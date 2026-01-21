@@ -3,6 +3,7 @@ require_once 'controller/maincontroller.php';
 require_once 'controller/aboutcontroller.php';
 require_once 'controller/shopcontroller.php';
 require_once 'controller/contactcontroller.php';
+require_once 'commons/function.php';
 
 $act=$_GET['act']??'/';
 match ($act){
