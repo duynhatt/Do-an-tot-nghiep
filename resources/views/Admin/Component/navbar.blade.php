@@ -65,8 +65,7 @@
         </a>
         <div id="collapsePages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
-                <a class="collapse-item" href="#">Thêm mới sản phẩm</a>
-                <a class="collapse-item" href="#">Danh sách sản phẩm</a>
+                <a class="collapse-item" href="{{ route('admin.san-pham.index') }}">Danh sách sản phẩm</a>
             </div>
         </div>
     </li>
