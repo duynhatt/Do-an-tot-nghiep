@@ -21,8 +21,9 @@
         </a>
         <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
-                <a class="collapse-item" href="#">Thêm mới danh mục</a>
-                <a class="collapse-item" href="#">Danh sách danh mục</a>
+                <a class="collapse-item" href="{{ route('admin.danh-muc') }}">
+                    Danh sách danh mục
+                </a>
             </div>
         </div>
     </li>
