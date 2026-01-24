@@ -1,6 +1,13 @@
 <?php
-class aboutcontroller{
-    function about(){
-        require_once 'view/about.php';
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+class AboutController extends Controller
+{
+    public function About()
+    {
+        return view('client.About');
     }
 }

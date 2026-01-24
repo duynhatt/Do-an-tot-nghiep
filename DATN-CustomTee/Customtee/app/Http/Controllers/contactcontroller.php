@@ -1,6 +1,13 @@
 <?php
-class contactcontroller{
-    function contact(){
-        require_once 'view/contact.php';
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+class ContactController extends Controller
+{
+    public function Contact()
+    {
+        return view('client.Contact');
     }
 }
