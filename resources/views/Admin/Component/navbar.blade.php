@@ -21,12 +21,30 @@
         </a>
         <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
-                <a class="collapse-item" href="{{ route('admin.danh-muc') }}">
-                    Danh sách danh mục
+                <a href="{{ route('admin.danh-muc.index') }}">Danh mục</a>
+            </div>
+        </div>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link collapsed" href="#"
+            data-toggle="collapse" data-target="#collapseThuocTinh"
+            aria-expanded="false" aria-controls="collapseThuocTinh">
+            <span>Thuộc tính</span>
+        </a>
+
+        <div id="collapseThuocTinh" class="collapse" data-parent="#accordionSidebar">
+            <div class="bg-white py-2 collapse-inner rounded">
+                <a class="collapse-item" href="{{ route('admin.mau-sac.index') }}">
+                    Màu sắc
+                </a>
+                <a class="collapse-item" href="{{ route('admin.kich-thuoc.index') }}">
+                    Kích thước
                 </a>
             </div>
         </div>
     </li>
+
     <li class="nav-item">
         <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUtilities"
             aria-expanded="true" aria-controls="collapseUtilities">
@@ -39,6 +57,7 @@
             </div>
         </div>
     </li>
+
     <li class="nav-item">
         <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePages" aria-expanded="true"
             aria-controls="collapsePages">

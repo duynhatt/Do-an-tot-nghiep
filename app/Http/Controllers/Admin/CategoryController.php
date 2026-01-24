@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
-    public function list()
+    public function index()
     {
 
         $danhMucs = Category::orderBy('id', 'desc')->get();
@@ -38,7 +38,7 @@ class CategoryController extends Controller
         ]);
     }
 
-    public function edit($id)
+    public function show($id)
     {
         $danhMuc = Category::findOrFail($id);
 
@@ -72,7 +72,7 @@ class CategoryController extends Controller
     }
 
    
-    public function delete($id)
+    public function destroy($id)
     {
         $danhMuc = Category::findOrFail($id);
         $danhMuc->delete();
