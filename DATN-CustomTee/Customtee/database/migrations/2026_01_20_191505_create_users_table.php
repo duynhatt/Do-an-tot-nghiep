@@ -10,14 +10,14 @@ return new class extends Migration {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
 
-            $table->string('ten');
+            $table->string('name'); // trước đây là 'ten'
             $table->string('email')->unique();
-            $table->string('mat_khau');
-            $table->string('so_dien_thoai', 20)->nullable();
+            $table->string('password'); // trước đây là 'mat_khau'
+            $table->string('phone', 20)->nullable(); // trước đây 'so_dien_thoai'
 
-            $table->enum('vai_tro', ['admin', 'client'])->default('client');
+            $table->enum('role', ['admin', 'client'])->default('client'); // 'vai_tro'
 
-            $table->tinyInteger('trang_thai')->default(1);
+            $table->tinyInteger('status')->default(1); // 'trang_thai'
             // 1: hoạt động, 0: khóa
 
             $table->rememberToken();
