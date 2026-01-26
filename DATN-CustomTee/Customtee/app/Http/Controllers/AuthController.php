@@ -30,8 +30,7 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        Auth::login($user); // đăng nhập tự động
-        return redirect('/')->with('success', 'Đăng ký thành công!');
+       return redirect('/login')->with('success', 'Đăng ký thành công, vui lòng đăng nhập!');
     }
 
     // Hiển thị form đăng nhập
