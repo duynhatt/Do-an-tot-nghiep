@@ -81,21 +81,55 @@
                 @guest
                     <a class="btn btn-outline-success me-2" href="{{ url('/login') }}">Đăng nhập</a>
                     <a class="btn btn-outline-primary me-2" href="{{ url('/register') }}">Đăng ký</a>
-                @else
-                    <div class="dropdown">
-                        <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            Xin chào, {{ auth()->user()->name }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li>
-                                <form method="POST" action="{{ url('/logout') }}">
-                                    @csrf
-                                    <button class="dropdown-item" type="submit">Đăng xuất</button>
-                                </form>
-                            </li>
-                        </ul>
-                    </div>
-                @endguest
+           
+                    @else
+
+
+
+    <div class="dropdown">
+        <a class="btn btn-light dropdown-toggle d-flex align-items-center"
+   href="#"
+   id="userDropdown"
+   data-bs-toggle="dropdown">
+    <img
+        src="{{ auth()->user()->avatar
+            ? asset('storage/'.auth()->user()->avatar)
+            : asset('img/default-avatar.png') }}"
+        class="rounded-circle me-2"
+        width="50"
+        height="50"
+        style="object-fit: cover"
+    >
+    {{ auth()->user()->name }}
+</a>
+
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+            <!-- Thông tin cá nhân -->
+            <li>
+                <a class="dropdown-item" href="{{ route('profile') }}">
+                    <i class="fa fa-user me-2"></i> Thông tin cá nhân
+                </a>
+            </li>
+
+            <li><hr class="dropdown-divider"></li>
+
+            <!-- Đăng xuất -->
+            <li>
+                <form method="POST" action="{{ url('/logout') }}">
+                    @csrf
+                    <button class="dropdown-item text-danger" type="submit">
+                        <i class="fa fa-sign-out-alt me-2"></i> Đăng xuất
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </div>
+@endguest
+ 
+
+
+
+
 
             </div>
         </div>
