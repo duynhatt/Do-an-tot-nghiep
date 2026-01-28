@@ -7,6 +7,11 @@ use App\Http\Controllers\client\ContactController;
 use App\Http\Controllers\client\ShopController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\client\ProfileController;
+use App\Http\Controllers\Admin\KichThuocController;
+use App\Http\Controllers\Admin\MauSacController;
+use App\Http\Controllers\Admin\SanPhamController;
+use App\Http\Controllers\Admin\CategoryController;
+
 
 use App\Http\Controllers\AuthController;
 
@@ -40,11 +45,13 @@ Route::middleware('auth')->group(function () {
 });
 
 
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [DashboardController::class, 'home'])->name('home');
+    Route::get('/dashboard', [DashboardController::class, 'Dashboard'])->name('dashboard');
 
+    Route::resource('danh-muc', CategoryController::class);
 
-
-
-
-
-//admin
-Route::get('/dashboard', [DashboardController::class, 'dashboard']);
+    Route::resource('mau-sac', MauSacController::class);
+    Route::resource('kich-thuoc', KichThuocController::class);
+    Route::resource('san-pham', SanPhamController::class);
+});
