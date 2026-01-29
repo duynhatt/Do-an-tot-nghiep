@@ -22,11 +22,11 @@
 </head>
 <body>
 
-    @include('client.layout.header')   <!-- Navbar -->
+    @include('client.layout.header')  
     
-    @yield('content')                  <!-- Nội dung trang -->
+    @yield('content')                  
 
-    @include('client.layout.footer')   <!-- Footer -->
+    @include('client.layout.footer')   
 
     <!-- Scripts -->
     <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
