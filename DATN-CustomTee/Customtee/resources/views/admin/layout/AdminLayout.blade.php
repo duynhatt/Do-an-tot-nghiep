@@ -51,7 +51,7 @@
         <!-- Header -->
         <header class="header fixed-top clearfix">
             <div class="brand">
-                <a href="{{ url('DashBoard') }}" class="logo">ADMIN</a>
+                <a href="{{ url('admin') }}" class="logo">ADMIN</a>
                 <div class="sidebar-toggle-box">
                     <div class="fa fa-bars"></div>
                 </div>
@@ -92,7 +92,7 @@
                     <ul class="sidebar-menu" id="nav-accordion">
                         <!-- Dashboard -->
                         <li>
-                            <a class="active" href="{{ url('DashBoard') }}">
+                            <a class="active" href="{{ url('admin') }}">
                                 <i class="fa fa-dashboard"></i>
                                 <span>Dashboard</span>
                             </a>

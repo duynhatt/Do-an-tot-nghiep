@@ -14,10 +14,4 @@ class DashboardController extends Controller
     {
         return view('Admin.layout.adminlayout');
     }
-
-    public function Dashboard()
-    {
-        return view('admin.DashBoard');
-    }
-
 }
