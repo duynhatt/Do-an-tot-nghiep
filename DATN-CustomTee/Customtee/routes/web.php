@@ -43,14 +43,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/password', [ProfileController::class, 'changePassword'])->name('profile.password');
 });
-
-
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'home'])->name('home');
     Route::get('/dashboard', [DashboardController::class, 'Dashboard'])->name('dashboard');
-
     Route::resource('danh-muc', CategoryController::class);
-
     Route::resource('mau-sac', MauSacController::class);
     Route::resource('kich-thuoc', KichThuocController::class);
     Route::resource('san-pham', SanPhamController::class);
