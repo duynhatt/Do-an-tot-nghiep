@@ -20,6 +20,10 @@
                         <th>Hình ảnh</th>
                         <th>Tên sản phẩm</th>
                         <th>Danh mục</th>
+                        {{-- <th>màu</th>
+                        <th>kích cỡ</th>
+                        <th>số lượng</th>
+                        <th>giá</th> --}}
                         <th>Trạng thái</th>
                         <th width="15%">Hành động</th>
                     </tr>

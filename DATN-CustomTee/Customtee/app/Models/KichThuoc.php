@@ -19,4 +19,9 @@ class KichThuoc extends Model
     protected $casts = [
         'trang_thai' => 'boolean',
     ];
+    public function variants()
+{
+    return $this->hasMany(BienThe::class, 'kich_thuoc_id');
+}
+
 }

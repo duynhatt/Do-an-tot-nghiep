@@ -11,6 +11,8 @@ use App\Http\Controllers\Admin\KichThuocController;
 use App\Http\Controllers\Admin\MauSacController;
 use App\Http\Controllers\Admin\SanPhamController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\VariantController;
+
 
 
 use App\Http\Controllers\AuthController;
@@ -51,3 +53,25 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('kich-thuoc', KichThuocController::class);
     Route::resource('san-pham', SanPhamController::class);
 });
+Route::prefix('admin/variants')->name('variants.')->group(function () {
+    Route::get('/', [VariantController::class, 'index'])->name('index');
+    Route::get('/create', [VariantController::class, 'create'])->name('create');
+    Route::post('/store', [VariantController::class, 'store'])->name('store');
+    Route::get('/edit/{id}', [VariantController::class, 'edit'])->name('edit');
+    Route::post('/update/{id}', [VariantController::class, 'update'])->name('update');
+    Route::delete('/delete/{id}', [VariantController::class, 'destroy'])->name('delete');
+});
+
+
+
+Route::get('/admin/products/info/{id}', function ($id) {
+    $product = \App\Models\SanPham::with('category')->findOrFail($id);
+
+    return response()->json([
+        'name'     => $product->ten_san_pham,
+        'image'    => $product->hinh_anh_chinh, // ví dụ: san-pham/abc.jpg
+        'category' => $product->category->ten_danh_muc ?? '',
+        'desc'     => $product->mo_ta_ngan,
+    ]);
+});
+

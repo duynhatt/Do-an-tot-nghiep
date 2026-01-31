@@ -65,22 +65,10 @@
 
             <div class="top-nav clearfix">
                 <ul class="nav pull-right top-menu">
-                    <li>
-                        <input type="text" class="form-control search" placeholder="Search">
-                    </li>
-
-                    <!-- User Dropdown -->
-                    <li class="dropdown">
-                        <a data-toggle="dropdown" class="dropdown-toggle" href="#">
-                            <span class="username">John Doe</span>
-                            <b class="caret"></b>
-                        </a>
-                        <ul class="dropdown-menu extended logout">
-                            <li><a href="#"><i class="fa fa-suitcase"></i> Profile</a></li>
-                            <li><a href="#"><i class="fa fa-cog"></i> Settings</a></li>
-                            <li><a href="login.html"><i class="fa fa-key"></i> Log Out</a></li>
-                        </ul>
-                    </li>
+                    <a class="active" href="{{ url('/') }}">
+                                <i class="fa fa-dashboard"></i>
+                                <span>CustomTee</span>
+                            </a>
                 </ul>
             </div>
         </header>
@@ -122,16 +110,24 @@
                         </li>
 
                         <!-- Variants -->
-                        <li class="sub-menu">
-                            <a href="javascript:;">
-                                <i class="fa fa-random"></i>
-                                <span>Biến thể</span>
-                            </a>
-                            <ul class="sub">
-                                <li><a href="#">Thêm mới biến thể</a></li>
-                                <li><a href="#">Danh sách biến thể</a></li>
-                            </ul>
-                        </li>
+                     <li class="sub-menu">
+    <a href="javascript:;">
+        <i class="fa fa-random"></i>
+        <span>Biến thể</span>
+    </a>
+    <ul class="sub">
+        <li>
+            <a href="{{ route('variants.create') }}">
+                Thêm mới biến thể
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('variants.index') }}">
+                Danh sách biến thể
+            </a>
+        </li>
+    </ul>
+</li>
 
                         <!-- Products -->
                         <li class="sub-menu">
@@ -143,89 +139,6 @@
                                 <li><a href="{{ route('admin.san-pham.index') }}">Danh sách sản phẩm</a></li>
                             </ul>
                         </li>
-
-                        <!-- UI Elements -->
-                        <li class="sub-menu">
-                            <a href="javascript:;">
-                                <i class="fa fa-book"></i>
-                                <span>UI Elements</span>
-                            </a>
-                            <ul class="sub">
-                                <li><a href="typography.html">Typography</a></li>
-                                <li><a href="glyphicon.html">Glyphicons</a></li>
-                                <li><a href="grids.html">Grids</a></li>
-                            </ul>
-                        </li>
-
-                        <!-- Font Awesome -->
-                        <li>
-                            <a href="fontawesome.html">
-                                <i class="fa fa-bullhorn"></i>
-                                <span>Font Awesome</span>
-                            </a>
-                        </li>
-
-                        <!-- Data Tables -->
-                        <li class="sub-menu">
-                            <a href="javascript:;">
-                                <i class="fa fa-th"></i>
-                                <span>Data Tables</span>
-                            </a>
-                            <ul class="sub">
-                                <li><a href="basic_table.html">Basic Table</a></li>
-                                <li><a href="responsive_table.html">Responsive Table</a></li>
-                            </ul>
-                        </li>
-
-                        <!-- Form Components -->
-                        <li class="sub-menu">
-                            <a href="javascript:;">
-                                <i class="fa fa-tasks"></i>
-                                <span>Form Components</span>
-                            </a>
-                            <ul class="sub">
-                                <li><a href="form_component.html">Form Elements</a></li>
-                                <li><a href="form_validation.html">Form Validation</a></li>
-                                <li><a href="dropzone.html">Dropzone</a></li>
-                            </ul>
-                        </li>
-
-                        <!-- Mail -->
-                        <li class="sub-menu">
-                            <a href="javascript:;">
-                                <i class="fa fa-envelope"></i>
-                                <span>Mail</span>
-                            </a>
-                            <ul class="sub">
-                                <li><a href="mail.html">Inbox</a></li>
-                                <li><a href="mail_compose.html">Compose Mail</a></li>
-                            </ul>
-                        </li>
-
-                        <!-- Charts -->
-                        <li class="sub-menu">
-                            <a href="javascript:;">
-                                <i class="fa fa-bar-chart-o"></i>
-                                <span>Charts</span>
-                            </a>
-                            <ul class="sub">
-                                <li><a href="chartjs.html">Chart.js</a></li>
-                                <li><a href="flot_chart.html">Flot Charts</a></li>
-                            </ul>
-                        </li>
-
-                        <!-- Maps -->
-                        <li class="sub-menu">
-                            <a href="javascript:;">
-                                <i class="fa fa-bar-chart-o"></i>
-                                <span>Maps</span>
-                            </a>
-                            <ul class="sub">
-                                <li><a href="google_map.html">Google Map</a></li>
-                                <li><a href="vector_map.html">Vector Map</a></li>
-                            </ul>
-                        </li>
-
                         <!-- Extra Pages -->
                         <li class="sub-menu">
                             <a href="javascript:;">
@@ -238,14 +151,8 @@
                                 <li><a href="registration.html">Registration</a></li>
                             </ul>
                         </li>
-
                         <!-- Login -->
-                        <li>
-                            <a href="login.html">
-                                <i class="fa fa-user"></i>
-                                <span>Login Page</span>
-                            </a>
-                        </li>
+                        
                     </ul>
                 </div>
             </div>
