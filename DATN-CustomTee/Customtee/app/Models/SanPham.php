@@ -47,4 +47,14 @@ class SanPham extends Model
             }
         });
     }
+    public function variants()
+{
+    return $this->hasMany(BienThe::class, 'san_pham_id');
+}
+
+public function category()
+{
+    return $this->belongsTo(Category::class, 'danh_muc_id');
+}
+
 }

@@ -20,4 +20,9 @@ class MauSac extends Model
     protected $casts = [
         'trang_thai' => 'boolean',
     ];
+    public function variants()
+{
+    return $this->hasMany(BienThe::class, 'mau_sac_id');
+}
+
 }
