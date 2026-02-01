@@ -3,16 +3,36 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
+use App\Models\SanPham;
 use Illuminate\Http\Request;
 
 class ShopController extends Controller
 {
-    public function Shop()
+    public function Shop(Request $request)
     {
-        return view('client.Shop');
+        $danhMucs = Category::hienThi()->orderBy('ten_danh_muc')->get();
+
+        $query = SanPham::with('category')
+            ->where('trang_thai', true)
+            ->withMin(['variants' => function ($q) {
+                $q->where('trang_thai', 1);
+            }], 'gia');
+
+        if ($request->filled('danh_muc')) {
+            $query->where('danh_muc_id', $request->danh_muc);
+        }
+
+        $sanPhams = $query->orderBy('id', 'desc')->get();
+
+        return view('client.Shop', compact('danhMucs', 'sanPhams'));
     }
-     public function ShopSingle()
+
+    public function ShopSingle($id)
     {
-        return view('client.ShopSingle');
+        $product = SanPham::with(['category', 'variants.color', 'variants.size'])
+            ->where('trang_thai', true)
+            ->findOrFail($id);
+        return view('client.ShopSingle', compact('product'));
     }
 }

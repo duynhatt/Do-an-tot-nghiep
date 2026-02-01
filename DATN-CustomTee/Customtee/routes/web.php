@@ -35,7 +35,7 @@ Route::get('/', [HomeController::class, 'index']);
 Route::get('About', [AboutController::class, 'About']);
 Route::get('Contact', [ContactController::class, 'Contact']);
 Route::get('Shop', [ShopController::class, 'Shop']);
-Route::get('ShopSingle', [ShopController::class, 'ShopSingle']);
+Route::get('ShopSingle/{id}', [ShopController::class, 'ShopSingle'])->name('shop.single');
 
 
 // routes/web.php
