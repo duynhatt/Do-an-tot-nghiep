@@ -13,7 +13,7 @@
         <select name="san_pham_id" id="productSelect" class="form-control">
             @foreach($products as $p)
                 <option value="{{ $p->id }}"
-                        data-img="{{ asset('storage/' . $p->hinh_anh_chinh) }}"
+                        data-img="{{ $p->hinh_anh_chinh ? asset('storage/' . $p->hinh_anh_chinh) : asset('img/shop_01.jpg') }}"
                         data-cat="{{ $p->category->ten_danh_muc ?? '' }}"
                         {{ $variant->san_pham_id == $p->id ? 'selected' : '' }}>
                     {{ $p->ten_san_pham }}
@@ -25,8 +25,8 @@
     {{-- PREVIEW SẢN PHẨM --}}
     <div class="product-info-box">
         <img id="previewImg"
-             src="{{ asset('storage/' . $variant->product->hinh_anh_chinh) }}">
-        <div><b>Danh mục:</b> <span id="productCat">{{ $variant->product->category->ten_danh_muc }}</span></div>
+             src="{{ $variant->product->hinh_anh_chinh ? asset('storage/' . $variant->product->hinh_anh_chinh) : asset('img/shop_01.jpg') }}">
+        <div><b>Danh mục:</b> <span id="productCat">{{ $variant->product->category->ten_danh_muc ?? '-' }}</span></div>
     </div>
 
     {{-- MÀU --}}

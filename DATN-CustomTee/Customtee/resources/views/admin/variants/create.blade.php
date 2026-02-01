@@ -13,7 +13,7 @@
         <select name="san_pham_id" id="productSelect" class="form-control" required>
             <option value="">-- Chọn sản phẩm --</option>
             @foreach($products as $p)
-                <option value="{{ $p->id }}">{{ $p->ten_san_pham }}</option>
+                <option value="{{ $p->id }}" {{ ($selectedProductId ?? '') == $p->id ? 'selected' : '' }}>{{ $p->ten_san_pham }}</option>
             @endforeach
         </select>
     </div>
@@ -99,6 +99,14 @@
 
 {{-- AJAX --}}
 <script>
+// Load thông tin sản phẩm nếu đã chọn sẵn
+document.addEventListener('DOMContentLoaded', function() {
+    const productSelect = document.getElementById('productSelect');
+    if (productSelect.value) {
+        productSelect.dispatchEvent(new Event('change'));
+    }
+});
+
 document.getElementById('productSelect').addEventListener('change', function () {
     let productId = this.value;
 
@@ -111,10 +119,10 @@ document.getElementById('productSelect').addEventListener('change', function () 
         .then(res => res.json())
         .then(data => {
             document.getElementById('productInfo').style.display = 'block';
-            document.getElementById('productName').innerText = data.name;
-            document.getElementById('productCategory').innerText = data.category;
-            document.getElementById('productDesc').innerText = data.desc;
-            document.getElementById('productImage').src = '/storage/' + data.image;
+            document.getElementById('productName').innerText = data.name || '';
+            document.getElementById('productCategory').innerText = data.category || '';
+            document.getElementById('productDesc').innerText = data.desc || '';
+            document.getElementById('productImage').src = data.image ? '/storage/' + data.image : '{{ asset("img/shop_01.jpg") }}';
         });
 });
 </script>
