@@ -15,12 +15,13 @@ class VariantController extends Controller
 {
 public function index()
 {
-    $variants = BienThe::with([
-    'product.category',  // load danh mục luôn
-    'color',
-    'size'
-])->latest()->get();
-    return view('admin.variants.index', compact('variants'));
+    $sanPhams = SanPham::with([
+        'danhMuc',
+        'variants' => function ($q) {
+            $q->with(['color', 'size'])->latest();
+        }
+    ])->orderBy('ten_san_pham')->get();
+    return view('admin.variants.index', compact('sanPhams'));
 
 
 
@@ -31,13 +32,14 @@ public function index()
 
 }
 
-public function create()
+public function create(Request $request)
 {
-    $products = SanPham::all();
+    $products = SanPham::orderBy('ten_san_pham')->get();
     $colors   = MauSac::all();
     $sizes    = KichThuoc::all();
+    $selectedProductId = $request->get('san_pham_id');
 
-    return view('admin.variants.create', compact('products','colors','sizes'));
+    return view('admin.variants.create', compact('products', 'colors', 'sizes', 'selectedProductId'));
 }
 
 
@@ -47,25 +49,29 @@ public function create()
 public function store(Request $request)
 {
     $request->validate([
-        'san_pham_id'   => 'required',
+        'san_pham_id'   => 'required|exists:san_phams,id',
         'mau_sac_id'    => [
             'required',
+            'exists:mau_sacs,id',
             Rule::unique('bien_thes')->where(function ($q) use ($request) {
                 return $q->where('san_pham_id', $request->san_pham_id)
                          ->where('kich_thuoc_id', $request->kich_thuoc_id);
             })
         ],
-        'kich_thuoc_id' => 'required',
+        'kich_thuoc_id' => 'required|exists:kich_thuocs,id',
         'gia'           => 'required|numeric',
         'so_luong'      => 'required|integer',
     ], [
         'mau_sac_id.unique' => 'Biến thể màu + size này đã tồn tại cho sản phẩm.'
     ]);
 
-    BienThe::create($request->all());
+    BienThe::create($request->only([
+        'san_pham_id', 'mau_sac_id', 'kich_thuoc_id',
+        'gia', 'gia_khuyen_mai', 'so_luong', 'trang_thai'
+    ]));
 
-    return redirect()->route('variants.index')
-        ->with('success','Thêm biến thể thành công');
+    return redirect(route('variants.index') . '#product-' . $request->san_pham_id)
+        ->with('success', 'Thêm biến thể thành công');
 }
 
 
@@ -87,16 +93,28 @@ public function update(Request $request, $id)
     $variant = BienThe::findOrFail($id);
 
     $request->validate([
-        'san_pham_id' => 'required',
-        'mau_sac_id' => 'required',
-        'kich_thuoc_id' => 'required',
-        'gia' => 'required|numeric',
-        'so_luong' => 'required|integer',
+        'san_pham_id'   => 'required|exists:san_phams,id',
+        'mau_sac_id'    => [
+            'required',
+            'exists:mau_sacs,id',
+            Rule::unique('bien_thes')->where(function ($q) use ($request) {
+                return $q->where('san_pham_id', $request->san_pham_id)
+                         ->where('kich_thuoc_id', $request->kich_thuoc_id);
+            })->ignore($id)
+        ],
+        'kich_thuoc_id' => 'required|exists:kich_thuocs,id',
+        'gia'           => 'required|numeric',
+        'so_luong'      => 'required|integer',
+    ], [
+        'mau_sac_id.unique' => 'Biến thể màu + size này đã tồn tại cho sản phẩm.'
     ]);
 
-    $variant->update($request->all());
+    $variant->update($request->only([
+        'san_pham_id', 'mau_sac_id', 'kich_thuoc_id',
+        'gia', 'gia_khuyen_mai', 'so_luong', 'trang_thai'
+    ]));
 
-    return redirect()->route('variants.index')
+    return redirect(route('variants.index') . '#product-' . $variant->san_pham_id)
         ->with('success', 'Cập nhật biến thể thành công');
 }
 
@@ -104,9 +122,10 @@ public function update(Request $request, $id)
 public function destroy($id)
 {
     $variant = BienThe::findOrFail($id);
+    $sanPhamId = $variant->san_pham_id;
     $variant->delete();
 
-    return redirect()->route('variants.index')
+    return redirect(route('variants.index') . '#product-' . $sanPhamId)
         ->with('success', 'Đã xoá biến thể');
 }
 

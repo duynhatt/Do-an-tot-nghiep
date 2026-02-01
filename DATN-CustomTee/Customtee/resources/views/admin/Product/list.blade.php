@@ -51,12 +51,16 @@
                             @endif
                         </td>
                         <td>
-                            <button class="btn btn-sm btn-warning btn-edit"
-                                data-id="{{ $sp->id }}">
+                            <a href="{{ route('variants.create', ['san_pham_id' => $sp->id]) }}" class="btn btn-sm btn-info" title="Thêm biến thể">
+                                <i class="fas fa-palette"></i>
+                            </a>
+                            <a href="{{ route('variants.index') }}#product-{{ $sp->id }}" class="btn btn-sm btn-secondary" title="Xem biến thể">
+                                <i class="fas fa-list"></i>
+                            </a>
+                            <button class="btn btn-sm btn-warning btn-edit" data-id="{{ $sp->id }}">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger btn-delete"
-                                data-id="{{ $sp->id }}">
+                            <button class="btn btn-sm btn-danger btn-delete" data-id="{{ $sp->id }}">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
