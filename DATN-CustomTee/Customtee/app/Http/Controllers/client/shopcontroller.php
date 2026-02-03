@@ -15,6 +15,7 @@ class ShopController extends Controller
 
         $query = SanPham::with('category')
             ->where('trang_thai', true)
+            ->whereHas('danhMuc', fn($q) => $q->where('trang_thai', 1))
             ->withMin(['variants' => function ($q) {
                 $q->where('trang_thai', 1);
             }], 'gia');
@@ -32,6 +33,7 @@ class ShopController extends Controller
     {
         $product = SanPham::with(['category', 'variants.color', 'variants.size'])
             ->where('trang_thai', true)
+            ->whereHas('danhMuc', fn($q) => $q->where('trang_thai', 1))
             ->findOrFail($id);
         return view('client.ShopSingle', compact('product'));
     }

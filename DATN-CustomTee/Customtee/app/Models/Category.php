@@ -19,6 +19,11 @@ class Category extends Model
         'trang_thai' => 'integer',
     ];
 
+    public function sanPhams()
+    {
+        return $this->hasMany(SanPham::class, 'danh_muc_id');
+    }
+
     public function scopeHienThi($query)
     {
         return $query->where('trang_thai', 1);

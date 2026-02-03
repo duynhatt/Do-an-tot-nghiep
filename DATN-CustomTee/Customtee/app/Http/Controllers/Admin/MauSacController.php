@@ -17,9 +17,15 @@ class MauSacController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'ten_mau' => 'required|string|max:100',
-            'ma_mau'  => 'nullable|string|max:7', 
-            'trang_thai' => 'required|in:0,1',
+            'ten_mau'     => 'required|string|max:100|unique:mau_sacs,ten_mau',
+            'ma_mau'      => 'nullable|string|max:20',
+            'trang_thai'  => 'required|in:0,1',
+        ], [
+            'ten_mau.required' => 'Vui lòng nhập tên màu.',
+            'ten_mau.max'      => 'Tên màu không được quá 100 ký tự.',
+            'ten_mau.unique'   => 'Tên màu này đã tồn tại.',
+            'trang_thai.required' => 'Vui lòng chọn trạng thái.',
+            'trang_thai.in'    => 'Trạng thái không hợp lệ.',
         ]);
 
         MauSac::create($request->only(['ten_mau', 'ma_mau', 'trang_thai']));
@@ -42,9 +48,15 @@ class MauSacController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'ten_mau' => 'required|string|max:100',
-            'ma_mau'  => 'nullable|string|max:7',
-            'trang_thai' => 'required|in:0,1',
+            'ten_mau'     => 'required|string|max:100|unique:mau_sacs,ten_mau,' . $id,
+            'ma_mau'      => 'nullable|string|max:20',
+            'trang_thai'  => 'required|in:0,1',
+        ], [
+            'ten_mau.required' => 'Vui lòng nhập tên màu.',
+            'ten_mau.max'      => 'Tên màu không được quá 100 ký tự.',
+            'ten_mau.unique'   => 'Tên màu này đã tồn tại.',
+            'trang_thai.required' => 'Vui lòng chọn trạng thái.',
+            'trang_thai.in'    => 'Trạng thái không hợp lệ.',
         ]);
 
         $mauSac = MauSac::findOrFail($id);
@@ -58,7 +70,15 @@ class MauSacController extends Controller
 
     public function destroy($id)
     {
-        $mauSac = MauSac::findOrFail($id);
+        $mauSac = MauSac::withCount('variants')->findOrFail($id);
+
+        if ($mauSac->variants_count > 0) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Không thể xóa màu sắc đang được sử dụng trong biến thể sản phẩm.',
+            ], 422);
+        }
+
         $mauSac->delete();
 
         return response()->json([

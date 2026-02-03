@@ -20,9 +20,16 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'ten_danh_muc' => 'required|string|max:255',
-            'mo_ta'        => 'nullable|string',
+            'ten_danh_muc' => 'required|string|max:255|unique:danh_mucs,ten_danh_muc',
+            'mo_ta'        => 'nullable|string|max:1000',
             'trang_thai'   => 'required|in:0,1',
+        ], [
+            'ten_danh_muc.required' => 'Vui lòng nhập tên danh mục.',
+            'ten_danh_muc.max'      => 'Tên danh mục không được quá 255 ký tự.',
+            'ten_danh_muc.unique'   => 'Tên danh mục này đã tồn tại.',
+            'mo_ta.max'             => 'Mô tả không được quá 1000 ký tự.',
+            'trang_thai.required'   => 'Vui lòng chọn trạng thái.',
+            'trang_thai.in'         => 'Trạng thái không hợp lệ.',
         ]);
 
         Category::create([
@@ -51,9 +58,16 @@ class CategoryController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'ten_danh_muc' => 'required|string|max:255',
-            'mo_ta'        => 'nullable|string',
+            'ten_danh_muc' => 'required|string|max:255|unique:danh_mucs,ten_danh_muc,' . $id,
+            'mo_ta'        => 'nullable|string|max:1000',
             'trang_thai'   => 'required|in:0,1',
+        ], [
+            'ten_danh_muc.required' => 'Vui lòng nhập tên danh mục.',
+            'ten_danh_muc.max'      => 'Tên danh mục không được quá 255 ký tự.',
+            'ten_danh_muc.unique'   => 'Tên danh mục này đã tồn tại.',
+            'mo_ta.max'             => 'Mô tả không được quá 1000 ký tự.',
+            'trang_thai.required'   => 'Vui lòng chọn trạng thái.',
+            'trang_thai.in'         => 'Trạng thái không hợp lệ.',
         ]);
 
         $danhMuc = Category::findOrFail($id);
@@ -74,7 +88,15 @@ class CategoryController extends Controller
    
     public function destroy($id)
     {
-        $danhMuc = Category::findOrFail($id);
+        $danhMuc = Category::withCount('sanPhams')->findOrFail($id);
+
+        if ($danhMuc->san_phams_count > 0) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Không thể xóa danh mục đang có sản phẩm. Vui lòng xóa hoặc chuyển sản phẩm sang danh mục khác trước.',
+            ], 422);
+        }
+
         $danhMuc->delete();
 
         return response()->json([

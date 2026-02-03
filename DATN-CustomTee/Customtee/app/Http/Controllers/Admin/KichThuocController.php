@@ -17,8 +17,14 @@ class KichThuocController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'ten_kich_thuoc' => 'required|string|max:50',
+            'ten_kich_thuoc' => 'required|string|max:50|unique:kich_thuocs,ten_kich_thuoc',
             'trang_thai'     => 'required|in:0,1',
+        ], [
+            'ten_kich_thuoc.required' => 'Vui lòng nhập tên kích thước.',
+            'ten_kich_thuoc.max'      => 'Tên kích thước không được quá 50 ký tự.',
+            'ten_kich_thuoc.unique'   => 'Tên kích thước này đã tồn tại.',
+            'trang_thai.required'     => 'Vui lòng chọn trạng thái.',
+            'trang_thai.in'           => 'Trạng thái không hợp lệ.',
         ]);
 
         KichThuoc::create($request->only(['ten_kich_thuoc', 'trang_thai']));
@@ -41,8 +47,14 @@ class KichThuocController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'ten_kich_thuoc' => 'required|string|max:50',
+            'ten_kich_thuoc' => 'required|string|max:50|unique:kich_thuocs,ten_kich_thuoc,' . $id,
             'trang_thai'     => 'required|in:0,1',
+        ], [
+            'ten_kich_thuoc.required' => 'Vui lòng nhập tên kích thước.',
+            'ten_kich_thuoc.max'      => 'Tên kích thước không được quá 50 ký tự.',
+            'ten_kich_thuoc.unique'   => 'Tên kích thước này đã tồn tại.',
+            'trang_thai.required'     => 'Vui lòng chọn trạng thái.',
+            'trang_thai.in'           => 'Trạng thái không hợp lệ.',
         ]);
 
         $kichThuoc = KichThuoc::findOrFail($id);
@@ -56,7 +68,15 @@ class KichThuocController extends Controller
 
     public function destroy($id)
     {
-        $kichThuoc = KichThuoc::findOrFail($id);
+        $kichThuoc = KichThuoc::withCount('variants')->findOrFail($id);
+
+        if ($kichThuoc->variants_count > 0) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Không thể xóa kích thước đang được sử dụng trong biến thể sản phẩm.',
+            ], 422);
+        }
+
         $kichThuoc->delete();
 
         return response()->json([
