@@ -75,12 +75,14 @@
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>Tên màu</label>
-                        <input type="text" name="ten_mau" class="form-control" required>
+                        <label>Tên màu <span class="text-danger">*</span></label>
+                        <input type="text" name="ten_mau" class="form-control" required maxlength="100" placeholder="Ví dụ: Đỏ, Xanh navy">
+                        <small class="text-muted">Tối đa 100 ký tự, không được trùng</small>
                     </div>
                     <div class="form-group">
                         <label>Mã màu (ví dụ: #FF0000)</label>
-                        <input type="color" name="ma_mau" class="form-control" placeholder="#RRGGBB">
+                        <input type="color" name="ma_mau" class="form-control" style="height: 40px; padding: 2px;">
+                        <small class="text-muted">Chọn màu hoặc để trống</small>
                     </div>
                     <div class="form-group">
                         <label>Trạng thái</label>
@@ -112,12 +114,14 @@
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>Tên màu</label>
-                        <input type="text" id="edit_ten_mau" class="form-control" required>
+                        <label>Tên màu <span class="text-danger">*</span></label>
+                        <input type="text" id="edit_ten_mau" class="form-control" required maxlength="100" placeholder="Ví dụ: Đỏ, Xanh navy">
+                        <small class="text-muted">Tối đa 100 ký tự, không được trùng</small>
                     </div>
                     <div class="form-group">
                         <label>Mã màu</label>
-                        <input type="color" id="edit_ma_mau" class="form-control" placeholder="#RRGGBB">
+                        <input type="color" id="edit_ma_mau" class="form-control" style="height: 40px; padding: 2px;">
+                        <small class="text-muted">Chọn màu hoặc để trống</small>
                     </div>
                     <div class="form-group">
                         <label>Trạng thái</label>
@@ -139,6 +143,23 @@
 <script>
     $(function() {
 
+        function showValidationErrors(xhr) {
+            if (xhr.status === 422 && xhr.responseJSON) {
+                const data = xhr.responseJSON;
+                if (data.errors) {
+                    Object.keys(data.errors).forEach(function(field) {
+                        toastr.error(data.errors[field][0]);
+                    });
+                    return true;
+                }
+                if (data.message) {
+                    toastr.error(data.message);
+                    return true;
+                }
+            }
+            return false;
+        }
+
         $('#formAdd').submit(function(e) {
             e.preventDefault();
             $.post("{{ route('admin.mau-sac.store') }}", $(this).serialize(), function(res) {
@@ -149,7 +170,9 @@
                 } else {
                     toastr.error(res.message || 'Có lỗi xảy ra');
                 }
-            }).fail(() => toastr.error('Lỗi kết nối server'));
+            }).fail(function(xhr) {
+                if (!showValidationErrors(xhr)) toastr.error('Lỗi kết nối server');
+            });
         });
 
         $('.btn-edit').click(function() {
@@ -158,7 +181,7 @@
                 if (res.status) {
                     $('#edit_id').val(res.data.id);
                     $('#edit_ten_mau').val(res.data.ten_mau);
-                    $('#edit_ma_mau').val(res.data.ma_mau);
+                    $('#edit_ma_mau').val(res.data.ma_mau || '#000000');
                     $('#edit_trang_thai').val(res.data.trang_thai ? 1 : 0);
                     $('#modalEdit').modal('show');
                 } else {
@@ -191,8 +214,8 @@
                         toastr.error(res.message || 'Có lỗi xảy ra');
                     }
                 },
-                error: function() {
-                    toastr.error('Lỗi kết nối server');
+                error: function(xhr) {
+                    if (!showValidationErrors(xhr)) toastr.error('Lỗi kết nối server');
                 }
             });
         });
@@ -215,7 +238,13 @@
                         toastr.error(res.message || 'Không thể xóa');
                     }
                 },
-                error: () => toastr.error('Lỗi khi xóa')
+                error: function(xhr) {
+                    if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.message) {
+                        toastr.error(xhr.responseJSON.message);
+                    } else if (!showValidationErrors(xhr)) {
+                        toastr.error('Lỗi khi xóa');
+                    }
+                }
             });
         });
 

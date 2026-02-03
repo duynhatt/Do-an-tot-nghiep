@@ -64,8 +64,9 @@
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>Tên kích thước (S, M, L, 38, 39...)</label>
-                        <input type="text" name="ten_kich_thuoc" class="form-control" required>
+                        <label>Tên kích thước (S, M, L, 38, 39...) <span class="text-danger">*</span></label>
+                        <input type="text" name="ten_kich_thuoc" class="form-control" required maxlength="50" placeholder="Ví dụ: S, M, L, XL">
+                        <small class="text-muted">Tối đa 50 ký tự, không được trùng</small>
                     </div>
                     <div class="form-group">
                         <label>Trạng thái</label>
@@ -96,8 +97,9 @@
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>Tên kích thước</label>
-                        <input type="text" id="edit_ten_kich_thuoc" class="form-control" required>
+                        <label>Tên kích thước <span class="text-danger">*</span></label>
+                        <input type="text" id="edit_ten_kich_thuoc" class="form-control" required maxlength="50" placeholder="Ví dụ: S, M, L, XL">
+                        <small class="text-muted">Tối đa 50 ký tự, không được trùng</small>
                     </div>
                     <div class="form-group">
                         <label>Trạng thái</label>
@@ -119,6 +121,23 @@
 <script>
     $(function() {
 
+        function showValidationErrors(xhr) {
+            if (xhr.status === 422 && xhr.responseJSON) {
+                const data = xhr.responseJSON;
+                if (data.errors) {
+                    Object.keys(data.errors).forEach(function(field) {
+                        toastr.error(data.errors[field][0]);
+                    });
+                    return true;
+                }
+                if (data.message) {
+                    toastr.error(data.message);
+                    return true;
+                }
+            }
+            return false;
+        }
+
         $('#formAdd').submit(function(e) {
             e.preventDefault();
             $.post("{{ route('admin.kich-thuoc.store') }}", $(this).serialize(), function(res) {
@@ -129,7 +148,9 @@
                 } else {
                     toastr.error(res.message || 'Có lỗi xảy ra');
                 }
-            }).fail(() => toastr.error('Lỗi kết nối server'));
+            }).fail(function(xhr) {
+                if (!showValidationErrors(xhr)) toastr.error('Lỗi kết nối server');
+            });
         });
 
         $('.btn-edit').click(function() {
@@ -169,8 +190,8 @@
                         toastr.error(res.message || 'Có lỗi xảy ra');
                     }
                 },
-                error: function() {
-                    toastr.error('Lỗi kết nối server');
+                error: function(xhr) {
+                    if (!showValidationErrors(xhr)) toastr.error('Lỗi kết nối server');
                 }
             });
         });
@@ -187,13 +208,19 @@
                 },
                 success: function(res) {
                     if (res.status) {
-                        setTimeout(() => location.reload(), 1500);
                         toastr.success(res.message);
+                        setTimeout(() => location.reload(), 1500);
                     } else {
                         toastr.error(res.message || 'Không thể xóa');
                     }
                 },
-                error: () => toastr.error('Lỗi khi xóa')
+                error: function(xhr) {
+                    if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.message) {
+                        toastr.error(xhr.responseJSON.message);
+                    } else if (!showValidationErrors(xhr)) {
+                        toastr.error('Lỗi khi xóa');
+                    }
+                }
             });
         });
 

@@ -7,6 +7,16 @@
 <form action="{{ route('variants.store') }}" method="POST" style="max-width:600px;">
     @csrf
 
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach ($errors->all() as $err)
+                    <li>{{ $err }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     {{-- SẢN PHẨM --}}
     <div class="form-group">
         <label>Sản phẩm</label>
@@ -49,19 +59,22 @@
     {{-- GIÁ --}}
     <div class="form-group">
         <label>Giá</label>
-        <input type="number" name="gia" class="form-control" required>
+        <input type="number" name="gia" class="form-control @error('gia') is-invalid @enderror" value="{{ old('gia') }}" min="0" required>
+        @error('gia')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 
     {{-- GIÁ KM --}}
     <div class="form-group">
         <label>Giá khuyến mãi</label>
-        <input type="number" name="gia_khuyen_mai" class="form-control">
+        <input type="number" name="gia_khuyen_mai" class="form-control @error('gia_khuyen_mai') is-invalid @enderror" value="{{ old('gia_khuyen_mai') }}" min="0">
+        @error('gia_khuyen_mai')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 
     {{-- SỐ LƯỢNG --}}
     <div class="form-group">
         <label>Số lượng</label>
-        <input type="number" name="so_luong" class="form-control" required>
+        <input type="number" name="so_luong" class="form-control @error('so_luong') is-invalid @enderror" value="{{ old('so_luong') }}" min="0" required>
+        @error('so_luong')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 
     {{-- TRẠNG THÁI --}}

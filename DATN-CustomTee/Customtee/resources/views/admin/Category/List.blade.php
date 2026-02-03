@@ -72,13 +72,15 @@
 
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>Tên danh mục</label>
-                        <input type="text" name="ten_danh_muc" class="form-control" required>
+                        <label>Tên danh mục <span class="text-danger">*</span></label>
+                        <input type="text" name="ten_danh_muc" class="form-control" required maxlength="255" placeholder="Nhập tên danh mục">
+                        <small class="text-muted">Tối đa 255 ký tự, không được trùng với danh mục khác</small>
                     </div>
 
                     <div class="form-group">
                         <label>Mô tả</label>
-                        <textarea name="mo_ta" class="form-control" rows="3"></textarea>
+                        <textarea name="mo_ta" class="form-control" rows="3" maxlength="1000" placeholder="Mô tả danh mục (tùy chọn)"></textarea>
+                        <small class="text-muted">Tối đa 1000 ký tự</small>
                     </div>
 
                     <div class="form-group">
@@ -113,13 +115,15 @@
 
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>Tên danh mục</label>
-                        <input type="text" id="edit_ten_danh_muc" class="form-control" required>
+                        <label>Tên danh mục <span class="text-danger">*</span></label>
+                        <input type="text" id="edit_ten_danh_muc" class="form-control" required maxlength="255" placeholder="Nhập tên danh mục">
+                        <small class="text-muted">Tối đa 255 ký tự, không được trùng với danh mục khác</small>
                     </div>
 
                     <div class="form-group">
                         <label>Mô tả</label>
-                        <textarea id="edit_mo_ta" class="form-control" rows="3"></textarea>
+                        <textarea id="edit_mo_ta" class="form-control" rows="3" maxlength="1000" placeholder="Mô tả danh mục (tùy chọn)"></textarea>
+                        <small class="text-muted">Tối đa 1000 ký tự</small>
                     </div>
 
                     <div class="form-group">
@@ -143,6 +147,24 @@
 <script>
     $(function() {
 
+        // Hiển thị lỗi validation từ server (422)
+        function showValidationErrors(xhr) {
+            if (xhr.status === 422 && xhr.responseJSON) {
+                const data = xhr.responseJSON;
+                if (data.errors) {
+                    Object.keys(data.errors).forEach(function(field) {
+                        toastr.error(data.errors[field][0]);
+                    });
+                    return true;
+                }
+                if (data.message) {
+                    toastr.error(data.message);
+                    return true;
+                }
+            }
+            return false;
+        }
+
         $('#formAdd').submit(function(e) {
             e.preventDefault();
 
@@ -154,8 +176,10 @@
                 } else {
                     toastr.error(res.message || 'Có lỗi xảy ra khi thêm danh mục');
                 }
-            }).fail(function() {
-                toastr.error('Lỗi kết nối server');
+            }).fail(function(xhr) {
+                if (!showValidationErrors(xhr)) {
+                    toastr.error('Lỗi kết nối server');
+                }
             });
         });
 
@@ -201,8 +225,10 @@
                         toastr.error(res.message || 'Có lỗi khi cập nhật');
                     }
                 },
-                error: function() {
-                    toastr.error('Lỗi kết nối server');
+                error: function(xhr) {
+                    if (!showValidationErrors(xhr)) {
+                        toastr.error('Lỗi kết nối server');
+                    }
                 }
             });
         });
@@ -227,8 +253,12 @@
                         toastr.error(res.message || 'Không thể xóa danh mục');
                     }
                 },
-                error: function() {
-                    toastr.error('Lỗi khi xóa danh mục');
+                error: function(xhr) {
+                    if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.message) {
+                        toastr.error(xhr.responseJSON.message);
+                    } else if (!showValidationErrors(xhr)) {
+                        toastr.error('Lỗi khi xóa danh mục');
+                    }
                 }
             });
         });
