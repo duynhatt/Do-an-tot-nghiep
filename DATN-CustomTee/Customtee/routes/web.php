@@ -12,8 +12,7 @@ use App\Http\Controllers\Admin\MauSacController;
 use App\Http\Controllers\Admin\SanPhamController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\VariantController;
-
-
+use App\Http\Controllers\client\SanPhamController as ClientSanPhamController;
 
 use App\Http\Controllers\AuthController;
 
@@ -36,6 +35,8 @@ Route::get('About', [AboutController::class, 'About']);
 Route::get('Contact', [ContactController::class, 'Contact']);
 Route::get('Shop', [ShopController::class, 'Shop']);
 Route::get('ShopSingle/{id}', [ShopController::class, 'ShopSingle'])->name('shop.single');
+Route::get('/san-pham/{slug}', [ClientSanPhamController::class, 'showProduct'])
+    ->name('sanpham.chitiet');
 
 
 // routes/web.php
