@@ -169,6 +169,7 @@
 
         let selectedColor = null;
         let selectedSize = null;
+        let currentVariantId = null;
 
         colorButtons.forEach(btn => {
             btn.addEventListener('click', function() {
@@ -211,6 +212,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.variant) {
+                        currentVariantId = data.variant.id || null;
                         const giaBan = data.variant.gia_khuyen_mai || data.variant.gia;
                         giaHienTai.textContent = new Intl.NumberFormat('vi-VN').format(giaBan) + ' ₫';
 
@@ -227,6 +229,7 @@
 
                         tonKhoInfo.textContent = `Còn ${data.variant.so_luong} sản phẩm`;
                     } else {
+                        currentVariantId = null;
                         giaHienTai.textContent = 'Hết hàng';
                         tonKhoInfo.textContent = 'Hết hàng';
                         giaGoc.classList.add('d-none');
@@ -243,7 +246,49 @@
                 alert('Vui lòng chọn màu sắc và kích thước!');
                 return;
             }
-            alert('Đã thêm vào giỏ hàng!');
+            if (!currentVariantId) {
+                alert('Vui lòng chọn lại màu và kích thước.');
+                return;
+            }
+            const qty = parseInt(document.getElementById('quantity').value, 10) || 1;
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!token) {
+                alert('Phiên đăng nhập hết hạn. Vui lòng tải lại trang.');
+                return;
+            }
+            addToCartBtn.disabled = true;
+            fetch('{{ route("gio-hang.store") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    san_pham_id: {{ $sanPham->id }},
+                    bien_the_id: currentVariantId,
+                    so_luong: qty
+                })
+            })
+            .then(r => {
+                if (r.status === 401) {
+                    window.location.href = '{{ url("/login") }}';
+                    return;
+                }
+                return r.json();
+            })
+            .then(data => {
+                if (!data) return;
+                if (data.success) {
+                    alert(data.message || 'Đã thêm vào giỏ hàng!');
+                } else {
+                    const msg = (data.errors && Object.values(data.errors).flat().length) ? Object.values(data.errors).flat().join('\n') : (data.message || 'Có lỗi xảy ra.');
+                    alert(msg);
+                }
+            })
+            .catch(() => alert('Có lỗi xảy ra. Vui lòng thử lại.'))
+            .finally(() => { addToCartBtn.disabled = false; });
         });
     });
 </script>

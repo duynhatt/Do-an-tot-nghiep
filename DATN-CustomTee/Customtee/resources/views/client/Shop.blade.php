@@ -62,19 +62,19 @@
                             <img class="card-img rounded-0 img-fluid" src="{{ $sp->hinh_anh_chinh ? asset('storage/' . $sp->hinh_anh_chinh) : asset('img/shop_01.jpg') }}" alt="{{ $sp->ten_san_pham }}">
                             <div class="card-img-overlay rounded-0 product-overlay d-flex align-items-center justify-content-center">
                                 <ul class="list-unstyled">
-                                    <li><a class="btn btn-success text-white" href="{{ route('shop.single', $sp->id) }}"><i class="far fa-heart"></i></a></li>
+                                    <li><a class="btn btn-success text-white"  href="{{ route('sanpham.chitiet', $sp->slug) }}"><i class="far fa-heart"></i></a></li>
                                     <li>
                                         <a class="btn btn-success text-white mt-2"
                                             href="{{ route('sanpham.chitiet', $sp->slug) }}">
                                             <i class="far fa-eye"></i>
                                         </a>
                                     </li>
-                                    <li><a class="btn btn-success text-white mt-2" href="{{ route('shop.single', $sp->id) }}"><i class="fas fa-cart-plus"></i></a></li>
+                                    <li><a class="btn btn-success text-white mt-2"  href="{{ route('sanpham.chitiet', $sp->slug) }}"><i class="fas fa-cart-plus"></i></a></li>
                                 </ul>
                             </div>
                         </div>
                         <div class="card-body">
-                            <a href="{{ route('shop.single', $sp->id) }}" class="h3 text-decoration-none">{{ $sp->ten_san_pham }}</a>
+                            <a  href="{{ route('sanpham.chitiet', $sp->slug) }}" class="h3 text-decoration-none">{{ $sp->ten_san_pham }}</a>
                             {{-- <ul class="w-100 list-unstyled d-flex justify-content-between mb-0">
                                     <li class="text-muted small">{{ $sp->category->ten_danh_muc ?? '' }}</li>
                             </ul> --}}

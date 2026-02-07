@@ -55,4 +55,8 @@ class User extends Authenticatable
     'role',
 ];
 
+    public function gioHangs()
+    {
+        return $this->hasMany(GioHang::class, 'nguoi_dung_id');
+    }
 }

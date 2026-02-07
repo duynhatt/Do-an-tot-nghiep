@@ -4,6 +4,7 @@
     <title>CustomTee</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- ICON -->
     <link rel="apple-touch-icon" href="{{ asset('img/apple-icon.png') }}">
@@ -71,11 +72,21 @@
                     <i class="fa fa-fw fa-search text-dark mr-2"></i>
                 </a>
 
-                <a class="nav-icon position-relative text-decoration-none" href="#">
+                @auth
+                <a class="nav-icon position-relative text-decoration-none" href="{{ route('gio-hang.index') }}" title="Giỏ hàng">
                     <i class="fa fa-fw fa-cart-arrow-down text-dark mr-1"></i>
-                    <span
-                        class="position-absolute top-0 left-100 translate-middle badge rounded-pill bg-light text-dark">7</span>
+                    @php
+                        $cartCount = \App\Models\GioHang::where('nguoi_dung_id', auth()->id())->dangTrongGio()->whereNotNull('bien_the_id')->count();
+                    @endphp
+                    @if($cartCount > 0)
+                        <span class="position-absolute top-0 left-100 translate-middle badge rounded-pill bg-danger">{{ $cartCount > 99 ? '99+' : $cartCount }}</span>
+                    @endif
                 </a>
+                @else
+                <a class="nav-icon position-relative text-decoration-none" href="{{ url('/login') }}" title="Đăng nhập để xem giỏ hàng">
+                    <i class="fa fa-fw fa-cart-arrow-down text-dark mr-1"></i>
+                </a>
+                @endauth
 
                 <!-- Auth Links -->
                 @guest

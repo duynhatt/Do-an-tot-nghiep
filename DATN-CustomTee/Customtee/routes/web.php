@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\SanPhamController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\VariantController;
 use App\Http\Controllers\client\SanPhamController as ClientSanPhamController;
+use App\Http\Controllers\client\GioHangController;
 
 use App\Http\Controllers\AuthController;
 use App\Models\BienThe;
@@ -36,7 +37,7 @@ Route::get('/', [HomeController::class, 'index']);
 Route::get('About', [AboutController::class, 'About']);
 Route::get('Contact', [ContactController::class, 'Contact']);
 Route::get('Shop', [ShopController::class, 'Shop']);
-Route::get('ShopSingle/{id}', [ShopController::class, 'ShopSingle'])->name('shop.single');
+// Route::get('ShopSingle/{id}', [ShopController::class, 'ShopSingle'])->name('shop.single');
 Route::get('/san-pham/{slug}', [ClientSanPhamController::class, 'showProduct'])
     ->name('sanpham.chitiet');
 
@@ -55,6 +56,7 @@ Route::get('/api/product-variant', function (Request $request) {
         return response()->json([
             'success' => true,
             'variant' => [
+                'id'              => $variant->id,
                 'gia'             => $variant->gia,
                 'gia_khuyen_mai'  => $variant->gia_khuyen_mai,
                 'so_luong'        => $variant->so_luong,
@@ -73,6 +75,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
     Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/password', [ProfileController::class, 'changePassword'])->name('profile.password');
+
+    // Giỏ hàng (lưu DB, gắn user)
+    Route::get('/gio-hang', [GioHangController::class, 'index'])->name('gio-hang.index');
+    Route::post('/gio-hang', [GioHangController::class, 'store'])->name('gio-hang.store');
+    Route::put('/gio-hang/{gioHang}', [GioHangController::class, 'update'])->name('gio-hang.update');
+    Route::delete('/gio-hang/{gioHang}', [GioHangController::class, 'destroy'])->name('gio-hang.destroy');
 });
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'home'])->name('home');
