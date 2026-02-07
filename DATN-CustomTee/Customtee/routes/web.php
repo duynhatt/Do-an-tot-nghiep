@@ -14,7 +14,6 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\VariantController;
 use App\Http\Controllers\client\SanPhamController as ClientSanPhamController;
 use App\Http\Controllers\client\GioHangController;
-
 use App\Http\Controllers\AuthController;
 use App\Models\BienThe;
 use Illuminate\Http\Request;
@@ -45,6 +44,18 @@ Route::get('/api/product-variant', function (Request $request) {
     $productId = $request->query('product_id');
     $colorId   = $request->query('color');
     $sizeId    = $request->query('size');
+
+    // Kiểm tra sản phẩm có tồn tại và được hiển thị hay không
+    $product = \App\Models\SanPham::where('id', $productId)
+        ->where('trang_thai', true)
+        ->whereHas('danhMuc', fn($q) => $q->where('trang_thai', 1))
+        ->first();
+
+    if (!$product) {
+        return response()->json([
+            'success' => false
+        ]);
+    }
 
     $variant = BienThe::where('san_pham_id', $productId)
         ->where('mau_sac_id', $colorId)

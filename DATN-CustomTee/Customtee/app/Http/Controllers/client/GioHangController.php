@@ -23,6 +23,11 @@ class GioHangController extends Controller
             ->orderBy('updated_at', 'desc')
             ->get();
 
+        // Cập nhật giá hiện tại từ bien_thes
+        foreach ($items as $item) {
+            $item->syncGiaMoi();
+        }
+
         $tongTien = $items->sum('thanh_tien');
 
         return view('client.gio-hang.index', compact('items', 'tongTien'));
@@ -119,6 +124,8 @@ class GioHangController extends Controller
         }
 
         $gioHang->so_luong = $validated['so_luong'];
+        // Cập nhật giá mới nếu có thay đổi
+        $gioHang->syncGiaMoi();
         $gioHang->save();
 
         if ($request->wantsJson()) {

@@ -53,4 +53,33 @@ class GioHang extends Model
     {
         return $query->where('trang_thai', self::TRANG_THAI_DANG_TRONG_GIO);
     }
+
+    /**
+     * Cập nhật giá và số lượng từ bien_thes hiện tại
+     * - Cập nhật don_gia nếu giá thay đổi
+     * - Điều chỉnh so_luong nếu tồn kho không đủ
+     */
+    public function syncGiaMoi()
+    {
+        if ($this->bienThe) {
+            $giaMoi = $this->bienThe->gia_khuyen_mai ?? $this->bienThe->gia;
+            $soLuongTon = $this->bienThe->so_luong;
+
+            // Cập nhật giá nếu thay đổi
+            if ($giaMoi != $this->don_gia) {
+                $this->don_gia = $giaMoi;
+            }
+
+            // Điều chỉnh số lượng nếu tồn kho không đủ
+            if ($this->so_luong > $soLuongTon) {
+                $this->so_luong = $soLuongTon;
+            }
+
+            // Chỉ save nếu có thay đổi
+            if ($this->isDirty()) {
+                $this->save();
+            }
+        }
+        return $this;
+    }
 }

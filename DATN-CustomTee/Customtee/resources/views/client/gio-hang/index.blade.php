@@ -1,13 +1,14 @@
 @include('client.layout.header')
 
-<nav aria-label="breadcrumb" class="my-4">
+
+
+<div class="container my-5">
+    <nav aria-label="breadcrumb" class="my-4">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{{ url('/') }}" class="text-decoration-none">Trang chủ</a></li>
         <li class="breadcrumb-item active" aria-current="page">Giỏ hàng</li>
     </ol>
 </nav>
-
-<div class="container my-5">
     <h4 class="mb-4"><i class="fas fa-shopping-cart me-2"></i>Giỏ hàng của bạn</h4>
 
     @if(session('success'))
@@ -30,9 +31,9 @@
             <table class="table table-hover align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th style="width: 100px">Ảnh</th>
-                        <th>Sản phẩm</th>
-                        <th>Biến thể</th>
+                        <th style="width: 200px"></th>
+                        <th>Tên</th>
+                        <th>màu sắc/kích thước</th>
                         <th class="text-end">Đơn giá</th>
                         <th class="text-center" style="width: 140px">Số lượng</th>
                         <th class="text-end">Thành tiền</th>
@@ -93,7 +94,7 @@
                             <span>Tạm tính:</span>
                             <strong class="text-danger" id="tong-tien">{{ number_format($tongTien) }} ₫</strong>
                         </div>
-                        <p class="small text-muted mb-0">Chưa bao gồm phí vận chuyển. Không xử lý thanh toán tại bước này.</p>
+                        <p class="small text-muted mb-0"> </p>
                     </div>
                 </div>
             </div>

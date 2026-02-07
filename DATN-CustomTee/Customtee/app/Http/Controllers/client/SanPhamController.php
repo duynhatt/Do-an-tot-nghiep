@@ -20,6 +20,10 @@ class SanPhamController extends Controller
             ->where('trang_thai', true)
             ->firstOrFail();
 
+        // Kiểm tra xem danh mục có được hiển thị hay không
+        if (!$sanPham->category || !$sanPham->category->trang_thai) {
+            abort(404);
+        }
         $variants = $sanPham->variants;
 
         if ($variants->isEmpty()) {
