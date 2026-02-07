@@ -19,12 +19,10 @@ class SanPham extends Model
         'mo_ta_ngan',
         'mo_ta_chi_tiet',
         'hinh_anh_chinh',
-        'cho_phep_thiet_ke',
         'trang_thai',
     ];
 
     protected $casts = [
-        'cho_phep_thiet_ke' => 'boolean',
         'trang_thai'        => 'boolean',
     ];
 

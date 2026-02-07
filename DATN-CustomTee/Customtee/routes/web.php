@@ -12,10 +12,11 @@ use App\Http\Controllers\Admin\MauSacController;
 use App\Http\Controllers\Admin\SanPhamController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\VariantController;
-
-
+use App\Http\Controllers\client\SanPhamController as ClientSanPhamController;
 
 use App\Http\Controllers\AuthController;
+use App\Models\BienThe;
+use Illuminate\Http\Request;
 
 // Client Authentication
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
@@ -36,7 +37,35 @@ Route::get('About', [AboutController::class, 'About']);
 Route::get('Contact', [ContactController::class, 'Contact']);
 Route::get('Shop', [ShopController::class, 'Shop']);
 Route::get('ShopSingle/{id}', [ShopController::class, 'ShopSingle'])->name('shop.single');
+Route::get('/san-pham/{slug}', [ClientSanPhamController::class, 'showProduct'])
+    ->name('sanpham.chitiet');
 
+Route::get('/api/product-variant', function (Request $request) {
+    $productId = $request->query('product_id');
+    $colorId   = $request->query('color');
+    $sizeId    = $request->query('size');
+
+    $variant = BienThe::where('san_pham_id', $productId)
+        ->where('mau_sac_id', $colorId)
+        ->where('kich_thuoc_id', $sizeId)
+        ->where('trang_thai', true)
+        ->first();
+
+    if ($variant) {
+        return response()->json([
+            'success' => true,
+            'variant' => [
+                'gia'             => $variant->gia,
+                'gia_khuyen_mai'  => $variant->gia_khuyen_mai,
+                'so_luong'        => $variant->so_luong,
+            ]
+        ]);
+    }
+
+    return response()->json([
+        'success' => false
+    ]);
+})->name('api.product.variant');
 
 // routes/web.php
 
@@ -74,4 +103,3 @@ Route::get('/admin/products/info/{id}', function ($id) {
         'desc'     => $product->mo_ta_ngan,
     ]);
 });
-
