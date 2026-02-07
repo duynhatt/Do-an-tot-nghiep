@@ -3,7 +3,11 @@
 <nav aria-label="breadcrumb" class="my-4">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Trang chủ</a></li>
-        <li class="breadcrumb-item"><a href="#" class="text-decoration-none">{{ $sanPham->category->ten_danh_muc ?? 'Danh mục' }}</a></li>
+        <li class="breadcrumb-item">
+            <a href="#" class="text-decoration-none">
+                {{ $sanPham->category->ten_danh_muc ?? 'Danh mục' }}
+            </a>
+        </li>
         <li class="breadcrumb-item active" aria-current="page">{{ $sanPham->ten_san_pham }}</li>
     </ol>
 </nav>
@@ -17,8 +21,7 @@
                     class="img-fluid w-100 product-main-img"
                     alt="{{ $sanPham->ten_san_pham }}">
             </div>
-
-            <!-- Img Albulm -->
+            <!-- Album -->
         </div>
 
         <div class="col-lg-7">
@@ -31,17 +34,11 @@
 
             <div class="mb-4">
                 <h3 class="d-inline fw-bold text-danger me-3" id="gia-hien-tai">
-                    {{ number_format($giaMacDinh->gia_khuyen_mai ?? $giaMacDinh->gia) }} ₫
+                    {{ $priceRange }}
                 </h3>
 
-                @if($giaMacDinh->gia_khuyen_mai && $giaMacDinh->gia_khuyen_mai < $giaMacDinh->gia)
-                    <span class="text-muted text-decoration-line-through fs-5" id="gia-goc">
-                        {{ number_format($giaMacDinh->gia) }} ₫
-                    </span>
-                    <span class="badge bg-danger ms-2" id="phan-tram-giam">
-                        -{{ round(100 - ($giaMacDinh->gia_khuyen_mai / $giaMacDinh->gia * 100)) }}%
-                    </span>
-                    @endif
+                <span class="text-muted text-decoration-line-through fs-5 d-none" id="gia-goc"></span>
+                <span class="badge bg-danger ms-2 d-none" id="phan-tram-giam"></span>
             </div>
 
             <p class="text-secondary mb-4 lead">
@@ -51,11 +48,10 @@
             <div class="mb-4">
                 <label class="fw-semibold d-block mb-2">Màu sắc:</label>
                 <div class="d-flex flex-wrap gap-2" id="color-options">
-                    @foreach ($sanPham->variants->where('trang_thai', true)->unique('mau_sac_id') as $variant)
+                    @foreach ($sanPham->variants->unique('mau_sac_id') as $variant)
                     <button type="button"
                         class="btn btn-outline-secondary btn-sm color-btn rounded-pill px-3"
-                        data-color-id="{{ $variant->mau_sac_id }}"
-                        data-toggle="button">
+                        data-color-id="{{ $variant->mau_sac_id }}">
                         {{ $variant->color->ten_mau }}
                     </button>
                     @endforeach
@@ -65,7 +61,7 @@
             <div class="mb-4">
                 <label class="fw-semibold d-block mb-2">Kích thước:</label>
                 <div class="d-flex flex-wrap gap-2" id="size-options">
-                    @foreach ($sanPham->variants->where('trang_thai', true)->unique('kich_thuoc_id') as $variant)
+                    @foreach ($sanPham->variants->unique('kich_thuoc_id') as $variant)
                     <button type="button"
                         class="btn btn-outline-secondary btn-sm size-btn px-3"
                         data-size-id="{{ $variant->kich_thuoc_id }}">
@@ -83,7 +79,11 @@
                     <button class="btn btn-outline-secondary" type="button" id="btn-increase">+</button>
                 </div>
                 <small class="text-muted d-block mt-2" id="ton-kho-info">
-                    Còn {{ $giaMacDinh->so_luong ?? 0 }} sản phẩm
+                    @if($totalStock > 0)
+                    Còn {{ $totalStock }} sản phẩm (tổng tất cả biến thể)
+                    @else
+                    Hết hàng
+                    @endif
                 </small>
             </div>
 
@@ -106,7 +106,7 @@
                     </div>
                     <div class="col-6 col-md-4">
                         <strong>Tình trạng:</strong><br>
-                        <span class="text-success">Còn hàng</span>
+                        <span class="text-success">{{ $totalStock > 0 ? 'Còn hàng' : 'Hết hàng' }}</span>
                     </div>
                     <div class="col-6 col-md-4">
                         <strong>Bảo hành:</strong><br>
@@ -161,7 +161,10 @@
     document.addEventListener('DOMContentLoaded', function() {
         const colorButtons = document.querySelectorAll('.color-btn');
         const sizeButtons = document.querySelectorAll('.size-btn');
-        const quantityInput = document.getElementById('quantity');
+        const giaHienTai = document.getElementById('gia-hien-tai');
+        const giaGoc = document.getElementById('gia-goc');
+        const phanTramGiam = document.getElementById('phan-tram-giam');
+        const tonKhoInfo = document.getElementById('ton-kho-info');
         const addToCartBtn = document.getElementById('btn-add-to-cart');
 
         let selectedColor = null;
@@ -186,27 +189,52 @@
         });
 
         document.getElementById('btn-increase').addEventListener('click', () => {
-            quantityInput.value = parseInt(quantityInput.value) + 1;
+            let qty = parseInt(document.getElementById('quantity').value);
+            document.getElementById('quantity').value = qty + 1;
         });
 
         document.getElementById('btn-decrease').addEventListener('click', () => {
-            if (quantityInput.value > 1) {
-                quantityInput.value = parseInt(quantityInput.value) - 1;
-            }
+            let qty = parseInt(document.getElementById('quantity').value);
+            if (qty > 1) document.getElementById('quantity').value = qty - 1;
         });
 
         function updateVariantInfo() {
-            if (!selectedColor || !selectedSize) return;
+            if (!selectedColor || !selectedSize) {
+                giaHienTai.textContent = '{{ $priceRange }}';
+                giaGoc.classList.add('d-none');
+                phanTramGiam.classList.add('d-none');
+                tonKhoInfo.innerHTML = '{{ $totalStock > 0 ? "Còn $totalStock sản phẩm (tổng tất cả biến thể)" : "Hết hàng" }}';
+                return;
+            }
 
             fetch(`/api/product-variant?product_id={{ $sanPham->id }}&color=${selectedColor}&size=${selectedSize}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.variant) {
-                        document.getElementById('gia-hien-tai').textContent = new Intl.NumberFormat('vi-VN').format(data.variant.gia_khuyen_mai || data.variant.gia) + ' ₫';
-                        document.getElementById('ton-kho-info').textContent = `Còn ${data.variant.so_luong} sản phẩm`;
+                        const giaBan = data.variant.gia_khuyen_mai || data.variant.gia;
+                        giaHienTai.textContent = new Intl.NumberFormat('vi-VN').format(giaBan) + ' ₫';
 
+                        if (data.variant.gia_khuyen_mai && data.variant.gia_khuyen_mai < data.variant.gia) {
+                            giaGoc.textContent = new Intl.NumberFormat('vi-VN').format(data.variant.gia) + ' ₫';
+                            const percent = Math.round(100 - (data.variant.gia_khuyen_mai / data.variant.gia * 100));
+                            phanTramGiam.textContent = `-${percent}%`;
+                            giaGoc.classList.remove('d-none');
+                            phanTramGiam.classList.remove('d-none');
+                        } else {
+                            giaGoc.classList.add('d-none');
+                            phanTramGiam.classList.add('d-none');
+                        }
+
+                        tonKhoInfo.textContent = `Còn ${data.variant.so_luong} sản phẩm`;
                     } else {
+                        giaHienTai.textContent = 'Hết hàng';
+                        tonKhoInfo.textContent = 'Hết hàng';
+                        giaGoc.classList.add('d-none');
+                        phanTramGiam.classList.add('d-none');
                     }
+                })
+                .catch(() => {
+                    giaHienTai.textContent = 'Lỗi tải giá';
                 });
         }
 
