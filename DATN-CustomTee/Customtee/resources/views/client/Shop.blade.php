@@ -97,25 +97,17 @@
                         </div>
                     </div>
                 </div>
-                @empty
+             @empty
                 <div class="col-12 text-center py-5">
                     <p class="text-muted">Chưa có sản phẩm nào trong danh mục này.</p>
                     <a href="{{ url('/Shop') }}" class="btn btn-success">Xem tất cả sản phẩm</a>
                 </div>
                 @endforelse
             </div>
-            <div div="row">
-                <ul class="pagination pagination-lg justify-content-end">
-                    <li class="page-item disabled">
-                        <a class="page-link active rounded-0 mr-3 shadow-sm border-top-0 border-left-0" href="#" tabindex="-1">1</a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link rounded-0 mr-3 shadow-sm border-top-0 border-left-0 text-dark" href="#">2</a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link rounded-0 shadow-sm border-top-0 border-left-0 text-dark" href="#">3</a>
-                    </li>
-                </ul>
+            <div class="row mt-5">
+                <div class="col-12 d-flex justify-content-center">
+                    {{ $sanPhams->links('pagination::bootstrap-4') }}
+                </div>
             </div>
         </div>
 
