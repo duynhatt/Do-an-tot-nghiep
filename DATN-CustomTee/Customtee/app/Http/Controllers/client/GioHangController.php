@@ -26,6 +26,10 @@ class GioHangController extends Controller
         // Cập nhật giá hiện tại từ bien_thes
         foreach ($items as $item) {
             $item->syncGiaMoi();
+            // Đảm bảo thành tiền luôn đúng với giá mới và số lượng
+            $item->thanh_tien = $item->so_luong * $item->don_gia;
+            // Chỉ lưu khi có sự thay đổi để tối ưu, tránh ghi vào DB không cần thiết
+            if ($item->isDirty()) $item->save();
         }
 
         $tongTien = $items->sum('thanh_tien');
@@ -81,6 +85,9 @@ class GioHangController extends Controller
                 ]);
             }
             $existing->so_luong = $newSoLuong;
+            // Cập nhật lại giá theo thời điểm hiện tại để tránh giá cũ
+            $existing->don_gia = $donGia;
+            $existing->thanh_tien = $newSoLuong * $donGia;
             $existing->save();
             $message = 'Đã cập nhật số lượng trong giỏ hàng.';
         } else {
@@ -88,8 +95,10 @@ class GioHangController extends Controller
                 'nguoi_dung_id' => Auth::id(),
                 'san_pham_id'   => $validated['san_pham_id'],
                 'bien_the_id'   => $validated['bien_the_id'],
+                'thiet_ke_ao_id' => null, // Đảm bảo là sản phẩm thường
                 'so_luong'      => $validated['so_luong'],
                 'don_gia'       => $donGia,
+                'thanh_tien'    => $validated['so_luong'] * $donGia,
                 'trang_thai'    => GioHang::TRANG_THAI_DANG_TRONG_GIO,
             ]);
             $message = 'Đã thêm vào giỏ hàng.';
@@ -126,6 +135,8 @@ class GioHangController extends Controller
         $gioHang->so_luong = $validated['so_luong'];
         // Cập nhật giá mới nếu có thay đổi
         $gioHang->syncGiaMoi();
+        // Tính lại thành tiền
+        $gioHang->thanh_tien = $gioHang->so_luong * $gioHang->don_gia;
         $gioHang->save();
 
         if ($request->wantsJson()) {

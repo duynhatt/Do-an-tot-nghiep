@@ -74,7 +74,7 @@
                             </td>
                             <td class="text-end fw-bold text-danger thanh-tien-cell">{{ number_format($item->thanh_tien) }} ₫</td>
                             <td>
-                                <form action="{{ route('gio-hang.destroy', $item) }}" method="POST" class="d-inline form-remove-item" onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này khỏi giỏ?');">
+                                <form action="{{ route('gio-hang.destroy', $item) }}" method="POST" class="d-inline form-remove-item">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-outline-danger btn-sm" title="Xóa"><i class="fas fa-trash-alt"></i></button>
@@ -108,6 +108,8 @@
 
 @include('client.layout.footer')
 @include('client.layout.scripts')
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 @if(!$items->isEmpty())
 <script>
@@ -195,7 +197,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.querySelectorAll('.form-remove-item').forEach(function(form) {
         form.addEventListener('submit', function(e) {
-            if (!confirm('Bạn có chắc muốn xóa sản phẩm này khỏi giỏ?')) e.preventDefault();
+            e.preventDefault();
+            Swal.fire({
+                text: "Bạn muốn xóa sản phẩm này khỏi giỏ hàng?",
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Xóa',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
         });
     });
 });

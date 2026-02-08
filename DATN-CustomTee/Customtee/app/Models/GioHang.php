@@ -75,10 +75,6 @@ class GioHang extends Model
                 $this->so_luong = $soLuongTon;
             }
 
-            // Chỉ save nếu có thay đổi
-            if ($this->isDirty()) {
-                $this->save();
-            }
         }
         return $this;
     }
