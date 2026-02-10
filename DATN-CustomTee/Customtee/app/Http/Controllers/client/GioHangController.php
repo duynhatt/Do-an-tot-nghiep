@@ -33,8 +33,15 @@ class GioHangController extends Controller
         }
 
         $tongTien = $items->sum('thanh_tien');
+        $hasSelection = session()->has('gio_hang_selected_ids');
+        $selectedIds = session('gio_hang_selected_ids');
+        $selectedIds = is_array($selectedIds) ? $selectedIds : [];
+        $itemIds = $items->pluck('id')->all();
+        $selectedIds = array_values(array_intersect($selectedIds, $itemIds));
+        $useSelection = $hasSelection;
+        $selectedSet = $useSelection ? array_fill_keys($selectedIds, true) : [];
 
-        return view('client.gio-hang.index', compact('items', 'tongTien'));
+        return view('client.gio-hang.index', compact('items', 'tongTien', 'selectedSet', 'useSelection'));
     }
 
     /**
@@ -175,6 +182,32 @@ class GioHangController extends Controller
         }
 
         return redirect()->route('gio-hang.index')->with('success', 'Đã xóa sản phẩm khỏi giỏ hàng.');
+    }
+
+    /**
+     * Lưu danh sách dòng giỏ hàng được chọn để checkout.
+     */
+    public function updateSelection(Request $request)
+    {
+        $validated = $request->validate([
+            'ids'   => 'array',
+            'ids.*' => 'integer',
+        ]);
+
+        $ids = $validated['ids'] ?? [];
+
+        if (count($ids) > 0) {
+            $validIds = GioHang::where('nguoi_dung_id', Auth::id())
+                ->dangTrongGio()
+                ->whereIn('id', $ids)
+                ->pluck('id')
+                ->all();
+            $ids = $validIds;
+        }
+
+        session(['gio_hang_selected_ids' => $ids]);
+
+        return response()->json(['success' => true, 'selected' => $ids]);
     }
 
     private function authorizeCartItem(GioHang $gioHang): void
