@@ -4,7 +4,7 @@
 
 <h3 style="margin-bottom:20px;">Cập nhật biến thể</h3>
 
-<form action="{{ route('variants.update', $variant->id) }}" method="POST" style="max-width:600px;">
+<form action="{{ route('variants.update', $variant->id) }}" method="POST" style="max-width:900px;">
     @csrf
 
     @if ($errors->any())
@@ -17,80 +17,98 @@
         </div>
     @endif
 
+    <input type="hidden" name="san_pham_id" value="{{ $product->id }}">
+
     {{-- SẢN PHẨM --}}
     <div class="form-group">
         <label>Sản phẩm</label>
-        <select name="san_pham_id" id="productSelect" class="form-control">
+        <select id="productSelect" class="form-control" disabled>
             @foreach($products as $p)
                 <option value="{{ $p->id }}"
                         data-img="{{ $p->hinh_anh_chinh ? asset('storage/' . $p->hinh_anh_chinh) : asset('img/shop_01.jpg') }}"
                         data-cat="{{ $p->category->ten_danh_muc ?? '' }}"
-                        {{ $variant->san_pham_id == $p->id ? 'selected' : '' }}>
+                        {{ $product->id == $p->id ? 'selected' : '' }}>
                     {{ $p->ten_san_pham }}
                 </option>
             @endforeach
         </select>
+        <small class="text-muted">Sửa nhiều biến thể trong cùng một sản phẩm.</small>
     </div>
 
     {{-- PREVIEW SẢN PHẨM --}}
     <div class="product-info-box">
         <img id="previewImg"
-             src="{{ $variant->product->hinh_anh_chinh ? asset('storage/' . $variant->product->hinh_anh_chinh) : asset('img/shop_01.jpg') }}">
-        <div><b>Danh mục:</b> <span id="productCat">{{ $variant->product->category->ten_danh_muc ?? '-' }}</span></div>
+             src="{{ $product->hinh_anh_chinh ? asset('storage/' . $product->hinh_anh_chinh) : asset('img/shop_01.jpg') }}">
+        <div><b>Danh mục:</b> <span id="productCat">{{ $product->category->ten_danh_muc ?? '-' }}</span></div>
     </div>
 
-    {{-- MÀU --}}
+    @php
+        $oldVariants = old('variants');
+        if (!$oldVariants) {
+            $oldVariants = $product->variants->map(function ($v) {
+                return [
+                    'id' => $v->id,
+                    'mau_sac_id' => $v->mau_sac_id,
+                    'kich_thuoc_id' => $v->kich_thuoc_id,
+                    'gia' => $v->gia,
+                    'gia_khuyen_mai' => $v->gia_khuyen_mai,
+                    'so_luong' => $v->so_luong,
+                    'trang_thai' => $v->trang_thai ? '1' : '0',
+                ];
+            })->values()->all();
+        }
+    @endphp
+
     <div class="form-group">
-        <label>Màu</label>
-        <select name="mau_sac_id" class="form-control">
-            @foreach($colors as $c)
-                <option value="{{ $c->id }}" {{ $variant->mau_sac_id == $c->id ? 'selected' : '' }}>
-                    {{ $c->ten_mau }}
-                </option>
+        <label>Danh sách biến thể</label>
+        <div class="row variant-header">
+            <div class="col-md-3">Màu</div>
+            <div class="col-md-2">Size</div>
+            <div class="col-md-2">Giá</div>
+            <div class="col-md-2">Giá KM</div>
+            <div class="col-md-2">Số lượng</div>
+            <div class="col-md-1">Trạng thái</div>
+        </div>
+        <div id="variantsContainer">
+            @foreach($oldVariants as $index => $row)
+                <div class="variant-row" data-index="{{ $index }}">
+                    <input type="hidden" name="variants[{{ $index }}][id]" value="{{ $row['id'] ?? '' }}">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <select name="variants[{{ $index }}][mau_sac_id]" class="form-control form-control-sm" required>
+                                <option value="">-- Chọn màu --</option>
+                                @foreach($colors as $c)
+                                    <option value="{{ $c->id }}" {{ ($row['mau_sac_id'] ?? '') == $c->id ? 'selected' : '' }}>{{ $c->ten_mau }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="variants[{{ $index }}][kich_thuoc_id]" class="form-control form-control-sm" required>
+                                <option value="">-- Chọn size --</option>
+                                @foreach($sizes as $s)
+                                    <option value="{{ $s->id }}" {{ ($row['kich_thuoc_id'] ?? '') == $s->id ? 'selected' : '' }}>{{ $s->ten_kich_thuoc }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" name="variants[{{ $index }}][gia]" class="form-control form-control-sm" value="{{ $row['gia'] ?? '' }}" min="0" required>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" name="variants[{{ $index }}][gia_khuyen_mai]" class="form-control form-control-sm" value="{{ $row['gia_khuyen_mai'] ?? '' }}" min="0">
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" name="variants[{{ $index }}][so_luong]" class="form-control form-control-sm" value="{{ $row['so_luong'] ?? '' }}" min="0" required>
+                        </div>
+                        <div class="col-md-1">
+                            <select name="variants[{{ $index }}][trang_thai]" class="form-control form-control-sm">
+                                <option value="1" {{ ($row['trang_thai'] ?? '1') == '1' ? 'selected' : '' }}>Hiện</option>
+                                <option value="0" {{ ($row['trang_thai'] ?? '1') == '0' ? 'selected' : '' }}>Ẩn</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
             @endforeach
-        </select>
-    </div>
-
-    {{-- SIZE --}}
-    <div class="form-group">
-        <label>Size</label>
-        <select name="kich_thuoc_id" class="form-control">
-            @foreach($sizes as $s)
-                <option value="{{ $s->id }}" {{ $variant->kich_thuoc_id == $s->id ? 'selected' : '' }}>
-                    {{ $s->ten_kich_thuoc }}
-                </option>
-            @endforeach
-        </select>
-    </div>
-
-    {{-- GIÁ --}}
-    <div class="form-group">
-        <label>Giá</label>
-        <input type="number" name="gia" class="form-control @error('gia') is-invalid @enderror" value="{{ old('gia', $variant->gia) }}" min="0">
-        @error('gia')<div class="invalid-feedback">{{ $message }}</div>@enderror
-    </div>
-
-    {{-- GIÁ KM --}}
-    <div class="form-group">
-        <label>Giá khuyến mãi</label>
-        <input type="number" name="gia_khuyen_mai" class="form-control @error('gia_khuyen_mai') is-invalid @enderror" value="{{ old('gia_khuyen_mai', $variant->gia_khuyen_mai) }}" min="0">
-        @error('gia_khuyen_mai')<div class="invalid-feedback">{{ $message }}</div>@enderror
-    </div>
-
-    {{-- SỐ LƯỢNG --}}
-    <div class="form-group">
-        <label>Số lượng</label>
-        <input type="number" name="so_luong" class="form-control @error('so_luong') is-invalid @enderror" value="{{ old('so_luong', $variant->so_luong) }}" min="0">
-        @error('so_luong')<div class="invalid-feedback">{{ $message }}</div>@enderror
-    </div>
-
-    {{-- TRẠNG THÁI --}}
-    <div class="form-group">
-        <label>Trạng thái</label>
-        <select name="trang_thai" class="form-control">
-            <option value="1" {{ $variant->trang_thai ? 'selected' : '' }}>Hiện</option>
-            <option value="0" {{ !$variant->trang_thai ? 'selected' : '' }}>Ẩn</option>
-        </select>
+        </div>
     </div>
 
     <button type="submit" class="btn btn-primary">Cập nhật</button>
@@ -111,6 +129,23 @@
     width:120px;
     margin-bottom:10px;
     border-radius:6px;
+}
+.variant-header{
+    font-size:12px;
+    color:#666;
+    margin-bottom:6px;
+}
+.variant-header .col-md-1,
+.variant-header .col-md-2,
+.variant-header .col-md-3{
+    padding-top:2px;
+    padding-bottom:2px;
+}
+#variantsContainer .variant-row{
+    padding:10px;
+    border:1px dashed #ddd;
+    margin-bottom:10px;
+    background:#fcfcfc;
 }
 </style>
 
