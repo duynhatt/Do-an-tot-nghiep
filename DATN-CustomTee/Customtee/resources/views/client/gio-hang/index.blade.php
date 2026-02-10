@@ -31,6 +31,9 @@
             <table class="table table-hover align-middle">
                 <thead class="table-light">
                     <tr>
+                        <th style="width: 44px" class="text-center">
+                            <input type="checkbox" id="select-all" class="form-check-input" title="Chọn tất cả">
+                        </th>
                         <th style="width: 200px"></th>
                         <th>Tên</th>
                         <th>màu sắc/kích thước</th>
@@ -46,8 +49,16 @@
                             $maxStock = $item->bienThe ? $item->bienThe->so_luong : 0;
                             $isOutOfStock = $maxStock < 1;
                             $displayQty = $isOutOfStock ? 0 : $item->so_luong;
+                            $isChecked = !$isOutOfStock && (!$useSelection || isset($selectedSet[$item->id]));
                         @endphp
                         <tr data-item-id="{{ $item->id }}">
+                            <td class="text-center">
+                                <input type="checkbox"
+                                    class="form-check-input cart-item-checkbox"
+                                    data-item-id="{{ $item->id }}"
+                                    {{ $isOutOfStock ? 'disabled' : '' }}
+                                    {{ $isChecked ? 'checked' : '' }}>
+                            </td>
                             <td>
                                 <img src="{{ asset('storage/' . $item->sanPham->hinh_anh_chinh) }}"
                                     alt="{{ $item->sanPham->ten_san_pham }}"
@@ -70,7 +81,7 @@
                             </td>
                             <td class="text-end">{{ number_format($item->don_gia) }} ₫</td>
                             <td>
-                                <form class="d-inline-flex align-items-center justify-content-center gap-1 form-update-qty" data-item-id="{{ $item->id }}" data-max="{{ $maxStock }}">
+                                <form action="{{ route('gio-hang.update', $item) }}" method="POST" class="d-inline-flex align-items-center justify-content-center gap-1 form-update-qty" data-item-id="{{ $item->id }}" data-max="{{ $maxStock }}">
                                     @csrf
                                     <input type="hidden" name="_method" value="PUT">
                                     <div class="input-group input-group-sm" style="width: 120px;">
@@ -124,6 +135,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const updateQtyForms = document.querySelectorAll('.form-update-qty');
     const tongTienEl = document.getElementById('tong-tien');
+    const selectAllEl = document.getElementById('select-all');
 
     function formatMoney(n) {
         return new Intl.NumberFormat('vi-VN').format(n) + ' ₫';
@@ -131,11 +143,52 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function refreshTongTien() {
         let tong = 0;
-        document.querySelectorAll('.thanh-tien-cell').forEach(function(cell) {
-            const t = cell.getAttribute('data-value');
+        document.querySelectorAll('tr[data-item-id]').forEach(function(row) {
+            const checkbox = row.querySelector('.cart-item-checkbox');
+            if (!checkbox || checkbox.disabled || !checkbox.checked) return;
+            const cell = row.querySelector('.thanh-tien-cell');
+            const t = cell ? cell.getAttribute('data-value') : null;
             if (t) tong += parseInt(t, 10);
         });
         if (tongTienEl) tongTienEl.textContent = formatMoney(tong);
+    }
+
+    function syncSelectAll() {
+        if (!selectAllEl) return;
+        const enabledCheckboxes = Array.from(document.querySelectorAll('.cart-item-checkbox'))
+            .filter(function(cb) { return !cb.disabled; });
+        if (enabledCheckboxes.length === 0) {
+            selectAllEl.checked = false;
+            selectAllEl.indeterminate = false;
+            return;
+        }
+        const checkedCount = enabledCheckboxes.filter(function(cb) { return cb.checked; }).length;
+        selectAllEl.checked = checkedCount === enabledCheckboxes.length;
+        selectAllEl.indeterminate = checkedCount > 0 && checkedCount < enabledCheckboxes.length;
+    }
+
+    function collectSelectedIds() {
+        return Array.from(document.querySelectorAll('.cart-item-checkbox'))
+            .filter(function(cb) { return !cb.disabled && cb.checked; })
+            .map(function(cb) { return parseInt(cb.dataset.itemId, 10); })
+            .filter(function(id) { return Number.isInteger(id); });
+    }
+
+    function syncSelection() {
+        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (!token) return;
+        fetch('{{ route('gio-hang.selection') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': token,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ ids: collectSelectedIds() })
+        }).catch(function() {
+            // Silent fail to avoid blocking cart usage when selection sync fails.
+        });
     }
 
     document.querySelectorAll('.thanh-tien-cell').forEach(function(cell) {
@@ -143,6 +196,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (text) cell.setAttribute('data-value', text);
     });
     refreshTongTien();
+    syncSelectAll();
+    syncSelection();
 
     function showError(message) {
         if (window.Swal) {
@@ -224,12 +279,19 @@ document.addEventListener('DOMContentLoaded', function() {
                             input.setAttribute('disabled', 'disabled');
                             form.querySelector('.btn-qty-minus').setAttribute('disabled', 'disabled');
                             form.querySelector('.btn-qty-plus').setAttribute('disabled', 'disabled');
+                            const checkbox = row ? row.querySelector('.cart-item-checkbox') : null;
+                            if (checkbox) {
+                                checkbox.checked = false;
+                                checkbox.setAttribute('disabled', 'disabled');
+                            }
                         }
                     }
                     if (typeof data.so_luong === 'number') {
                         input.value = data.so_luong;
                     }
                     refreshTongTien();
+                    syncSelectAll();
+                    syncSelection();
                 }
             })
             .catch(function(err) {
@@ -263,6 +325,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     form.submit();
                 }
             });
+        });
+    });
+
+    if (selectAllEl) {
+        selectAllEl.addEventListener('change', function() {
+            const checked = selectAllEl.checked;
+            document.querySelectorAll('.cart-item-checkbox').forEach(function(cb) {
+                if (!cb.disabled) cb.checked = checked;
+            });
+            refreshTongTien();
+            syncSelectAll();
+            syncSelection();
+        });
+    }
+
+    document.querySelectorAll('.cart-item-checkbox').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            refreshTongTien();
+            syncSelectAll();
+            syncSelection();
         });
     });
 });
