@@ -2,7 +2,12 @@
 
 @section('AdminContent')
 
-<h3 style="margin-bottom:20px;">Cập nhật biến thể</h3>
+<div class="d-flex justify-content-between align-items-center" style="margin-bottom:20px;">
+    <h3 class="mb-0">Cập nhật biến thể</h3>
+    <a href="{{ route('admin.san-pham.index') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fa fa-arrow-left"></i> Danh sách sản phẩm
+    </a>
+</div>
 
 <form action="{{ route('variants.update', $variant->id) }}" method="POST" style="max-width:900px;">
     @csrf
@@ -32,7 +37,7 @@
                 </option>
             @endforeach
         </select>
-        <small class="text-muted">Sửa nhiều biến thể trong cùng một sản phẩm.</small>
+        <small class="text-muted">Sửa biến thể sản phẩm.</small>
     </div>
 
     {{-- PREVIEW SẢN PHẨM --}}
@@ -132,7 +137,7 @@
 }
 .variant-header{
     font-size:12px;
-    color:#666;
+    color:#000000;
     margin-bottom:6px;
 }
 .variant-header .col-md-1,
@@ -146,6 +151,7 @@
     border:1px dashed #ddd;
     margin-bottom:10px;
     background:#fcfcfc;
+    width: 100%;
 }
 </style>
 

@@ -5,9 +5,12 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0 font-weight-bold">Quản lý biến thể sản phẩm</h2>
     <div>
+        <a href="{{ route('admin.san-pham.index') }}" class="btn btn-outline-secondary shadow-sm px-3 mr-2">
+            <i class="fa fa-arrow-left"></i> Danh sách sản phẩm
+        </a>
         @if(!empty($selectedProductId))
             <a href="{{ route('variants.index') }}" class="btn btn-outline-secondary shadow-sm px-3 mr-2">
-                <i class="fa fa-list"></i> Tất cả sản phẩm
+                <i class="fa fa-list"></i> Tất cả biến thể
             </a>
         @endif
         <a href="{{ route('variants.create') }}" class="btn btn-primary shadow-sm px-4">
@@ -56,7 +59,7 @@
                     @if($sp->variants->count() > 0)
                         <a href="{{ route('variants.edit', $sp->variants->first()->id) }}"
                            class="btn btn-warning btn-sm shadow px-3 mr-2">
-                            <i class="fa fa-edit"></i> Sửa nhiều biến thể
+                            <i class="fa fa-edit"></i> Sửa biến thể
                         </a>
                     @endif
                     <a href="{{ route('variants.create', ['san_pham_id' => $sp->id]) }}"
@@ -94,14 +97,14 @@
                                 @if($v->trang_thai)
                                     <span class="badge badge-success px-3">Hiện</span>
                                 @else
-                                    <span class="badge badge-secondary px-3">Ẩn</span>
+                                    <span class="badge badge-secondary px-3 width">Ẩn</span>
                                 @endif
                             </td>
                                      <td>
-                                          <a href="{{ route('variants.edit', $v->id) }}"
+                                          {{-- <a href="{{ route('variants.edit', $v->id) }}"
                                               class="btn btn-warning btn-sm">
                                               <i class="fa fa-edit"></i>
-                                          </a>
+                                          </a> --}}
 
                                 <form action="{{ route('variants.delete', $v->id) }}"
                                       method="POST"

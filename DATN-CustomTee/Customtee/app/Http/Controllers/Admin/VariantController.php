@@ -134,7 +134,8 @@ public function store(Request $request)
 
     BienThe::insert($rows);
 
-    return redirect(route('variants.index'))
+    return redirect()
+        ->route('variants.create', ['san_pham_id' => $validated['san_pham_id']])
         ->with('success', 'Thêm biến thể thành công');
 }
 
@@ -256,7 +257,8 @@ public function update(Request $request, $id)
         ]);
     }
 
-    return redirect(route('variants.index') . '#product-' . $sanPhamId)
+    return redirect()
+        ->route('variants.edit', $id)
         ->with('success', 'Cập nhật biến thể thành công');
 }
 
@@ -264,10 +266,9 @@ public function update(Request $request, $id)
 public function destroy($id)
 {
     $variant = BienThe::findOrFail($id);
-    $sanPhamId = $variant->san_pham_id;
     $variant->delete();
 
-    return redirect(route('variants.index') . '#product-' . $sanPhamId)
+    return redirect()->back()
         ->with('success', 'Đã xoá biến thể');
 }
 

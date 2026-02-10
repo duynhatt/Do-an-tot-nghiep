@@ -42,6 +42,11 @@
                 </thead>
                 <tbody>
                     @foreach($items as $item)
+                        @php
+                            $maxStock = $item->bienThe ? $item->bienThe->so_luong : 0;
+                            $isOutOfStock = $maxStock < 1;
+                            $displayQty = $isOutOfStock ? 0 : $item->so_luong;
+                        @endphp
                         <tr data-item-id="{{ $item->id }}">
                             <td>
                                 <img src="{{ asset('storage/' . $item->sanPham->hinh_anh_chinh) }}"
@@ -56,19 +61,22 @@
                             <td>
                                 @if($item->bienThe)
                                     <span class="badge bg-secondary">{{ $item->bienThe->color->ten_mau ?? '—' }} / {{ $item->bienThe->size->ten_kich_thuoc ?? '—' }}</span>
+                                    @if($isOutOfStock)
+                                        <span class="badge bg-danger ms-1">Het hang</span>
+                                    @endif
                                 @else
                                     —
                                 @endif
                             </td>
                             <td class="text-end">{{ number_format($item->don_gia) }} ₫</td>
                             <td>
-                                <form class="d-inline-flex align-items-center justify-content-center gap-1 form-update-qty" data-item-id="{{ $item->id }}" data-max="{{ $item->bienThe ? $item->bienThe->so_luong : 0 }}">
+                                <form class="d-inline-flex align-items-center justify-content-center gap-1 form-update-qty" data-item-id="{{ $item->id }}" data-max="{{ $maxStock }}">
                                     @csrf
                                     <input type="hidden" name="_method" value="PUT">
                                     <div class="input-group input-group-sm" style="width: 120px;">
-                                        <button type="button" class="btn btn-outline-secondary btn-qty-minus">−</button>
-                                        <input type="number" name="so_luong" class="form-control text-center qty-input" min="1" value="{{ $item->so_luong }}" max="{{ $item->bienThe ? $item->bienThe->so_luong : 1 }}">
-                                        <button type="button" class="btn btn-outline-secondary btn-qty-plus">+</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-qty-minus" {{ $isOutOfStock ? 'disabled' : '' }}>−</button>
+                                        <input type="number" name="so_luong" class="form-control text-center qty-input" min="{{ $isOutOfStock ? 0 : 1 }}" value="{{ $displayQty }}" max="{{ $maxStock }}" {{ $isOutOfStock ? 'disabled' : '' }}>
+                                        <button type="button" class="btn btn-outline-secondary btn-qty-plus" {{ $isOutOfStock ? 'disabled' : '' }}>+</button>
                                     </div>
                                 </form>
                             </td>
@@ -136,19 +144,31 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     refreshTongTien();
 
+    function showError(message) {
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'error',
+                text: message
+            });
+            return;
+        }
+        alert(message);
+    }
+
     updateQtyForms.forEach(function(form) {
         const itemId = form.dataset.itemId;
-        const max = parseInt(form.dataset.max, 10) || 9999;
+        let max = parseInt(form.dataset.max, 10) || 0;
         const input = form.querySelector('.qty-input');
         const row = form.closest('tr');
         const thanhTienCell = row ? row.querySelector('.thanh-tien-cell') : null;
-        const donGia = row ? (function() {
-            const prevCell = row.cells[3];
-            return prevCell ? parseInt(prevCell.textContent.replace(/\D/g, ''), 10) : 0;
-        })() : 0;
+        const isDisabled = input.hasAttribute('disabled');
 
         function submitQty() {
             form.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+
+        if (isDisabled || max < 1) {
+            return;
         }
 
         form.querySelector('.btn-qty-minus').addEventListener('click', function() {
@@ -169,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const qty = parseInt(input.value, 10);
             if (qty < 1 || qty > max) {
-                alert('Số lượng phải từ 1 đến ' + max);
+                showError('Số lượng phải từ 1 đến ' + max);
                 return;
             }
             const url = '{{ url("/gio-hang") }}/' + itemId;
@@ -183,15 +203,48 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: JSON.stringify({ so_luong: qty })
             })
-            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (!r.ok) {
+                    return r.json().then(function(data) {
+                        throw data;
+                    });
+                }
+                return r.json();
+            })
             .then(function(data) {
                 if (data.success && data.thanh_tien !== undefined && thanhTienCell) {
                     thanhTienCell.setAttribute('data-value', data.thanh_tien);
                     thanhTienCell.textContent = formatMoney(data.thanh_tien);
+                    if (typeof data.max === 'number') {
+                        max = data.max;
+                        form.dataset.max = data.max;
+                        input.max = data.max;
+                        if (data.max < 1) {
+                            input.value = 0;
+                            input.setAttribute('disabled', 'disabled');
+                            form.querySelector('.btn-qty-minus').setAttribute('disabled', 'disabled');
+                            form.querySelector('.btn-qty-plus').setAttribute('disabled', 'disabled');
+                        }
+                    }
+                    if (typeof data.so_luong === 'number') {
+                        input.value = data.so_luong;
+                    }
                     refreshTongTien();
                 }
             })
-            .catch(function() { form.submit(); });
+            .catch(function(err) {
+                if (err && err.errors && err.errors.so_luong) {
+                    showError(err.errors.so_luong[0]);
+                    if (typeof err.max === 'number') {
+                        max = err.max;
+                        form.dataset.max = err.max;
+                        input.max = err.max;
+                    }
+                    return;
+                }
+                showError('Không thể cập nhật số lượng. Vui lòng thử lại.');
+                form.submit();
+            });
         });
     });
 

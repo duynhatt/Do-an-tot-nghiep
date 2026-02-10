@@ -2,7 +2,12 @@
 
 @section('AdminContent')
 
-<h3 style="margin-bottom:20px;">Thêm biến thể sản phẩm</h3>
+<div class="d-flex justify-content-between align-items-center" style="margin-bottom:20px;">
+    <h3 class="mb-0">Thêm biến thể sản phẩm</h3>
+    <a href="{{ route('admin.san-pham.index') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fa fa-arrow-left"></i> Danh sách sản phẩm
+    </a>
+</div>
 
 <form action="{{ route('variants.store') }}" method="POST" style="max-width:1500px;">
     @csrf
@@ -36,6 +41,29 @@
         <div><b>Mô tả:</b> <span id="productDesc"></span></div>
     </div>
 
+    {{-- BIẾN THỂ HIỆN CÓ --}}
+    <div id="existingVariants" class="product-info-box" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="font-weight-bold">Biến thể hiện có</div>
+            <div class="text-muted small" id="existingVariantsCount"></div>
+        </div>
+        <div class="table-responsive mt-2">
+            <table class="table table-sm table-bordered mb-0">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Màu</th>
+                        <th>Size</th>
+                        <th>Giá</th>
+                        <th>Giá KM</th>
+                        <th>Kho</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody id="existingVariantsBody"></tbody>
+            </table>
+        </div>
+    </div>
+
     @php
         $oldVariants = old('variants', [
             [
@@ -57,7 +85,7 @@
             <div class="col-md-2">Giá</div>
             <div class="col-md-2">Giá KM</div>
             <div class="col-md-2">Số lượng</div>
-            <div class="col-md-1">Trạng thái</div>
+            <div class="col-3">Trạng thái</div>
         </div>
         <div id="variantsContainer" data-next-index="{{ count($oldVariants) }}">
             @foreach($oldVariants as $index => $row)
@@ -165,6 +193,7 @@ document.getElementById('productSelect').addEventListener('change', function () 
 
     if (!productId) {
         document.getElementById('productInfo').style.display = 'none';
+        document.getElementById('existingVariants').style.display = 'none';
         return;
     }
 
@@ -176,6 +205,41 @@ document.getElementById('productSelect').addEventListener('change', function () 
             document.getElementById('productCategory').innerText = data.category || '';
             document.getElementById('productDesc').innerText = data.desc || '';
             document.getElementById('productImage').src = data.image ? '/storage/' + data.image : '{{ asset("img/shop_01.jpg") }}';
+        });
+
+    fetch(`/admin/variants/by-product/${productId}`)
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById('existingVariants');
+            const body = document.getElementById('existingVariantsBody');
+            const count = document.getElementById('existingVariantsCount');
+            const variants = Array.isArray(data.variants) ? data.variants : [];
+
+            body.innerHTML = '';
+            if (variants.length === 0) {
+                body.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Chưa có biến thể</td></tr>';
+                count.textContent = '';
+            } else {
+                count.textContent = variants.length + ' biến thể';
+                variants.forEach(variant => {
+                    const gia = variant.gia != null ? Number(variant.gia).toLocaleString('vi-VN') + 'đ' : '-';
+                    const giaKm = variant.gia_khuyen_mai != null ? Number(variant.gia_khuyen_mai).toLocaleString('vi-VN') + 'đ' : '-';
+                    const status = variant.trang_thai ? 'Hiện' : 'Ẩn';
+                    const row = `
+                        <tr>
+                            <td>${variant.mau || '-'}</td>
+                            <td>${variant.size || '-'}</td>
+                            <td>${gia}</td>
+                            <td>${giaKm}</td>
+                            <td>${variant.so_luong ?? 0}</td>
+                            <td>${status}</td>
+                        </tr>
+                    `;
+                    body.insertAdjacentHTML('beforeend', row);
+                });
+            }
+
+            container.style.display = 'block';
         });
 });
 

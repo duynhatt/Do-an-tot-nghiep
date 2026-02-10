@@ -21,17 +21,9 @@ use Illuminate\Http\Request;
 // Client Authentication
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
 Route::post('/register', [AuthController::class, 'register'])->name('register.submit');
-
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
-
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
-// Trang chủ sau khi đăng nhập
-Route::get('/', function () {
-    return view('home'); // tạo view resources/views/home.blade.php
-})->middleware('auth');
-
 Route::get('/', [HomeController::class, 'index']);
 Route::get('About', [AboutController::class, 'About']);
 Route::get('Contact', [ContactController::class, 'Contact']);
@@ -44,7 +36,6 @@ Route::get('/api/product-variant', function (Request $request) {
     $productId = $request->query('product_id');
     $colorId   = $request->query('color');
     $sizeId    = $request->query('size');
-
     // Kiểm tra sản phẩm có tồn tại và được hiển thị hay không
     $product = \App\Models\SanPham::where('id', $productId)
         ->where('trang_thai', true)
@@ -93,7 +84,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/gio-hang/{gioHang}', [GioHangController::class, 'update'])->name('gio-hang.update');
     Route::delete('/gio-hang/{gioHang}', [GioHangController::class, 'destroy'])->name('gio-hang.destroy');
 });
-Route::prefix('admin')->name('admin.')->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [DashboardController::class, 'home'])->name('home');
     Route::get('/dashboard', [DashboardController::class, 'Dashboard'])->name('dashboard');
     Route::resource('danh-muc', CategoryController::class);
@@ -101,7 +92,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('kich-thuoc', KichThuocController::class);
     Route::resource('san-pham', SanPhamController::class);
 });
-Route::prefix('admin/variants')->name('variants.')->group(function () {
+Route::prefix('admin/variants')->name('variants.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [VariantController::class, 'index'])->name('index');
     Route::get('/create', [VariantController::class, 'create'])->name('create');
     Route::post('/store', [VariantController::class, 'store'])->name('store');
@@ -121,4 +112,22 @@ Route::get('/admin/products/info/{id}', function ($id) {
         'category' => $product->category->ten_danh_muc ?? '',
         'desc'     => $product->mo_ta_ngan,
     ]);
-});
+})->middleware(['auth', 'admin']);
+
+Route::get('/admin/variants/by-product/{id}', function ($id) {
+    $product = \App\Models\SanPham::with(['variants.color', 'variants.size'])->findOrFail($id);
+
+    return response()->json([
+        'variants' => $product->variants->map(function ($variant) {
+            return [
+                'id'             => $variant->id,
+                'mau'            => $variant->color->ten_mau ?? '',
+                'size'           => $variant->size->ten_kich_thuoc ?? '',
+                'gia'            => $variant->gia,
+                'gia_khuyen_mai' => $variant->gia_khuyen_mai,
+                'so_luong'       => $variant->so_luong,
+                'trang_thai'     => (bool) $variant->trang_thai,
+            ];
+        })->values(),
+    ]);
+})->middleware(['auth', 'admin']);

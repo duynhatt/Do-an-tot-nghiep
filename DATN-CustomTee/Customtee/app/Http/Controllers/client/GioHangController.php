@@ -127,8 +127,16 @@ class GioHangController extends Controller
         $bienThe = $gioHang->bienThe;
         if (!$bienThe || $validated['so_luong'] > $bienThe->so_luong) {
             $max = $bienThe ? $bienThe->so_luong : 0;
+            $message = "Số lượng tối đa theo kho là {$max}.";
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'message' => $message,
+                    'errors'  => ['so_luong' => [$message]],
+                    'max'     => (int) $max,
+                ], 422);
+            }
             throw ValidationException::withMessages([
-                'so_luong' => "Số lượng tối đa theo kho là {$max}.",
+                'so_luong' => $message,
             ]);
         }
 
@@ -140,9 +148,12 @@ class GioHangController extends Controller
         $gioHang->save();
 
         if ($request->wantsJson()) {
+            $gioHang->refresh();
             return response()->json([
                 'success'    => true,
-                'thanh_tien' => (int) $gioHang->fresh()->thanh_tien,
+                'thanh_tien' => (int) $gioHang->thanh_tien,
+                'so_luong'   => (int) $gioHang->so_luong,
+                'max'        => $bienThe ? (int) $bienThe->so_luong : 0,
                 'message'    => 'Đã cập nhật số lượng.',
             ]);
         }
