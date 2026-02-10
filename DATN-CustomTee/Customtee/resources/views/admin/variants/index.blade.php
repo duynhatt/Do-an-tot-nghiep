@@ -4,9 +4,19 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0 font-weight-bold">Quản lý biến thể sản phẩm</h2>
-    <a href="{{ route('variants.create') }}" class="btn btn-primary shadow-sm px-4">
-        <i class="fa fa-plus"></i> Thêm biến thể
-    </a>
+    <div>
+        <a href="{{ route('admin.san-pham.index') }}" class="btn btn-outline-secondary shadow-sm px-3 mr-2">
+            <i class="fa fa-arrow-left"></i> Danh sách sản phẩm
+        </a>
+        @if(!empty($selectedProductId))
+            <a href="{{ route('variants.index') }}" class="btn btn-outline-secondary shadow-sm px-3 mr-2">
+                <i class="fa fa-list"></i> Tất cả biến thể
+            </a>
+        @endif
+        <a href="{{ route('variants.create') }}" class="btn btn-primary shadow-sm px-4">
+            <i class="fa fa-plus"></i> Thêm biến thể
+        </a>
+    </div>
 </div>
 
 @if(session('success'))
@@ -45,10 +55,18 @@
                     </div>
                 </div>
 
-                <a href="{{ route('variants.create', ['san_pham_id' => $sp->id]) }}"
-                   class="btn btn-success btn-sm shadow px-3">
-                    <i class="fa fa-plus-circle"></i> Thêm biến thể
-                </a>
+                <div class="d-flex align-items-center">
+                    @if($sp->variants->count() > 0)
+                        <a href="{{ route('variants.edit', $sp->variants->first()->id) }}"
+                           class="btn btn-warning btn-sm shadow px-3 mr-2">
+                            <i class="fa fa-edit"></i> Sửa biến thể
+                        </a>
+                    @endif
+                    <a href="{{ route('variants.create', ['san_pham_id' => $sp->id]) }}"
+                       class="btn btn-success btn-sm shadow px-3">
+                        <i class="fa fa-plus-circle"></i> Thêm biến thể
+                    </a>
+                </div>
 
             </div>
 
@@ -79,14 +97,14 @@
                                 @if($v->trang_thai)
                                     <span class="badge badge-success px-3">Hiện</span>
                                 @else
-                                    <span class="badge badge-secondary px-3">Ẩn</span>
+                                    <span class="badge badge-secondary px-3 width">Ẩn</span>
                                 @endif
                             </td>
-                            <td>
-                                <a href="{{ route('variants.edit', $v->id) }}"
-                                   class="btn btn-warning btn-sm">
-                                   <i class="fa fa-edit"></i>
-                                </a>
+                                     <td>
+                                          {{-- <a href="{{ route('variants.edit', $v->id) }}"
+                                              class="btn btn-warning btn-sm">
+                                              <i class="fa fa-edit"></i>
+                                          </a> --}}
 
                                 <form action="{{ route('variants.delete', $v->id) }}"
                                       method="POST"

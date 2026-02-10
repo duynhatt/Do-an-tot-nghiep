@@ -54,7 +54,7 @@
                             <a href="{{ route('variants.create', ['san_pham_id' => $sp->id]) }}" class="btn btn-sm btn-info" title="Thêm biến thể">
                                 <i class="fas fa-palette"></i>
                             </a>
-                            <a href="{{ route('variants.index') }}#product-{{ $sp->id }}" class="btn btn-sm btn-secondary" title="Xem biến thể">
+                            <a href="{{ route('variants.index', ['san_pham_id' => $sp->id]) }}" class="btn btn-sm btn-secondary" title="Xem biến thể">
                                 <i class="fas fa-list"></i>
                             </a>
                             <button class="btn btn-sm btn-warning btn-edit" data-id="{{ $sp->id }}">
@@ -132,12 +132,71 @@
                                     <option value="0">Ẩn</option>
                                 </select>
                             </div>
+                        </div>
+                    </div>
 
-                            <div class="form-group form-check">
-                                <input type="checkbox" name="cho_phep_thiet_ke" value="1" class="form-check-input">
-                                <label class="form-check-label">Cho phép tùy chỉnh / thiết kế</label>
+                    <div class="form-group mt-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="mb-0">Biến thể ban đầu</label>
+                            <div class="form-check">
+                                <input type="checkbox" id="enableInitialVariants" class="form-check-input">
+                                <label class="form-check-label" for="enableInitialVariants">Có biến thể ban đầu</label>
                             </div>
                         </div>
+                        <small class="text-muted">Bật để thêm biến thể ngay khi tạo sản phẩm.</small>
+                    </div>
+                    <div id="variantsSection" class="form-group" style="display:none;">
+                        <div class="row small text-muted mb-2">
+                            <div class="col-md-3">Màu</div>
+                            <div class="col-md-2">Size</div>
+                            <div class="col-md-2">Giá</div>
+                            <div class="col-md-2">Giá KM</div>
+                            <div class="col-md-2">Số lượng</div>
+                            <div class="col-md-1">Trạng thái</div>
+                        </div>
+                        <div id="productVariantsContainer" data-next-index="1">
+                            <div class="variant-row" data-index="0">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <select name="variants[0][mau_sac_id]" class="form-control form-control-sm" disabled>
+                                            <option value="">-- Chọn màu --</option>
+                                            @foreach($colors as $c)
+                                                <option value="{{ $c->id }}">{{ $c->ten_mau }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <select name="variants[0][kich_thuoc_id]" class="form-control form-control-sm" disabled>
+                                            <option value="">-- Chọn size --</option>
+                                            @foreach($sizes as $s)
+                                                <option value="{{ $s->id }}">{{ $s->ten_kich_thuoc }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="number" name="variants[0][gia]" class="form-control form-control-sm" min="0" disabled>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="number" name="variants[0][gia_khuyen_mai]" class="form-control form-control-sm" min="0" disabled>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="number" name="variants[0][so_luong]" class="form-control form-control-sm" min="0" disabled>
+                                    </div>
+                                    <div class="col-md-1">
+                                        <select name="variants[0][trang_thai]" class="form-control form-control-sm" disabled>
+                                            <option value="1">Hiện</option>
+                                            <option value="0">Ẩn</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-12 text-right">
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-variant">Xóa dòng</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" id="addVariantRow" class="btn btn-outline-primary btn-sm mt-2">Thêm dòng biến thể</button>
                     </div>
                 </div>
 
@@ -224,6 +283,86 @@
 
 <script>
     $(function() {
+        function setVariantsEnabled(isEnabled) {
+            $('#variantsSection').toggle(isEnabled);
+            $('#variantsSection').find('select, input').prop('disabled', !isEnabled);
+            $('#variantsSection').find('select[name$="[mau_sac_id]"], select[name$="[kich_thuoc_id]"], input[name$="[gia]"], input[name$="[so_luong]"]')
+                .prop('required', isEnabled);
+        }
+
+        function buildVariantRow(index) {
+            return `
+                <div class="variant-row" data-index="${index}">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <select name="variants[${index}][mau_sac_id]" class="form-control form-control-sm" required>
+                                <option value="">-- Chọn màu --</option>
+                                @foreach($colors as $c)
+                                    <option value="{{ $c->id }}">{{ $c->ten_mau }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="variants[${index}][kich_thuoc_id]" class="form-control form-control-sm" required>
+                                <option value="">-- Chọn size --</option>
+                                @foreach($sizes as $s)
+                                    <option value="{{ $s->id }}">{{ $s->ten_kich_thuoc }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" name="variants[${index}][gia]" class="form-control form-control-sm" min="0" required>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" name="variants[${index}][gia_khuyen_mai]" class="form-control form-control-sm" min="0">
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" name="variants[${index}][so_luong]" class="form-control form-control-sm" min="0" required>
+                        </div>
+                        <div class="col-md-1">
+                            <select name="variants[${index}][trang_thai]" class="form-control form-control-sm">
+                                <option value="1">Hiện</option>
+                                <option value="0">Ẩn</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-12 text-right">
+                            <button type="button" class="btn btn-sm btn-outline-danger remove-variant">Xóa dòng</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        $('#enableInitialVariants').on('change', function () {
+            setVariantsEnabled($(this).is(':checked'));
+        });
+
+        $('#addVariantRow').on('click', function () {
+            const container = $('#productVariantsContainer');
+            const currentIndex = parseInt(container.attr('data-next-index'), 10) || 0;
+            container.append(buildVariantRow(currentIndex));
+            container.attr('data-next-index', currentIndex + 1);
+        });
+
+        $('#productVariantsContainer').on('click', '.remove-variant', function () {
+            const rows = $('#productVariantsContainer .variant-row');
+            if (rows.length <= 1) {
+                return;
+            }
+            $(this).closest('.variant-row').remove();
+        });
+
+        $('#modalAdd').on('hidden.bs.modal', function () {
+            const container = $('#productVariantsContainer');
+            container.html(buildVariantRow(0));
+            container.attr('data-next-index', 1);
+            $('#enableInitialVariants').prop('checked', false);
+            setVariantsEnabled(false);
+        });
+
+        setVariantsEnabled(false);
 
         $('#formAdd').submit(function(e) {
             e.preventDefault();

@@ -62,19 +62,19 @@
                             <img class="card-img rounded-0 img-fluid" src="{{ $sp->hinh_anh_chinh ? asset('storage/' . $sp->hinh_anh_chinh) : asset('img/shop_01.jpg') }}" alt="{{ $sp->ten_san_pham }}">
                             <div class="card-img-overlay rounded-0 product-overlay d-flex align-items-center justify-content-center">
                                 <ul class="list-unstyled">
-                                    <li><a class="btn btn-success text-white" href="{{ route('shop.single', $sp->id) }}"><i class="far fa-heart"></i></a></li>
+                                    <li><a class="btn btn-success text-white"  href="{{ route('sanpham.chitiet', $sp->slug) }}"><i class="far fa-heart"></i></a></li>
                                     <li>
                                         <a class="btn btn-success text-white mt-2"
                                             href="{{ route('sanpham.chitiet', $sp->slug) }}">
                                             <i class="far fa-eye"></i>
                                         </a>
                                     </li>
-                                    <li><a class="btn btn-success text-white mt-2" href="{{ route('shop.single', $sp->id) }}"><i class="fas fa-cart-plus"></i></a></li>
+                                    <li><a class="btn btn-success text-white mt-2"  href="{{ route('sanpham.chitiet', $sp->slug) }}"><i class="fas fa-cart-plus"></i></a></li>
                                 </ul>
                             </div>
                         </div>
                         <div class="card-body">
-                            <a href="{{ route('shop.single', $sp->id) }}" class="h3 text-decoration-none">{{ $sp->ten_san_pham }}</a>
+                            <a  href="{{ route('sanpham.chitiet', $sp->slug) }}" class="h3 text-decoration-none">{{ $sp->ten_san_pham }}</a>
                             {{-- <ul class="w-100 list-unstyled d-flex justify-content-between mb-0">
                                     <li class="text-muted small">{{ $sp->category->ten_danh_muc ?? '' }}</li>
                             </ul> --}}
@@ -97,25 +97,17 @@
                         </div>
                     </div>
                 </div>
-                @empty
+             @empty
                 <div class="col-12 text-center py-5">
                     <p class="text-muted">Chưa có sản phẩm nào trong danh mục này.</p>
                     <a href="{{ url('/Shop') }}" class="btn btn-success">Xem tất cả sản phẩm</a>
                 </div>
                 @endforelse
             </div>
-            <div div="row">
-                <ul class="pagination pagination-lg justify-content-end">
-                    <li class="page-item disabled">
-                        <a class="page-link active rounded-0 mr-3 shadow-sm border-top-0 border-left-0" href="#" tabindex="-1">1</a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link rounded-0 mr-3 shadow-sm border-top-0 border-left-0 text-dark" href="#">2</a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link rounded-0 shadow-sm border-top-0 border-left-0 text-dark" href="#">3</a>
-                    </li>
-                </ul>
+            <div class="row mt-5">
+                <div class="col-12 d-flex justify-content-center">
+                    {{ $sanPhams->links('pagination::bootstrap-4') }}
+                </div>
             </div>
         </div>
 
