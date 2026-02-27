@@ -84,6 +84,14 @@ Route::middleware('auth')->group(function () {
     Route::put('/gio-hang/{gioHang}', [GioHangController::class, 'update'])->name('gio-hang.update');
     Route::delete('/gio-hang/{gioHang}', [GioHangController::class, 'destroy'])->name('gio-hang.destroy');
     Route::post('/gio-hang/selection', [GioHangController::class, 'updateSelection'])->name('gio-hang.selection');
+
+    Route::get('/checkout', [CheckoutController::class, 'index'])->name('dat-hang');
+    Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
+
+    Route::get('/order/success/{ma_don_hang}', function ($ma_don_hang) {
+        $donHang = \App\Models\DonHang::where('ma_don_hang', $ma_don_hang)->firstOrFail();
+        return view('client.checkout.success', compact('donHang'));
+    })->name('order.success');
 });
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [DashboardController::class, 'home'])->name('home');
