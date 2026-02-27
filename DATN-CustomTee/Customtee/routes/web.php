@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\VariantController;
 use App\Http\Controllers\client\SanPhamController as ClientSanPhamController;
 use App\Http\Controllers\client\GioHangController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\client\CheckoutController;
 use App\Models\BienThe;
 use Illuminate\Http\Request;
 
@@ -24,7 +25,7 @@ Route::post('/register', [AuthController::class, 'register'])->name('register.su
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-Route::get('/', [HomeController::class, 'index']);
+Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('About', [AboutController::class, 'About']);
 Route::get('Contact', [ContactController::class, 'Contact']);
 Route::get('Shop', [ShopController::class, 'Shop']);

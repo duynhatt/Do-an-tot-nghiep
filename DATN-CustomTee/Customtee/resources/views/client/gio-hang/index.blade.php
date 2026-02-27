@@ -122,6 +122,8 @@
 
     <div class="mt-4 d-flex gap-2 justify-content-between flex-wrap">
         <a href="{{ url('/Shop') }}" class="btn btn-outline-secondary">Tiếp tục mua sắm</a>
+        <a href="{{ route('dat-hang') }}" class="btn btn-outline-secondary">Đặt hàng</a>
+
     </div>
     @endif
 </div>
@@ -188,8 +190,7 @@
         function syncSelection() {
             const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             if (!token) return;
-            fetch('{{ route('
-                gio - hang.selection ') }}', {
+            fetch('{{ route('gio-hang.selection') }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
