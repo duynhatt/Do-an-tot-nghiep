@@ -88,7 +88,7 @@
 
                         <form method="POST" action="{{ route('checkout.process') }}" id="checkoutForm">
                             @csrf
-
+                            <input type="hidden" name="selected_items" value="{{ request()->query('items', '') }}">
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Họ và tên <span class="text-danger">*</span></label>

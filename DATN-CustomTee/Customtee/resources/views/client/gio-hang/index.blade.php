@@ -24,7 +24,6 @@
             <i class="fas fa-cart-plus fa-4x text-muted mb-3"></i>
             <p class="text-muted mb-4">Giỏ hàng trống.</p>
             <a href="{{ url('/Shop') }}" class="btn btn-success">Tiếp tục mua sắm</a>
-            <a href="{{ route('dat-hang') }}" class="btn btn-outline-secondary">Đặt hàng</a>
         </div>
     </div>
     @else
@@ -122,8 +121,9 @@
 
     <div class="mt-4 d-flex gap-2 justify-content-between flex-wrap">
         <a href="{{ url('/Shop') }}" class="btn btn-outline-secondary">Tiếp tục mua sắm</a>
-        <a href="{{ route('dat-hang') }}" class="btn btn-outline-secondary">Đặt hàng</a>
-
+        <button type="button" id="btn-proceed-to-checkout" class="btn btn-primary">
+            Tiến hành thanh toán
+        </button>
     </div>
     @endif
 </div>
@@ -202,7 +202,6 @@
                         ids: collectSelectedIds()
                     })
                 }).catch(function() {
-                // Silent fail to avoid blocking cart usage when selection sync fails.
             });
         }
 
@@ -371,6 +370,26 @@
                 syncSelectAll();
                 syncSelection();
             });
+        });
+
+        document.getElementById('btn-proceed-to-checkout')?.addEventListener('click', function() {
+            const selectedIds = collectSelectedIds();
+
+            if (selectedIds.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Chưa chọn sản phẩm',
+                    text: 'Vui lòng chọn ít nhất một sản phẩm để thanh toán',
+                    confirmButtonText: 'Đóng'
+                });
+                return;
+            }
+
+            const queryString = new URLSearchParams({
+                items: selectedIds.join(',')
+            }).toString();
+
+            window.location.href = '{{ route("dat-hang") }}?' + queryString;
         });
     });
 </script>
