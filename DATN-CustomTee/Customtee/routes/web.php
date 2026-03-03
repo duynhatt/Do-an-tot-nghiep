@@ -16,6 +16,7 @@ use App\Http\Controllers\client\SanPhamController as ClientSanPhamController;
 use App\Http\Controllers\client\GioHangController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\client\CheckoutController;
+use App\Http\Controllers\client\OrderController;
 use App\Models\BienThe;
 use Illuminate\Http\Request;
 
@@ -78,6 +79,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
     Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/password', [ProfileController::class, 'changePassword'])->name('profile.password');
+
+    Route::get('/order',[OrderController::class, 'list'])->name('order');
+    Route::get('/order/{id}', [OrderController::class, 'show'])->name('order.show');
 
     // Giỏ hàng (lưu DB, gắn user)
     Route::get('/gio-hang', [GioHangController::class, 'index'])->name('gio-hang.index');
