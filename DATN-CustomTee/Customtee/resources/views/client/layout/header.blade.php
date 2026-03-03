@@ -121,6 +121,11 @@
                     <i class="fa fa-user me-2"></i> Thông tin cá nhân
                 </a>
             </li>
+            <li>
+                <a class="dropdown-item" href="{{ route('order') }}">
+                    <i class="fa fa-user me-2"></i> Đơn hàng của tôi
+                </a>
+            </li>
 
             <li><hr class="dropdown-divider"></li>
 

@@ -19,7 +19,7 @@
             <p class="mt-4">Chúng tôi sẽ liên hệ với bạn sớm nhất để xác nhận đơn hàng.</p>
 
             <a href="{{ route('home') }}" class="btn btn-primary btn-lg mt-3">Quay về trang chủ</a>
-            <a href="#" class="btn btn-outline-primary mt-3">Xem đơn hàng của tôi</a>
+            <a href="{{ route('order') }}" class="btn btn-outline-primary mt-3">Xem đơn hàng của tôi</a>
         </div>
     </div>
 </div>
