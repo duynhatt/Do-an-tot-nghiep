@@ -9,14 +9,36 @@ use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
-    public function list()
+    public function list(Request $request)
     {
-        $donHangs = DonHang::where('nguoi_dung_id', Auth::id())
+        $query = DonHang::where('nguoi_dung_id', Auth::id())
             ->with(['chiTietDonHangs.sanPham', 'chiTietDonHangs.bienThe.color', 'chiTietDonHangs.bienThe.size'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(8);
+            ->orderBy('created_at', 'desc');
 
-        return view('client.order.index', compact('donHangs'));
+        $trangThai = $request->query('trang_thai');
+        $traHang = $request->boolean('tra_hang');
+
+        if ($trangThai && in_array($trangThai, [
+            DonHang::TRANG_THAI_CHO_XAC_NHAN,
+            DonHang::TRANG_THAI_DANG_XU_LY,
+            DonHang::TRANG_THAI_DANG_GIAO,
+            DonHang::TRANG_THAI_DA_GIAO,
+            DonHang::TRANG_THAI_DA_HUY,
+        ], true)) {
+            $query->where('trang_thai', $trangThai);
+        }
+
+        if ($traHang) {
+            $query->where('yeu_cau_tra', true);
+        }
+
+        $donHangs = $query->paginate(8)->withQueryString();
+
+        return view('client.order.index', [
+            'donHangs' => $donHangs,
+            'currentStatus' => $trangThai,
+            'traHang' => $traHang,
+        ]);
     }
 
     public function show($id)

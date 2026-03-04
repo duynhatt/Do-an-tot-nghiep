@@ -25,21 +25,26 @@
     {{-- Lọc theo trạng thái --}}
     <div class="card shadow mb-3">
         <div class="card-body py-2">
-            <form method="get" action="{{ route('admin.don-hang.index') }}" class="form-inline">
-                <label class="mr-2 mb-0">Trạng thái:</label>
-                <select name="trang_thai" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
-                    <option value="">Tất cả</option>
-                    @foreach([
-                        'cho_xac_nhan' => 'Chờ xác nhận',
-                        'dang_xu_ly' => 'Đang xử lý',
-                        'dang_giao' => 'Đang giao',
-                        'da_giao' => 'Đã giao',
-                        'da_huy' => 'Đã hủy',
-                    ] as $value => $label)
-                        <option value="{{ $value }}" {{ request('trang_thai') === $value ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </form>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <form method="get" action="{{ route('admin.don-hang.index') }}" class="form-inline">
+                    <label class="mr-2 mb-0">Trạng thái:</label>
+                    <select name="trang_thai" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+                        <option value="">Tất cả</option>
+                        @foreach([
+                            'cho_xac_nhan' => 'Chờ xác nhận',
+                            'dang_xu_ly' => 'Đang xử lý',
+                            'dang_giao' => 'Đang giao',
+                            'da_giao' => 'Đã giao',
+                            'da_huy' => 'Đã hủy',
+                        ] as $value => $label)
+                            <option value="{{ $value }}" {{ request('trang_thai') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </form>
+                <div class="text-muted small">
+                    Tổng: <strong>{{ $donHangs->total() }}</strong> đơn
+                </div>
+            </div>
         </div>
     </div>
 
@@ -51,27 +56,30 @@
                         <th width="4%">#</th>
                         <th>Mã đơn</th>
                         <th>Khách hàng</th>
-                        <th>Ngày đặt</th>
                         <th>Tổng tiền</th>
                         <th>Trạng thái</th>
-                        <th>Trả hàng</th>
                         <th width="12%">Hành động</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($donHangs as $index => $donHang)
                     <tr>
-                        <td class="text-center">{{ $donHangs->firstItem() + $index }}</td>
-                        <td><strong>{{ $donHang->ma_don_hang }}</strong></td>
-                        <td>
+                        <td class="text-center align-middle">{{ $donHangs->firstItem() + $index }}</td>
+                        <td class="align-middle">
+                            <strong>{{ $donHang->ma_don_hang }}</strong>
+                            <br>
+                            <small class="text-muted">
+                                <i class="far fa-clock mr-1"></i>{{ $donHang->created_at->format('d/m/Y H:i') }}
+                            </small>
+                        </td>
+                        <td class="align-middle">
                             {{ $donHang->ten_nguoi_nhan ?? $donHang->nguoiDung->name ?? '—' }}
                             @if($donHang->nguoiDung)
                                 <br><small class="text-muted">{{ $donHang->nguoiDung->email ?? '' }}</small>
                             @endif
                         </td>
-                        <td>{{ $donHang->created_at->format('d/m/Y H:i') }}</td>
-                        <td class="text-right">{{ number_format($donHang->tong_tien, 0, ',', '.') }} ₫</td>
-                        <td class="text-center">
+                        <td class="text-right align-middle">{{ number_format($donHang->tong_tien, 0, ',', '.') }} ₫</td>
+                        <td class="text-center align-middle">
                             @php
                                 $badge = [
                                     'cho_xac_nhan' => 'warning',
@@ -81,18 +89,20 @@
                                     'da_huy' => 'danger',
                                 ][$donHang->trang_thai] ?? 'secondary';
                             @endphp
-                            <span class="badge badge-{{ $badge }}">{{ \App\Models\DonHang::tenTrangThai($donHang->trang_thai) }}</span>
-                        </td>
-                        <td class="text-center">
-                            @if($donHang->yeu_cau_tra)
-                                <span class="badge badge-warning">
-                                    <i class="fas fa-undo-alt"></i> Yêu cầu
+                            <div>
+                                <span class="badge badge-{{ $badge }}">
+                                    {{ \App\Models\DonHang::tenTrangThai($donHang->trang_thai) }}
                                 </span>
-                            @else
-                                <span class="text-muted small">Không</span>
+                            </div>
+                            @if($donHang->yeu_cau_tra)
+                                <div class="mt-1">
+                                    <span class="badge badge-warning">
+                                        <i class="fas fa-undo-alt"></i> Yêu cầu trả hàng
+                                    </span>
+                                </div>
                             @endif
                         </td>
-                        <td class="text-center">
+                        <td class="text-center align-middle">
                             <a href="{{ route('admin.don-hang.show', $donHang) }}" class="btn btn-sm btn-info" title="Chi tiết">
                                 <i class="fas fa-eye"></i>
                             </a>
@@ -100,7 +110,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center text-muted py-4">Chưa có đơn hàng nào.</td>
+                        <td colspan="6" class="text-center text-muted py-4">Chưa có đơn hàng nào.</td>
                     </tr>
                     @endforelse
                 </tbody>
