@@ -22,12 +22,12 @@
         </div>
     @endif
 
-    {{-- Lọc theo trạng thái & trả hàng --}}
+    {{-- Lọc theo trạng thái --}}
     <div class="card shadow mb-3">
         <div class="card-body py-2">
             <form method="get" action="{{ route('admin.don-hang.index') }}" class="form-inline">
                 <label class="mr-2 mb-0">Trạng thái:</label>
-                <select name="trang_thai" class="form-control form-control-sm mr-3" onchange="this.form.submit()">
+                <select name="trang_thai" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
                     <option value="">Tất cả</option>
                     @foreach([
                         'cho_xac_nhan' => 'Chờ xác nhận',
@@ -39,14 +39,6 @@
                         <option value="{{ $value }}" {{ request('trang_thai') === $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
-
-                {{-- <div class="form-check form-check-inline align-middle">
-                    <input class="form-check-input" type="checkbox" name="yeu_cau_tra" value="1"
-                           id="filterYeuCauTra" onchange="this.form.submit()" {{ request('yeu_cau_tra') ? 'checked' : '' }}>
-                    <label class="form-check-label small mb-0" for="filterYeuCauTra">
-                        Chỉ đơn có yêu cầu trả hàng
-                    </label>
-                </div> --}}
             </form>
         </div>
     </div>
@@ -94,8 +86,10 @@
                         <td class="text-center">
                             @if($donHang->yeu_cau_tra)
                                 <span class="badge badge-warning">
-                                    <i class="fa fa-undo mr-1"></i> Yêu cầu trả hàng
+                                    <i class="fas fa-undo-alt"></i> Yêu cầu
                                 </span>
+                            @else
+                                <span class="text-muted small">Không</span>
                             @endif
                         </td>
                         <td class="text-center">
