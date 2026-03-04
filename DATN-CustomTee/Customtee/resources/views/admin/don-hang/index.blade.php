@@ -94,13 +94,6 @@
                                     {{ \App\Models\DonHang::tenTrangThai($donHang->trang_thai) }}
                                 </span>
                             </div>
-                            @if($donHang->yeu_cau_tra)
-                                <div class="mt-1">
-                                    <span class="badge badge-warning">
-                                        <i class="fas fa-undo-alt"></i> Yêu cầu trả hàng
-                                    </span>
-                                </div>
-                            @endif
                         </td>
                         <td class="text-center align-middle">
                             <a href="{{ route('admin.don-hang.show', $donHang) }}" class="btn btn-sm btn-info" title="Chi tiết">

@@ -78,14 +78,6 @@
                         </div>
                         
                     @endif
-                    @if($donHang->yeu_cau_tra)
-                        <hr class="my-2">
-                        <div class="alert alert-info py-2 mb-0 small">
-                            <i class="fas fa-undo-alt mr-1"></i><strong>Yêu cầu trả hàng</strong>
-                            @if($donHang->ngay_yeu_cau_tra) — {{ $donHang->ngay_yeu_cau_tra->format('d/m/Y H:i') }}@endif
-                            @if($donHang->ly_do_tra): {{ $donHang->ly_do_tra }}@endif
-                        </div>
-                    @endif
                 </div>
             </div>
 
