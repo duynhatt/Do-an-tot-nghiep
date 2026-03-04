@@ -217,77 +217,121 @@
                 <div class="col-lg-4">
                     <div class="card border-0 shadow-sm rounded-3 sticky-top" style="top: 20px;">
                         <div class="card-header bg-gradient text-white py-3 px-4">
-                            <h5 class="mb-0 fw-semibold" style="color: black">Tóm tắt thanh toán</h5>
+                            <h5 class="mb-0 fw-semibold">Thông tin đơn hàng</h5>
                         </div>
                         <div class="card-body p-4">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted small">Tạm tính</span>
-                                <span>{{ number_format($donHang->tam_tinh, 0, ',', '.') }} ₫</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted small">Giảm giá</span>
-                                <span class="text-danger">-{{ number_format($donHang->tien_giam ?? 0, 0, ',', '.') }}
-                                    ₫</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted small">Phí vận chuyển</span>
-                                <span>{{ number_format($donHang->phi_van_chuyen ?? 0, 0, ',', '.') }} ₫</span>
-                            </div>
-                            <hr class="my-3">
-                            <div class="d-flex justify-content-between align-items-center fw-bold fs-5">
-                                <span>Tổng cộng</span>
-                                <span class="text-primary">{{ number_format($donHang->tong_tien, 0, ',', '.') }}
-                                    ₫</span>
-                            </div>
-
-                            <hr class="my-4">
-
+                            {{-- Thông tin chung --}}
                             <div class="mb-3">
-                                <h6 class="fw-semibold small mb-2">Phương thức thanh toán</h6>
-                                <div class="d-flex align-items-center">
+                                <h6 class="fw-semibold small text-uppercase text-muted mb-2">Tổng quan</h6>
+                                <ul class="list-unstyled small mb-0">
+                                    <li class="d-flex justify-content-between mb-1">
+                                        <span class="text-muted">Mã đơn</span>
+                                        <span class="fw-medium text-dark">{{ $donHang->ma_don_hang }}</span>
+                                    </li>
+                                    <li class="d-flex justify-content-between mb-1">
+                                        <span class="text-muted">Ngày đặt</span>
+                                        <span>{{ $donHang->created_at->format('d/m/Y H:i') }}</span>
+                                    </li>
+                                    <li class="d-flex justify-content-between mb-1">
+                                        <span class="text-muted">Trạng thái</span>
+                                        <span class="badge bg-primary-subtle text-primary border">
+                                            {{ \App\Models\DonHang::tenTrangThai($donHang->trang_thai) }}
+                                        </span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <hr class="my-3">
+
+                            {{-- Tóm tắt thanh toán --}}
+                            <div class="mb-3">
+                                <h6 class="fw-semibold small text-uppercase text-muted mb-2">Thanh toán</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted small">Tạm tính</span>
+                                    <span class="small">{{ number_format($donHang->tam_tinh, 0, ',', '.') }} ₫</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted small">Giảm giá</span>
+                                    <span class="small text-danger">
+                                        -{{ number_format($donHang->tien_giam ?? 0, 0, ',', '.') }} ₫
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-3">
+                                    <span class="text-muted small">Phí vận chuyển</span>
+                                    <span class="small">
+                                        {{ number_format($donHang->phi_van_chuyen ?? 0, 0, ',', '.') }} ₫
+                                    </span>
+                                </div>
+                                <div class="p-3 rounded-3 bg-light d-flex justify-content-between align-items-center">
+                                    <span class="text-muted small text-uppercase">Tổng cộng</span>
+                                    <span class="fw-bold text-primary">
+                                        {{ number_format($donHang->tong_tien, 0, ',', '.') }} ₫
+                                    </span>
+                                </div>
+                            </div>
+
+                            <hr class="my-3">
+
+                            {{-- Phương thức & trạng thái thanh toán --}}
+                            <div class="mb-3">
+                                <h6 class="fw-semibold small text-uppercase text-muted mb-2">Hình thức thanh toán</h6>
+                                <div class="d-flex align-items-center mb-1">
                                     <i class="bi bi-credit-card-2-front text-primary me-2"></i>
-                                    @switch($donHang->phuong_thuc_thanh_toan)
-                                        @case('cod')
-                                            COD (Thanh toán khi nhận hàng)
-                                        @break
+                                    <span class="small">
+                                        @switch($donHang->phuong_thuc_thanh_toan)
+                                            @case('cod')
+                                                COD (Thanh toán khi nhận hàng)
+                                            @break
 
-                                        @case('zalo_pay')
-                                            ZaloPay
-                                        @break
+                                            @case('zalo_pay')
+                                                ZaloPay
+                                            @break
 
-                                        @case('momo')
-                                            MoMo
-                                        @break
+                                            @case('momo')
+                                                MoMo
+                                            @break
 
-                                        @case('vnpay')
-                                            VNPay
-                                        @break
+                                            @case('vnpay')
+                                                VNPay
+                                            @break
 
-                                        @default
-                                            Thanh toán trực tuyến
-                                    @endswitch
+                                            @default
+                                                Thanh toán trực tuyến
+                                        @endswitch
+                                    </span>
                                 </div>
                                 <small class="d-block mt-1">
                                     @if ($donHang->trang_thai_thanh_toan === 'da_thanh_toan')
-                                        <span class="text-success">Đã thanh toán</span>
+                                        <span class="badge bg-success-subtle text-success border border-success">
+                                            Đã thanh toán
+                                        </span>
                                     @elseif($donHang->trang_thai_thanh_toan === 'that_bai')
-                                        <span class="text-danger">Thất bại</span>
+                                        <span class="badge bg-danger-subtle text-danger border border-danger">
+                                            Thanh toán thất bại
+                                        </span>
                                     @else
-                                        <span class="text-warning">Chưa thanh toán</span>
+                                        <span class="badge bg-warning-subtle text-warning border border-warning">
+                                            Chưa thanh toán
+                                        </span>
                                     @endif
                                 </small>
                             </div>
 
+                            {{-- Địa chỉ giao hàng --}}
                             <div>
-                                <h6 class="fw-semibold small mb-2">Giao hàng đến</h6>
+                                <h6 class="fw-semibold small text-uppercase text-muted mb-2">Giao hàng đến</h6>
                                 <p class="mb-1 fw-medium">{{ $donHang->ten_nguoi_nhan }}</p>
-                                <p class="mb-1 small">{{ $donHang->so_dien_thoai_nhan_hang }}</p>
-                                <p class="mb-0 small text-muted">{{ $donHang->dia_chi_chi_tiet }}</p>
+                                <p class="mb-1 small">
+                                    <i class="bi bi-phone me-1"></i>{{ $donHang->so_dien_thoai_nhan_hang }}
+                                </p>
+                                <p class="mb-0 small text-muted">
+                                    <i class="bi bi-geo-alt me-1"></i>{{ $donHang->dia_chi_chi_tiet }}
+                                </p>
 
                                 @if ($donHang->ghi_chu)
                                     <div class="mt-3">
-                                        <small class="fw-medium">Ghi chú:</small>
-                                        <p class="small text-muted mt-1 mb-0">{{ $donHang->ghi_chu }}</p>
+                                        <small class="fw-medium text-muted text-uppercase d-block mb-1">Ghi chú của bạn</small>
+                                        <p class="small text-muted mb-0">{{ $donHang->ghi_chu }}</p>
                                     </div>
                                 @endif
                             </div>
