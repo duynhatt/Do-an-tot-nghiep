@@ -6,6 +6,19 @@
     <div class="row justify-content-center">
         <div class="col-lg-11 col-xl-10">
 
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
             <nav aria-label="breadcrumb" class="mb-4">
                 <ol class="breadcrumb bg-transparent p-0 m-0">
                     <li class="breadcrumb-item">
@@ -105,6 +118,42 @@
                                 <div class="alert alert-danger mt-4 d-flex align-items-center small" role="alert">
                                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
                                     Đơn hàng đã bị hủy. Vui lòng liên hệ hỗ trợ nếu cần.
+                                </div>
+                            @endif
+
+                            @if ($donHang->trang_thai === 'cho_xac_nhan')
+                                <div class="mt-4 d-flex flex-wrap gap-2">
+                                    <form action="{{ route('order.cancel', $donHang->id) }}" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng này?');">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                                            <i class="bi bi-x-circle me-1"></i> Hủy đơn hàng
+                                        </button>
+                                    </form>
+                                </div>
+                            @endif
+
+                            @if ($donHang->trang_thai === 'da_giao')
+                                <div class="mt-4">
+                                    @if ($donHang->yeu_cau_tra)
+                                        <div class="alert alert-info small mb-2" role="alert">
+                                            <i class="bi bi-arrow-counterclockwise me-1"></i>
+                                            Bạn đã gửi yêu cầu trả hàng{{ $donHang->ngay_yeu_cau_tra ? ' vào ' . $donHang->ngay_yeu_cau_tra->format('d/m/Y H:i') : '' }}.
+                                        </div>
+                                        @if ($donHang->ly_do_tra)
+                                            <p class="small mb-0"><strong>Lý do đã gửi:</strong> {{ $donHang->ly_do_tra }}</p>
+                                        @endif
+                                    @else
+                                        <form action="{{ route('order.return', $donHang->id) }}" method="post">
+                                            @csrf
+                                            <div class="mb-2">
+                                                <label for="ly_do_tra" class="form-label small fw-semibold">Lý do trả hàng (tuỳ chọn)</label>
+                                                <textarea name="ly_do_tra" id="ly_do_tra" class="form-control form-control-sm" rows="2" maxlength="1000" placeholder="Nhập lý do (sai size, lỗi sản phẩm, ... nếu có)"></textarea>
+                                            </div>
+                                            <button type="submit" class="btn btn-outline-warning btn-sm" onclick="return confirm('Gửi yêu cầu trả hàng cho đơn này?');">
+                                                <i class="bi bi-arrow-counterclockwise me-1"></i> Yêu cầu trả hàng
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             @endif
                         </div>

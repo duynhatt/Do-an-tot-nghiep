@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\MauSacController;
 use App\Http\Controllers\Admin\SanPhamController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\VariantController;
+use App\Http\Controllers\Admin\DonHangController;
 use App\Http\Controllers\client\SanPhamController as ClientSanPhamController;
 use App\Http\Controllers\client\GioHangController;
 use App\Http\Controllers\AuthController;
@@ -80,8 +81,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/password', [ProfileController::class, 'changePassword'])->name('profile.password');
 
-    Route::get('/order',[OrderController::class, 'list'])->name('order');
+    Route::get('/order', [OrderController::class, 'list'])->name('order');
     Route::get('/order/{id}', [OrderController::class, 'show'])->name('order.show');
+    Route::post('/order/{id}/cancel', [OrderController::class, 'cancel'])->name('order.cancel');
+    Route::post('/order/{id}/return', [OrderController::class, 'requestReturn'])->name('order.return');
 
     // Giỏ hàng (lưu DB, gắn user)
     Route::get('/gio-hang', [GioHangController::class, 'index'])->name('gio-hang.index');
@@ -105,6 +108,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('mau-sac', MauSacController::class);
     Route::resource('kich-thuoc', KichThuocController::class);
     Route::resource('san-pham', SanPhamController::class);
+
+    // Đơn hàng: danh sách, chi tiết, cập nhật trạng thái
+    Route::get('don-hang', [DonHangController::class, 'index'])->name('don-hang.index');
+    Route::get('don-hang/{donHang}', [DonHangController::class, 'show'])->name('don-hang.show');
+    Route::patch('don-hang/{donHang}/status', [DonHangController::class, 'updateStatus'])->name('don-hang.update-status');
 });
 Route::prefix('admin/variants')->name('variants.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [VariantController::class, 'index'])->name('index');
