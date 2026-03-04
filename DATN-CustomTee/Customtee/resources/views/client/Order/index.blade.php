@@ -25,10 +25,9 @@
                     'da_huy' => ['Đã hủy', 'danger'],
                 ];
                 $currentStatus = $currentStatus ?? request('trang_thai');
-                $traHang = $traHang ?? request()->boolean('tra_hang');
             @endphp
 
-            @if ($donHangs->isEmpty() && !$currentStatus && !$traHang)
+            @if ($donHangs->isEmpty() && !$currentStatus)
                 <div class="card border-0 shadow-lg rounded-4 text-center py-5 px-4 bg-gradient-light">
                     <div class="card-body">
                         <i class="bi bi-bag-x-fill display-1 text-primary opacity-75 mb-4"></i>
@@ -44,7 +43,7 @@
                 {{-- Thanh tab lọc (server-side) --}}
                 <ul class="nav nav-pills nav-fill flex-nowrap overflow-auto mb-4 shadow-sm rounded-pill bg-white p-2">
                     <li class="nav-item" role="presentation">
-                        <a class="nav-link rounded-pill px-4 py-2 {{ !$currentStatus && !$traHang ? 'active' : '' }}"
+                        <a class="nav-link rounded-pill px-4 py-2 {{ !$currentStatus ? 'active' : '' }}"
                             href="{{ route('order') }}">
                             Tất cả
                         </a>
@@ -58,13 +57,6 @@
                             </a>
                         </li>
                     @endforeach
-
-                    <li class="nav-item" role="presentation">
-                        <a class="nav-link rounded-pill px-4 py-2 {{ $traHang ? 'active' : '' }}"
-                            href="{{ route('order', ['tra_hang' => 1]) }}">
-                            Trả hàng
-                        </a>
-                    </li>
                 </ul>
 
                 {{-- Danh sách đơn theo filter hiện tại --}}
@@ -93,13 +85,6 @@
                                                         </small>
                                                     </div>
                                                     <div class="d-flex flex-column align-items-end gap-2">
-                                                        @if ($donHang->yeu_cau_tra)
-                                                            <span
-                                                                class="badge bg-warning-subtle text-warning border border-warning">
-                                                                <i class="bi bi-arrow-counterclockwise me-1"></i>
-                                                                Yêu cầu trả hàng
-                                                            </span>
-                                                        @endif
                                                         <a href="{{ route('order.show', $donHang->id) }}"
                                                             class="btn btn-outline-primary btn-sm px-4 rounded-pill">
                                                             Chi tiết <i class="bi bi-arrow-right ms-2"></i>

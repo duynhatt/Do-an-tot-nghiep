@@ -84,7 +84,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/order', [OrderController::class, 'list'])->name('order');
     Route::get('/order/{id}', [OrderController::class, 'show'])->name('order.show');
     Route::post('/order/{id}/cancel', [OrderController::class, 'cancel'])->name('order.cancel');
-    Route::post('/order/{id}/return', [OrderController::class, 'requestReturn'])->name('order.return');
 
     // Giỏ hàng (lưu DB, gắn user)
     Route::get('/gio-hang', [GioHangController::class, 'index'])->name('gio-hang.index');
