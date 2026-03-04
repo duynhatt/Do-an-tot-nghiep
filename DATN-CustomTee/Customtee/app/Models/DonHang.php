@@ -9,6 +9,54 @@ class DonHang extends Model
 {
     use HasFactory;
 
+    /** Trạng thái đơn hàng */
+    const TRANG_THAI_CHO_XAC_NHAN = 'cho_xac_nhan';
+    const TRANG_THAI_DANG_XU_LY = 'dang_xu_ly';
+    const TRANG_THAI_DANG_GIAO = 'dang_giao';
+    const TRANG_THAI_DA_GIAO = 'da_giao';
+    const TRANG_THAI_DA_HUY = 'da_huy';
+
+    /** Các trạng thái có thể chuyển từ trạng thái hiện tại (admin) */
+    public static function trangThaiTiepTheo(string $trangThaiHienTai): array
+    {
+        $map = [
+            self::TRANG_THAI_CHO_XAC_NHAN => [
+                self::TRANG_THAI_DANG_XU_LY => 'Đang xử lý',
+                self::TRANG_THAI_DA_HUY => 'Đã hủy',
+            ],
+            self::TRANG_THAI_DANG_XU_LY => [
+                self::TRANG_THAI_DANG_GIAO => 'Đang giao',
+                self::TRANG_THAI_DA_HUY => 'Đã hủy',
+            ],
+            self::TRANG_THAI_DANG_GIAO => [
+                self::TRANG_THAI_DA_GIAO => 'Đã giao',
+            ],
+            self::TRANG_THAI_DA_GIAO => [], // Kết thúc
+            self::TRANG_THAI_DA_HUY => [],  // Kết thúc
+        ];
+        return $map[$trangThaiHienTai] ?? [];
+    }
+
+    /** Tên hiển thị trạng thái */
+    public static function tenTrangThai(string $trangThai): string
+    {
+        $ten = [
+            self::TRANG_THAI_CHO_XAC_NHAN => 'Chờ xác nhận',
+            self::TRANG_THAI_DANG_XU_LY => 'Đang xử lý',
+            self::TRANG_THAI_DANG_GIAO => 'Đang giao',
+            self::TRANG_THAI_DA_GIAO => 'Đã giao',
+            self::TRANG_THAI_DA_HUY => 'Đã hủy',
+        ];
+        return $ten[$trangThai] ?? $trangThai;
+    }
+
+    /** Kiểm tra có thể chuyển sang trạng thái mới không */
+    public static function coTheChuyenSang(string $tuTrangThai, string $sangTrangThai): bool
+    {
+        $tiepTheo = self::trangThaiTiepTheo($tuTrangThai);
+        return array_key_exists($sangTrangThai, $tiepTheo);
+    }
+
     protected $table = 'don_hangs';
 
     protected $fillable = [
@@ -26,7 +74,10 @@ class DonHang extends Model
         'ghi_chu',
         'dia_chi_chi_tiet',
         'so_dien_thoai_nhan_hang',
-        'ten_nguoi_nhan'
+        'ten_nguoi_nhan',
+        'yeu_cau_tra',
+        'ly_do_tra',
+        'ngay_yeu_cau_tra',
     ];
 
     protected $casts = [
@@ -34,6 +85,8 @@ class DonHang extends Model
         'tien_giam' => 'float',
         'phi_van_chuyen' => 'float',
         'tong_tien' => 'float',
+        'yeu_cau_tra' => 'boolean',
+        'ngay_yeu_cau_tra' => 'datetime',
     ];
 
 

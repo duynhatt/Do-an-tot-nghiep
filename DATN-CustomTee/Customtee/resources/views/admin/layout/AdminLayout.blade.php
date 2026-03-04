@@ -139,6 +139,17 @@
                                 <li><a href="{{ route('admin.san-pham.index') }}">Danh sách sản phẩm</a></li>
                             </ul>
                         </li>
+
+                        <!-- Orders -->
+                        <li class="sub-menu">
+                            <a href="javascript:;">
+                                <i class="fa fa-shopping-cart"></i>
+                                <span>Đơn hàng</span>
+                            </a>
+                            <ul class="sub">
+                                <li><a href="{{ route('admin.don-hang.index') }}">Danh sách đơn hàng</a></li>
+                            </ul>
+                        </li>
                         <!-- Extra Pages -->
                         <li class="sub-menu">
                             <a href="javascript:;">
