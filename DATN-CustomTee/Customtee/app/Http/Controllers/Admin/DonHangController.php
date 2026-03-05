@@ -22,7 +22,21 @@ class DonHangController extends Controller
 
         $trangThai = $request->query('trang_thai');
         if ($trangThai !== null && $trangThai !== '') {
-            $query->where('trang_thai', $trangThai);
+            // Lọc theo các trạng thái chuẩn trong cột trang_thai (bao gồm "đã hoàn thành")
+            if (in_array($trangThai, [
+                DonHang::TRANG_THAI_CHO_XAC_NHAN,
+                DonHang::TRANG_THAI_DANG_XU_LY,
+                DonHang::TRANG_THAI_DANG_GIAO,
+                DonHang::TRANG_THAI_DA_GIAO,
+                DonHang::TRANG_THAI_DA_HOAN_THANH,
+                DonHang::TRANG_THAI_DA_HUY,
+            ], true)) {
+                $query->where('trang_thai', $trangThai);
+            }
+            // Lọc "Trả hàng": các đơn có yêu cầu trả
+            elseif ($trangThai === 'tra_hang') {
+                $query->where('yeu_cau_tra', true);
+            }
         }
 
         $donHangs = $query->paginate(10)->withQueryString();
@@ -51,7 +65,7 @@ class DonHangController extends Controller
     public function updateStatus(Request $request, DonHang $donHang)
     {
         $request->validate([
-            'trang_thai' => 'required|string|in:cho_xac_nhan,dang_xu_ly,dang_giao,da_giao,da_huy',
+            'trang_thai' => 'required|string|in:cho_xac_nhan,dang_xu_ly,dang_giao,da_giao,da_hoan_thanh,da_huy',
         ], [
             'trang_thai.required' => 'Vui lòng chọn trạng thái.',
             'trang_thai.in' => 'Trạng thái không hợp lệ.',

@@ -68,8 +68,7 @@ Route::get('/api/product-variant', function (Request $request) {
             ]
         ]);
     }
-
-    return response()->json([
+return response()->json([
         'success' => false
     ]);
 })->name('api.product.variant');
@@ -84,6 +83,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/order', [OrderController::class, 'list'])->name('order');
     Route::get('/order/{id}', [OrderController::class, 'show'])->name('order.show');
     Route::post('/order/{id}/cancel', [OrderController::class, 'cancel'])->name('order.cancel');
+    Route::post('/order/{id}/confirm', [OrderController::class, 'confirm'])->name('order.confirm');
 
     // Giỏ hàng (lưu DB, gắn user)
     Route::get('/gio-hang', [GioHangController::class, 'index'])->name('gio-hang.index');
@@ -116,7 +116,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 Route::prefix('admin/variants')->name('variants.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [VariantController::class, 'index'])->name('index');
     Route::get('/create', [VariantController::class, 'create'])->name('create');
-    Route::post('/store', [VariantController::class, 'store'])->name('store');
+Route::post('/store', [VariantController::class, 'store'])->name('store');
     Route::get('/edit/{id}', [VariantController::class, 'edit'])->name('edit');
     Route::post('/update/{id}', [VariantController::class, 'update'])->name('update');
     Route::delete('/delete/{id}', [VariantController::class, 'destroy'])->name('delete');

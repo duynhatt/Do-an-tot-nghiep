@@ -58,7 +58,7 @@
                                     'cho_xac_nhan' => [
                                         'Chờ xác nhận',
                                         'warning',
-                                        'bi bi-hourglass-split',
+'bi bi-hourglass-split',
                                         'Đang chờ xác nhận từ cửa hàng',
                                     ],
                                     'dang_xu_ly' => ['Đang xử lý', 'info', 'bi bi-gear', 'Đang chuẩn bị và đóng gói'],
@@ -72,7 +72,13 @@
                                         'Đã giao',
                                         'success',
                                         'bi bi-check-circle-fill',
-                                        'Giao hàng thành công',
+                                        'Giao hàng thành công. Vui lòng kiểm tra và xác nhận nếu bạn đã nhận đủ hàng.',
+                                    ],
+                                    'da_hoan_thanh' => [
+                                        'Đã hoàn thành',
+                                        'success',
+                                        'bi bi-check2-all',
+                                        'Đơn hàng đã được bạn xác nhận hoàn thành.',
                                     ],
                                     'da_huy' => ['Đã hủy', 'danger', 'bi bi-x-circle-fill', 'Đơn hàng đã bị hủy'],
                                 ];
@@ -94,21 +100,21 @@
 
                             <div class="d-flex justify-content-between position-relative mt-4 timeline-compact">
                                 <div
-                                    class="timeline-step {{ in_array($donHang->trang_thai, ['cho_xac_nhan', 'dang_xu_ly', 'dang_giao', 'da_giao']) ? 'active' : '' }}">
+                                    class="timeline-step {{ in_array($donHang->trang_thai, ['cho_xac_nhan', 'dang_xu_ly', 'dang_giao', 'da_giao', 'da_hoan_thanh']) ? 'active' : '' }}">
                                     <div class="step-icon"><i class="bi bi-check-circle"></i></div>
                                     <small>Xác nhận</small>
                                 </div>
                                 <div
-                                    class="timeline-step {{ in_array($donHang->trang_thai, ['dang_xu_ly', 'dang_giao', 'da_giao']) ? 'active' : '' }}">
+class="timeline-step {{ in_array($donHang->trang_thai, ['dang_xu_ly', 'dang_giao', 'da_giao', 'da_hoan_thanh']) ? 'active' : '' }}">
                                     <div class="step-icon"><i class="bi bi-gear"></i></div>
                                     <small>Xử lý</small>
                                 </div>
                                 <div
-                                    class="timeline-step {{ in_array($donHang->trang_thai, ['dang_giao', 'da_giao']) ? 'active' : '' }}">
+                                    class="timeline-step {{ in_array($donHang->trang_thai, ['dang_giao', 'da_giao', 'da_hoan_thanh']) ? 'active' : '' }}">
                                     <div class="step-icon"><i class="bi bi-truck"></i></div>
                                     <small>Giao hàng</small>
                                 </div>
-                                <div class="timeline-step {{ $donHang->trang_thai === 'da_giao' ? 'active' : '' }}">
+                                <div class="timeline-step {{ $donHang->trang_thai === 'da_hoan_thanh' ? 'active' : '' }}">
                                     <div class="step-icon"><i class="bi bi-check2-all"></i></div>
                                     <small>Hoàn tất</small>
                                 </div>
@@ -144,7 +150,7 @@
                                     <thead class="table-light">
                                         <tr>
                                             <th>Sản phẩm</th>
-                                            <th>Biến thể</th>
+<th>Biến thể</th>
                                             <th class="text-center">SL</th>
                                             <th class="text-end">Đơn giá</th>
                                             <th class="text-end">Thành tiền</th>
@@ -182,7 +188,7 @@
                                                     {{ number_format($chiTiet->thanh_tien, 0, ',', '.') }} ₫</td>
                                             </tr>
                                         @endforeach
-                                    </tbody>
+</tbody>
                                 </table>
                             </div>
                         </div>
@@ -230,7 +236,7 @@
                                     <span class="small text-danger">
                                         -{{ number_format($donHang->tien_giam ?? 0, 0, ',', '.') }} ₫
                                     </span>
-                                </div>
+</div>
                                 <div class="d-flex justify-content-between mb-3">
                                     <span class="text-muted small">Phí vận chuyển</span>
                                     <span class="small">
@@ -281,7 +287,7 @@
                                             Đã thanh toán
                                         </span>
                                     @elseif($donHang->trang_thai_thanh_toan === 'that_bai')
-                                        <span class="badge bg-danger-subtle text-danger border border-danger">
+<span class="badge bg-danger-subtle text-danger border border-danger">
                                             Thanh toán thất bại
                                         </span>
                                     @else
@@ -372,7 +378,7 @@
 
     .card {
         border-radius: 12px;
-    }
+}
 
     table th,
     table td {

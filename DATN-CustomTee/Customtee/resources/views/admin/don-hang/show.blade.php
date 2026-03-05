@@ -7,6 +7,7 @@
             'dang_xu_ly' => 'info',
             'dang_giao' => 'primary',
             'da_giao' => 'success',
+            'da_hoan_thanh' => 'success',
             'da_huy' => 'danger',
         ][$donHang->trang_thai] ?? 'secondary';
         $trangThaiTiepTheo = \App\Models\DonHang::trangThaiTiepTheo($donHang->trang_thai);
@@ -24,10 +25,17 @@
             <h2 class="mb-0 text-dark">Chi tiết đơn hàng <span class="text-primary">#{{ $donHang->ma_don_hang }}</span></h2>
             <small class="text-muted"><i class="far fa-clock mr-1"></i>Đặt lúc {{ $donHang->created_at->format('d/m/Y H:i') }}</small>
         </div>
-        <div class="col-auto">
-            <span class="badge badge-{{ $badge }} px-3 py-2" style="font-size: 0.95rem;">
+        <div class="col-auto text-right">
+            <span class="badge badge-{{ $badge }} px-3 py-2 mb-1" style="font-size: 0.95rem;">
                 {{ $tenTrangThaiHienTai }}
             </span>
+            @if($donHang->yeu_cau_tra)
+                <div>
+                    <span class="badge badge-danger px-3 py-1" style="font-size: 0.85rem;">
+                        Yêu cầu trả hàng
+                    </span>
+                </div>
+            @endif
         </div>
     </div>
 <hr>
@@ -53,8 +61,7 @@
                             <h6 class="text-uppercase text-muted small mb-2"><i class="fas fa-user mr-1"></i> Giao hàng</h6>
                             <table class="table table-sm table-borderless mb-0 small">
                                 <tr><td class="text-muted" width="100">Người nhận</td><td>{{ $donHang->ten_nguoi_nhan }}</td></tr>
-                                <tr><td class="text-muted">SĐT</td><td>{{ $donHang->so_dien_thoai_nhan_hang }}</td></tr>
-                                <tr><td class="text-muted">Địa chỉ</td><td>{{ $donHang->dia_chi_chi_tiet }}</td></tr>
+                                <tr><td class="text-muted">SĐT</td><td>{{ $donHang->so_dien_thoai_nhan_hang }}</td></tr><tr><td class="text-muted">Địa chỉ</td><td>{{ $donHang->dia_chi_chi_tiet }}</td></tr>
                                 @if($donHang->nguoiDung)
                                     <tr><td class="text-muted">Tài khoản</td><td>{{ $donHang->nguoiDung->name ?? $donHang->nguoiDung->email }}</td></tr>
                                 @endif
@@ -67,7 +74,7 @@
                                 <tr><td class="text-muted">Giảm giá</td><td class="text-right text-danger">-{{ number_format($donHang->tien_giam ?? 0, 0, ',', '.') }} ₫</td></tr>
                                 <tr><td class="text-muted">Phí ship</td><td class="text-right">{{ number_format($donHang->phi_van_chuyen ?? 0, 0, ',', '.') }} ₫</td></tr>
                             </table>
-                           
+
                         </div>
                     </div>
                     @if($donHang->ghi_chu)
@@ -78,6 +85,23 @@
                         </div>
                         
                     @endif
+                    @if($donHang->yeu_cau_tra)
+                        <div class="row mt-2 pt-2 border-top">
+                            <div class="col-12">
+                                <p class="mb-1">
+                                    <strong class="text-danger">Khách yêu cầu trả hàng</strong>
+                                    @if($donHang->ngay_yeu_cau_tra)
+                                        <span class="text-muted small">
+                                            (lúc {{ $donHang->ngay_yeu_cau_tra->format('d/m/Y H:i') }})
+                                        </span>
+                                    @endif
+                                </p>
+                                @if($donHang->ly_do_tra)
+                                    <p class="small mb-0"><strong class="text-muted">Lý do:</strong> {{ $donHang->ly_do_tra }}</p>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -85,8 +109,7 @@
             <div class="card shadow-sm">
               
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover table-sm mb-0">
+                    <div class="table-responsive"><table class="table table-hover table-sm mb-0">
                             <thead class="thead-light">
                                 <tr class="text-center">
                                     <th width="40">#</th>
@@ -127,8 +150,7 @@
                             </div>
                             <p class="small mt-2 mb-0">
                                 <span class="text-muted">Thanh toán:</span>
-                                {{ $donHang->phuong_thuc_thanh_toan === 'cod' ? 'COD' : ucfirst($donHang->phuong_thuc_thanh_toan) }}
-                                @if($donHang->trang_thai_thanh_toan === 'da_thanh_toan')
+                                {{ $donHang->phuong_thuc_thanh_toan === 'cod' ? 'COD' : ucfirst($donHang->phuong_thuc_thanh_toan) }}@if($donHang->trang_thai_thanh_toan === 'da_thanh_toan')
                                     <span class="badge badge-success ml-1">Đã TT</span>
                                 @elseif($donHang->trang_thai_thanh_toan === 'that_bai')
                                     <span class="badge badge-danger ml-1">Thất bại</span>

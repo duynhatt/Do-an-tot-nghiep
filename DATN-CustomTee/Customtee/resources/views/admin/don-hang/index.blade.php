@@ -36,6 +36,9 @@
                             'dang_giao' => 'Đang giao',
                             'da_giao' => 'Đã giao',
                             'da_huy' => 'Đã hủy',
+                            // Bộ lọc bổ sung
+                            'da_hoan_thanh' => 'Đã hoàn thành',
+                            'tra_hang' => 'Trả hàng',
                         ] as $value => $label)
                             <option value="{{ $value }}" {{ request('trang_thai') === $value ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
@@ -62,7 +65,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($donHangs as $index => $donHang)
+@forelse($donHangs as $index => $donHang)
                     <tr>
                         <td class="text-center align-middle">{{ $donHangs->firstItem() + $index }}</td>
                         <td class="align-middle">
@@ -86,6 +89,7 @@
                                     'dang_xu_ly' => 'info',
                                     'dang_giao' => 'primary',
                                     'da_giao' => 'success',
+                                    'da_hoan_thanh' => 'success',
                                     'da_huy' => 'danger',
                                 ][$donHang->trang_thai] ?? 'secondary';
                             @endphp
@@ -94,11 +98,30 @@
                                     {{ \App\Models\DonHang::tenTrangThai($donHang->trang_thai) }}
                                 </span>
                             </div>
+                            @if($donHang->yeu_cau_tra)
+                                <div class="mt-1">
+                                    <span class="badge badge-danger">Yêu cầu trả hàng</span>
+                                </div>
+                            @endif
                         </td>
                         <td class="text-center align-middle">
-                            <a href="{{ route('admin.don-hang.show', $donHang) }}" class="btn btn-sm btn-info" title="Chi tiết">
-                                <i class="fas fa-eye"></i>
-                            </a>
+                            <div class="d-flex justify-content-center flex-wrap gap-1">
+                                @if($donHang->trang_thai === 'da_giao' && !$donHang->yeu_cau_tra)
+                                    <form action="{{ route('admin.don-hang.update-status', $donHang) }}"
+                                          method="post"
+                                          onsubmit="return confirm('Xác nhận chuyển đơn hàng này sang trạng thái \"Đã hoàn thành\"?');">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="trang_thai" value="da_hoan_thanh">
+                                        <button type="submit" class="btn btn-sm btn-success" title="Xác nhận đã hoàn thành">
+                                            <i class="fas fa-check mr-1"></i> Hoàn thành
+                                        </button>
+                                    </form>
+                                @endif
+                                <a href="{{ route('admin.don-hang.show', $donHang) }}" class="btn btn-sm btn-info" title="Chi tiết">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     @empty
