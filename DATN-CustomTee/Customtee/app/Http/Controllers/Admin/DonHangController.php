@@ -25,11 +25,6 @@ class DonHangController extends Controller
             $query->where('trang_thai', $trangThai);
         }
 
-        // Lọc các đơn có yêu cầu trả hàng (nếu được chọn)
-        if ($request->boolean('yeu_cau_tra')) {
-            $query->where('yeu_cau_tra', true);
-        }
-
         $donHangs = $query->paginate(10)->withQueryString();
 
         return view('admin.don-hang.index', compact('donHangs'));
