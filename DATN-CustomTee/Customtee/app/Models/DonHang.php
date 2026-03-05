@@ -14,6 +14,7 @@ class DonHang extends Model
     const TRANG_THAI_DANG_XU_LY = 'dang_xu_ly';
     const TRANG_THAI_DANG_GIAO = 'dang_giao';
     const TRANG_THAI_DA_GIAO = 'da_giao';
+    const TRANG_THAI_DA_HOAN_THANH = 'da_hoan_thanh';
     const TRANG_THAI_DA_HUY = 'da_huy';
 
     /** Các trạng thái có thể chuyển từ trạng thái hiện tại (admin) */
@@ -21,18 +22,21 @@ class DonHang extends Model
     {
         $map = [
             self::TRANG_THAI_CHO_XAC_NHAN => [
-                self::TRANG_THAI_DANG_XU_LY => 'Đang xử lý',
-                self::TRANG_THAI_DA_HUY => 'Đã hủy',
+                self::TRANG_THAI_DANG_XU_LY   => 'Đang xử lý',
+                self::TRANG_THAI_DA_HUY       => 'Đã hủy',
             ],
             self::TRANG_THAI_DANG_XU_LY => [
-                self::TRANG_THAI_DANG_GIAO => 'Đang giao',
-                self::TRANG_THAI_DA_HUY => 'Đã hủy',
+                self::TRANG_THAI_DANG_GIAO    => 'Đang giao',
+                self::TRANG_THAI_DA_HUY       => 'Đã hủy',
             ],
             self::TRANG_THAI_DANG_GIAO => [
-                self::TRANG_THAI_DA_GIAO => 'Đã giao',
+                self::TRANG_THAI_DA_GIAO      => 'Đã giao',
             ],
-            self::TRANG_THAI_DA_GIAO => [], // Kết thúc
-            self::TRANG_THAI_DA_HUY => [],  // Kết thúc
+            self::TRANG_THAI_DA_GIAO => [
+                self::TRANG_THAI_DA_HOAN_THANH => 'Đã hoàn thành',
+            ],
+            self::TRANG_THAI_DA_HOAN_THANH => [], // Kết thúc
+            self::TRANG_THAI_DA_HUY        => [],  // Kết thúc
         ];
         return $map[$trangThaiHienTai] ?? [];
     }
@@ -41,15 +45,15 @@ class DonHang extends Model
     public static function tenTrangThai(string $trangThai): string
     {
         $ten = [
-            self::TRANG_THAI_CHO_XAC_NHAN => 'Chờ xác nhận',
-            self::TRANG_THAI_DANG_XU_LY => 'Đang xử lý',
-            self::TRANG_THAI_DANG_GIAO => 'Đang giao',
-            self::TRANG_THAI_DA_GIAO => 'Đã giao',
-            self::TRANG_THAI_DA_HUY => 'Đã hủy',
+            self::TRANG_THAI_CHO_XAC_NHAN   => 'Chờ xác nhận',
+            self::TRANG_THAI_DANG_XU_LY     => 'Đang xử lý',
+            self::TRANG_THAI_DANG_GIAO      => 'Đang giao',
+            self::TRANG_THAI_DA_GIAO        => 'Đã giao',
+            self::TRANG_THAI_DA_HOAN_THANH  => 'Đã hoàn thành',
+            self::TRANG_THAI_DA_HUY         => 'Đã hủy',
         ];
         return $ten[$trangThai] ?? $trangThai;
     }
-
     /** Kiểm tra có thể chuyển sang trạng thái mới không */
     public static function coTheChuyenSang(string $tuTrangThai, string $sangTrangThai): bool
     {
@@ -95,20 +99,6 @@ class DonHang extends Model
     {
         return $this->belongsTo(User::class, 'nguoi_dung_id');
     }
-
-    // // Địa chỉ nhận hàng
-    // public function diaChi()
-    // {
-    //     return $this->belongsTo(DiaChi::class, 'dia_chi_id');
-    // }
-
-    // // Voucher
-    // public function voucher()
-    // {
-    //     return $this->belongsTo(Voucher::class, 'voucher_id');
-    // }
-
-    // Chi tiết đơn hàng
     public function chiTietDonHangs()
     {
         return $this->hasMany(ChiTietDonHang::class, 'don_hang_id');

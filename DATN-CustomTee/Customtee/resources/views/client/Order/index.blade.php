@@ -1,3 +1,4 @@
+
 @include('client.layout.header')
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -23,6 +24,9 @@
                     'dang_giao' => ['Đang giao', 'primary'],
                     'da_giao' => ['Đã giao', 'success'],
                     'da_huy' => ['Đã hủy', 'danger'],
+                    // Bộ lọc nâng cao
+                    'da_hoan_thanh' => ['Đã hoàn thành', 'success'],
+                    'tra_hang' => ['Trả hàng', 'secondary'],
                 ];
                 $currentStatus = $currentStatus ?? request('trang_thai');
             @endphp
@@ -50,8 +54,7 @@
                     </li>
 
                     @foreach ($statusTabs as $key => $value)
-                        <li class="nav-item" role="presentation">
-                            <a class="nav-link rounded-pill px-4 py-2 {{ $currentStatus === $key ? 'active' : '' }}"
+                        <li class="nav-item" role="presentation"><a class="nav-link rounded-pill px-4 py-2 {{ $currentStatus === $key ? 'active' : '' }}"
                                 href="{{ route('order', ['trang_thai' => $key]) }}">
                                 {{ $value[0] }}
                             </a>
@@ -85,10 +88,23 @@
                                                         </small>
                                                     </div>
                                                     <div class="d-flex flex-column align-items-end gap-2">
-                                                        <a href="{{ route('order.show', $donHang->id) }}"
-                                                            class="btn btn-outline-primary btn-sm px-4 rounded-pill">
-                                                            Chi tiết <i class="bi bi-arrow-right ms-2"></i>
-                                                        </a>
+                                                        <div class="d-flex flex-wrap justify-content-end gap-2">
+                                                            @if ($donHang->trang_thai === 'da_giao' && !$donHang->yeu_cau_tra)
+                                                                <form action="{{ route('order.confirm', $donHang->id) }}"
+                                                                    method="post"
+                                                                    onsubmit="return confirm('Bạn xác nhận đã nhận đủ hàng và đồng ý hoàn tất đơn này?');">
+                                                                    @csrf<button type="submit"
+                                                                        class="btn btn-success btn-sm px-3 rounded-pill">
+                                                                        <i class="bi bi-check2-circle me-1"></i>
+                                                                        Xác nhận nhận hàng
+                                                                    </button>
+                                                                </form>
+                                                            @endif
+                                                            <a href="{{ route('order.show', $donHang->id) }}"
+                                                                class="btn btn-outline-primary btn-sm px-4 rounded-pill">
+                                                                Chi tiết <i class="bi bi-arrow-right ms-2"></i>
+                                                            </a>
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -111,8 +127,7 @@
 
                                                         <div class="col-md-4 text-md-center">
                                                             <h5 class="fw-bold text-dark mb-1">
-                                                                {{ number_format($donHang->tong_tien, 0, ',', '.') }} ₫
-                                                            </h5>
+                                                                {{ number_format($donHang->tong_tien, 0, ',', '.') }} ₫</h5>
                                                             <small class="text-muted">Tổng thanh toán</small>
                                                         </div>
 
@@ -139,12 +154,16 @@
                                                                         'success',
                                                                         'bi bi-check2-circle',
                                                                     ],
+                                                                    'da_hoan_thanh' => [
+                                                                        'Đã hoàn thành',
+                                                                        'success',
+                                                                        'bi bi-check2-all',
+                                                                    ],
                                                                     'da_huy' => ['Đã hủy', 'danger', 'bi bi-x-circle'],
                                                                 ];
                                                                 $st = $statusMap[$donHang->trang_thai] ?? [
                                                                     'Không xác định',
-                                                                    'secondary',
-                                                                    'bi bi-question-circle',
+                                                                    'secondary','bi bi-question-circle',
                                                                 ];
                                                             @endphp
                                                             <span
@@ -175,8 +194,7 @@
                                                                             </div>
                                                                         @endif
 
-                                                                        <div class="flex-grow-1">
-                                                                            <h6 class="fw-semibold mb-1 text-truncate"
+                                                                        <div class="flex-grow-1"><h6 class="fw-semibold mb-1 text-truncate"
                                                                                 style="max-width: 300px;">
                                                                                 {{ $ct->sanPham->ten_san_pham ?? 'Sản phẩm' }}
                                                                             </h6>
@@ -205,8 +223,7 @@
 
                                                                                 <div>
                                                                                     <span
-                                                                                        class="badge bg-primary-subtle text-primary border">
-                                                                                        x{{ $ct->so_luong }}
+                                                                                        class="badge bg-primary-subtle text-primary border">x{{ $ct->so_luong }}
                                                                                     </span>
                                                                                 </div>
                                                                             </div>
@@ -240,8 +257,7 @@
                                                                 <i class="bi bi-ticket-perforated me-1"></i>Đã áp dụng
                                                                 voucher
                                                             </small>
-                                                        @endif
-                                                    </div>
+                                                        @endif</div>
                                                 </div>
                                             </div>
                                         </div>
