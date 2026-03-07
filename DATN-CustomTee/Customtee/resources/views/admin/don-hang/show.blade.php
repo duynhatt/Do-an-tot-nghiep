@@ -150,12 +150,12 @@
                             </div>
                             <p class="small mt-2 mb-0">
                                 <span class="text-muted">Thanh toán:</span>
-                                {{ $donHang->phuong_thuc_thanh_toan === 'cod' ? 'COD' : ucfirst($donHang->phuong_thuc_thanh_toan) }}@if($donHang->trang_thai_thanh_toan === 'da_thanh_toan')
+                                {{ $donHang->phuong_thuc_thanh_toan === 'cod' ? 'COD' : ucfirst($donHang->phuong_thuc_thanh_toan) }}@if($donHang->trang_thai_thanh_toan === 'da_thanh_toan' || $donHang->trang_thai === 'da_hoan_thanh')
                                     <span class="badge badge-success ml-1">Đã TT</span>
                                 @elseif($donHang->trang_thai_thanh_toan === 'that_bai')
                                     <span class="badge badge-danger ml-1">Thất bại</span>
                                 @else
-                                    {{-- <span class="badge badge-warning ml-1">Chưa thanh toán</span> --}}
+                                    <span class="badge badge-warning ml-1">Chưa TT</span>
                                 @endif
                             </p>
                     </div>

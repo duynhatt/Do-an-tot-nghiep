@@ -151,7 +151,7 @@ class CheckoutController extends Controller
                 'trang_thai_thanh_toan'  => 'chua_thanh_toan',
                 'trang_thai'             => 'cho_xac_nhan',
                 'ghi_chu'                => $request->note,
-                'dia_chi_chi_tiet'       => $request->address,
+                'dia_chi_chi_tiet'       => $fullAddress,
                 'so_dien_thoai_nhan_hang' => $request->phone,
                 'ten_nguoi_nhan'         => $request->full_name,
             ]);

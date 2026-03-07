@@ -35,11 +35,17 @@ class DashboardController extends Controller
 
         $topCustomers = $this->getTopCustomers(8, $startDate, $endDate);
 
+        $ordersByStatus = $this->getOrdersByStatus($startDate, $endDate);
+
+        $topProducts = $this->getTopProducts(10, $startDate, $endDate);
+
         return view('admin.dashboard.index', compact(
             'stats',
             'revenueByDate',
             'revenueByCategory',
             'topCustomers',
+            'ordersByStatus',
+            'topProducts',
             'period',
             'startDate',
             'endDate'
@@ -171,6 +177,59 @@ class DashboardController extends Controller
             )
             ->groupBy('users.id', 'users.name', 'users.phone')
             ->orderByDesc('total_revenue')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Đếm đơn hàng theo từng trạng thái trong khoảng thời gian.
+     */
+    private function getOrdersByStatus($start, $end)
+    {
+        $statuses = [
+            DonHang::TRANG_THAI_CHO_XAC_NHAN,
+            DonHang::TRANG_THAI_DANG_XU_LY,
+            DonHang::TRANG_THAI_DANG_GIAO,
+            DonHang::TRANG_THAI_DA_GIAO,
+            DonHang::TRANG_THAI_DA_HOAN_THANH,
+            DonHang::TRANG_THAI_DA_HUY,
+        ];
+
+        $counts = DonHang::query()
+            ->whereBetween('created_at', [$start, $end])
+            ->select('trang_thai', DB::raw('COUNT(*) as count'))
+            ->groupBy('trang_thai')
+            ->pluck('count', 'trang_thai')
+            ->toArray();
+
+        $result = [];
+        foreach ($statuses as $status) {
+            $result[$status] = (int) ($counts[$status] ?? 0);
+        }
+        return $result;
+    }
+
+    /**
+     * Top sản phẩm bán chạy (theo số lượng & doanh thu) trong đơn đã giao/hoàn thành.
+     */
+    private function getTopProducts($limit = 10, $start, $end)
+    {
+        return ChiTietDonHang::query()
+            ->join('don_hangs', 'don_hang_chi_tiets.don_hang_id', '=', 'don_hangs.id')
+            ->join('san_phams', 'don_hang_chi_tiets.san_pham_id', '=', 'san_phams.id')
+            ->whereBetween('don_hangs.created_at', [$start, $end])
+            ->whereIn('don_hangs.trang_thai', [
+                DonHang::TRANG_THAI_DA_GIAO,
+                DonHang::TRANG_THAI_DA_HOAN_THANH
+            ])
+            ->select(
+                'san_phams.id',
+                'san_phams.ten_san_pham',
+                DB::raw('SUM(don_hang_chi_tiets.so_luong) as total_quantity'),
+                DB::raw('SUM(don_hang_chi_tiets.thanh_tien) as total_revenue')
+            )
+            ->groupBy('san_phams.id', 'san_phams.ten_san_pham')
+            ->orderByDesc('total_quantity')
             ->limit($limit)
             ->get();
     }

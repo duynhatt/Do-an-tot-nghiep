@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\DonHang;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DonHangController extends Controller
 {
@@ -77,7 +78,24 @@ class DonHangController extends Controller
             return back()->with('error', 'Không thể chuyển từ "' . DonHang::tenTrangThai($donHang->trang_thai) . '" sang "' . DonHang::tenTrangThai($trangThaiMoi) . '".');
         }
 
-        $donHang->update(['trang_thai' => $trangThaiMoi]);
+        $payload = ['trang_thai' => $trangThaiMoi];
+        if ($trangThaiMoi === DonHang::TRANG_THAI_DA_HOAN_THANH) {
+            $payload['trang_thai_thanh_toan'] = 'da_thanh_toan';
+        }
+
+        if ($trangThaiMoi === DonHang::TRANG_THAI_DA_HUY) {
+            DB::transaction(function () use ($donHang, $payload) {
+                $donHang->load('chiTietDonHangs.bienThe');
+                foreach ($donHang->chiTietDonHangs as $ct) {
+                    if ($ct->bienThe) {
+                        $ct->bienThe->increment('so_luong', $ct->so_luong);
+                    }
+                }
+                $donHang->update($payload);
+            });
+        } else {
+            $donHang->update($payload);
+        }
 
         return back()->with('success', 'Đã cập nhật trạng thái đơn hàng thành "' . DonHang::tenTrangThai($trangThaiMoi) . '".');
     }
