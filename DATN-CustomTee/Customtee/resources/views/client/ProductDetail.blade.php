@@ -1,16 +1,18 @@
 @include('client.layout.header')
 
-<nav aria-label="breadcrumb" class="my-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Trang chủ</a></li>
-        <li class="breadcrumb-item">
-            <a href="#" class="text-decoration-none">
-                {{ $sanPham->category->ten_danh_muc ?? 'Danh mục' }}
-            </a>
-        </li>
-        <li class="breadcrumb-item active" aria-current="page">{{ $sanPham->ten_san_pham }}</li>
-    </ol>
-</nav>
+<div class="container">
+    <nav aria-label="breadcrumb" class="my-4">
+        <ol class="breadcrumb bg-transparent p-0 mb-0">
+            <li class="breadcrumb-item"><a href="{{ url('/') }}" class="text-decoration-none">Trang chủ</a></li>
+            <li class="breadcrumb-item">
+                <a href="{{ url('/Shop') }}" class="text-decoration-none">
+                    {{ $sanPham->category->ten_danh_muc ?? 'Danh mục' }}
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ $sanPham->ten_san_pham }}</li>
+        </ol>
+    </nav>
+</div>
 
 <div class="container my-5">
     <div class="row g-5">
@@ -166,6 +168,7 @@
         const phanTramGiam = document.getElementById('phan-tram-giam');
         const tonKhoInfo = document.getElementById('ton-kho-info');
         const addToCartBtn = document.getElementById('btn-add-to-cart');
+        const buyNowBtn = document.getElementById('btn-buy-now');
 
         let selectedColor = null;
         let selectedSize = null;
@@ -289,6 +292,58 @@
             })
             .catch(() => alert('Có lỗi xảy ra. Vui lòng thử lại.'))
             .finally(() => { addToCartBtn.disabled = false; });
+        });
+
+        buyNowBtn.addEventListener('click', function() {
+            if (!selectedColor || !selectedSize) {
+                alert('Vui lòng chọn màu sắc và kích thước!');
+                return;
+            }
+            if (!currentVariantId) {
+                alert('Vui lòng chọn lại màu và kích thước.');
+                return;
+            }
+            const qty = parseInt(document.getElementById('quantity').value, 10) || 1;
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!token) {
+                alert('Phiên đăng nhập hết hạn. Vui lòng tải lại trang.');
+                return;
+            }
+            buyNowBtn.disabled = true;
+            fetch('{{ route("gio-hang.store") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    san_pham_id: {{ $sanPham->id }},
+                    bien_the_id: currentVariantId,
+                    so_luong: qty
+                })
+            })
+            .then(r => {
+                if (r.status === 401) {
+                    window.location.href = '{{ url("/login") }}';
+                    return;
+                }
+                return r.json();
+            })
+            .then(data => {
+                if (!data) return;
+                if (data.success && data.cart_item_id) {
+                    window.location.href = '{{ route("dat-hang") }}?items=' + data.cart_item_id;
+                } else if (data.success) {
+                    alert(data.message || 'Đã thêm vào giỏ hàng!');
+                } else {
+                    const msg = (data.errors && Object.values(data.errors).flat().length) ? Object.values(data.errors).flat().join('\n') : (data.message || 'Có lỗi xảy ra.');
+                    alert(msg);
+                }
+            })
+            .catch(() => alert('Có lỗi xảy ra. Vui lòng thử lại.'))
+            .finally(() => { buyNowBtn.disabled = false; });
         });
     });
 </script>

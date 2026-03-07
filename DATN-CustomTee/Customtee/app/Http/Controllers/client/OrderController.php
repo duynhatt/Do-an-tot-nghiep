@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DonHang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
@@ -74,7 +75,15 @@ class OrderController extends Controller
             return back()->with('error', 'Không thể hủy đơn hàng này.');
         }
 
-        $donHang->update(['trang_thai' => DonHang::TRANG_THAI_DA_HUY]);
+        DB::transaction(function () use ($donHang) {
+            $donHang->load('chiTietDonHangs.bienThe');
+            foreach ($donHang->chiTietDonHangs as $ct) {
+                if ($ct->bienThe) {
+                    $ct->bienThe->increment('so_luong', $ct->so_luong);
+                }
+            }
+            $donHang->update(['trang_thai' => DonHang::TRANG_THAI_DA_HUY]);
+        });
 
         return back()->with('success', 'Đơn hàng đã được hủy.');
     }
@@ -103,6 +112,7 @@ class OrderController extends Controller
 
         $donHang->update([
             'trang_thai' => DonHang::TRANG_THAI_DA_HOAN_THANH,
+            'trang_thai_thanh_toan' => 'da_thanh_toan',
         ]);
 
         return back()->with('success', 'Cảm ơn bạn đã xác nhận. Đơn hàng đã được chuyển sang trạng thái "Đã hoàn thành".');

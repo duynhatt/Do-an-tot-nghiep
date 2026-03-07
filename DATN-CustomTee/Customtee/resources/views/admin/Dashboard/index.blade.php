@@ -186,6 +186,33 @@
                 </div>
             </div>
 
+            {{-- Đơn hàng theo trạng thái --}}
+            <div class="mb-5">
+                <h5 class="fw-semibold mb-3">Đơn hàng theo trạng thái</h5>
+                <div class="row g-3">
+                    @php
+                        $statusLabels = [
+                            'cho_xac_nhan' => ['Chờ xác nhận', 'warning'],
+                            'dang_xu_ly' => ['Đang xử lý', 'info'],
+                            'dang_giao' => ['Đang giao', 'primary'],
+                            'da_giao' => ['Đã giao', 'info'],
+                            'da_hoan_thanh' => ['Đã hoàn thành', 'success'],
+                            'da_huy' => ['Đã hủy', 'danger'],
+                        ];
+                    @endphp
+                    @foreach ($statusLabels as $statusKey => $label)
+                        <div class="col-6 col-md-4 col-lg-2">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center py-3">
+                                    <div class="text-muted small mb-1">{{ $label[0] }}</div>
+                                    <div class="fw-bold fs-4 text-{{ $label[1] }}">{{ $ordersByStatus[$statusKey] ?? 0 }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
             <div class="row g-4">
                 <div class="col-xl-8">
                     <div class="chart-container">
@@ -210,6 +237,38 @@
                     <div class="chart-container h-100">
                         <h5 class="fw-semibold mb-4">Cơ cấu doanh thu theo danh mục</h5>
                         <canvas id="categoryChart" height="180"></canvas>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="chart-container">
+                        <h5 class="fw-semibold mb-4">Top sản phẩm bán chạy</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Sản phẩm</th>
+                                        <th class="text-end">Số lượng bán</th>
+                                        <th class="text-end">Doanh thu</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($topProducts as $index => $product)
+                                        <tr>
+                                            <td>{{ $index + 1 }}</td>
+                                            <td><strong>{{ $product->ten_san_pham }}</strong></td>
+                                            <td class="text-end">{{ number_format($product->total_quantity) }}</td>
+                                            <td class="text-end fw-bold">{{ number_format($product->total_revenue, 0, ',', '.') }} ₫</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted py-4">Chưa có dữ liệu trong khoảng thời gian này</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 

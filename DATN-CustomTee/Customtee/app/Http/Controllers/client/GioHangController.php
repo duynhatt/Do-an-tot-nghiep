@@ -92,27 +92,32 @@ class GioHangController extends Controller
                 ]);
             }
             $existing->so_luong = $newSoLuong;
-            // Cập nhật lại giá theo thời điểm hiện tại để tránh giá cũ
             $existing->don_gia = $donGia;
             $existing->thanh_tien = $newSoLuong * $donGia;
             $existing->save();
             $message = 'Đã cập nhật số lượng trong giỏ hàng.';
+            $cartItemId = $existing->id;
         } else {
-            GioHang::create([
+            $item = GioHang::create([
                 'nguoi_dung_id' => Auth::id(),
                 'san_pham_id'   => $validated['san_pham_id'],
                 'bien_the_id'   => $validated['bien_the_id'],
-                'thiet_ke_ao_id' => null, // Đảm bảo là sản phẩm thường
+                'thiet_ke_ao_id' => null,
                 'so_luong'      => $validated['so_luong'],
                 'don_gia'       => $donGia,
                 'thanh_tien'    => $validated['so_luong'] * $donGia,
                 'trang_thai'    => GioHang::TRANG_THAI_DANG_TRONG_GIO,
             ]);
             $message = 'Đã thêm vào giỏ hàng.';
+            $cartItemId = $item->id;
         }
 
         if ($request->wantsJson()) {
-            return response()->json(['success' => true, 'message' => $message]);
+            return response()->json([
+                'success'      => true,
+                'message'      => $message,
+                'cart_item_id' => $cartItemId,
+            ]);
         }
 
         return redirect()->route('gio-hang.index')->with('success', $message);

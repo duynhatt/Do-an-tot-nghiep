@@ -282,12 +282,12 @@ class="timeline-step {{ in_array($donHang->trang_thai, ['dang_xu_ly', 'dang_giao
                                     </span>
                                 </div>
                                 <small class="d-block mt-1">
-                                    @if ($donHang->trang_thai_thanh_toan === 'da_thanh_toan')
+                                    @if ($donHang->trang_thai_thanh_toan === 'da_thanh_toan' || $donHang->trang_thai === 'da_hoan_thanh')
                                         <span class="badge bg-success-subtle text-success border border-success">
                                             Đã thanh toán
                                         </span>
                                     @elseif($donHang->trang_thai_thanh_toan === 'that_bai')
-<span class="badge bg-danger-subtle text-danger border border-danger">
+                                        <span class="badge bg-danger-subtle text-danger border border-danger">
                                             Thanh toán thất bại
                                         </span>
                                     @else
