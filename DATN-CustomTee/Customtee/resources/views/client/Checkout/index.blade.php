@@ -64,6 +64,7 @@
 </style>
 
 <div class="checkout-container">
+
     @if ($errors->any())
     <div class="alert alert-danger">
         <ul>
@@ -73,6 +74,7 @@
         </ul>
     </div>
     @endif
+
     <div class="container">
         <h2 class="text-center mb-5 fw-bold text-dark">THANH TOÁN</h2>
 
@@ -178,7 +180,7 @@
 
                                     <div class="payment-option" data-method="online">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="payment_method" id="online" value="online" required>
+                                            <input class="form-check-input" type="radio" name="payment_method" id="online" value="vnpay" required>
                                             <label class="form-check-label fw-bold" for="online">
                                                 Thanh toán online
                                             </label>
