@@ -10,7 +10,11 @@
             'da_hoan_thanh' => 'success',
             'da_huy' => 'danger',
         ][$donHang->trang_thai] ?? 'secondary';
+
         $trangThaiTiepTheo = \App\Models\DonHang::trangThaiTiepTheo($donHang->trang_thai);
+        // Không cho admin chuyển đơn sang "Đã hoàn thành" – chỉ khách mới được xác nhận
+        unset($trangThaiTiepTheo[\App\Models\DonHang::TRANG_THAI_DA_HOAN_THANH]);
+
         $tenTrangThaiHienTai = \App\Models\DonHang::tenTrangThai($donHang->trang_thai);
     @endphp
 

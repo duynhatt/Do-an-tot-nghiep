@@ -106,18 +106,6 @@
                         </td>
                         <td class="text-center align-middle">
                             <div class="d-flex justify-content-center flex-wrap gap-1">
-                                @if($donHang->trang_thai === 'da_giao' && !$donHang->yeu_cau_tra)
-                                    <form action="{{ route('admin.don-hang.update-status', $donHang) }}"
-                                          method="post"
-                                          onsubmit="return confirm('Xác nhận chuyển đơn hàng này sang trạng thái \"Đã hoàn thành\"?');">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="trang_thai" value="da_hoan_thanh">
-                                        <button type="submit" class="btn btn-sm btn-success" title="Xác nhận đã hoàn thành">
-                                            <i class="fas fa-check mr-1"></i> Hoàn thành
-                                        </button>
-                                    </form>
-                                @endif
                                 <a href="{{ route('admin.don-hang.show', $donHang) }}" class="btn btn-sm btn-info" title="Chi tiết">
                                     <i class="fas fa-eye"></i>
                                 </a>

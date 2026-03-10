@@ -74,6 +74,11 @@ class DonHangController extends Controller
 
         $trangThaiMoi = $request->trang_thai;
 
+        // Chặn admin chuyển đơn sang "đã hoàn thành" – chỉ khách hàng được xác nhận nhận hàng
+        if ($trangThaiMoi === DonHang::TRANG_THAI_DA_HOAN_THANH) {
+            return back()->with('error', 'Chỉ khách hàng mới có thể xác nhận hoàn thành đơn hàng.');
+        }
+
         if (!DonHang::coTheChuyenSang($donHang->trang_thai, $trangThaiMoi)) {
             return back()->with('error', 'Không thể chuyển từ "' . DonHang::tenTrangThai($donHang->trang_thai) . '" sang "' . DonHang::tenTrangThai($trangThaiMoi) . '".');
         }
