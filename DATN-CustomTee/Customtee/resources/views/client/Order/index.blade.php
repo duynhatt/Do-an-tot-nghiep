@@ -1,8 +1,6 @@
-
 @include('client.layout.header')
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
 <div class="container py-5 my-3 my-md-5">
     <div class="row justify-content-center">
         <div class="col-lg-11 col-xl-10">
@@ -54,7 +52,8 @@
                     </li>
 
                     @foreach ($statusTabs as $key => $value)
-                        <li class="nav-item" role="presentation"><a class="nav-link rounded-pill px-4 py-2 {{ $currentStatus === $key ? 'active' : '' }}"
+                        <li class="nav-item" role="presentation"><a
+                                class="nav-link rounded-pill px-4 py-2 {{ $currentStatus === $key ? 'active' : '' }}"
                                 href="{{ route('order', ['trang_thai' => $key]) }}">
                                 {{ $value[0] }}
                             </a>
@@ -73,194 +72,186 @@
                         </div>
                     @else
                         @foreach ($donHangs as $donHang)
-                                        <div class="col-12">
-                                            <div
-                                                class="card border-0 shadow hover-lift rounded-4 overflow-hidden transition-all">
-                                                <div
-                                                    class="card-header bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center">
-                                                    <div>
-                                                        <h5 class="mb-0 fw-bold text-dark">
-                                                            Mã đơn: <span
-                                                                class="text-primary">{{ $donHang->ma_don_hang }}</span>
-                                                        </h5>
-                                                        <small class="text-muted">
-                                                            Đặt lúc {{ $donHang->created_at->format('d/m/Y H:i') }}
-                                                        </small>
+                            <div class="col-12">
+                                <div class="card border-0 shadow hover-lift rounded-4 overflow-hidden transition-all">
+                                    <div
+                                        class="card-header bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-0 fw-bold text-dark">
+                                                Mã đơn: <span class="text-primary">{{ $donHang->ma_don_hang }}</span>
+                                            </h5>
+                                            <small class="text-muted">
+                                                Đặt lúc {{ $donHang->created_at->format('d/m/Y H:i') }}
+                                            </small>
+                                        </div>
+                                        <div class="d-flex flex-column align-items-end gap-2">
+                                            <div class="d-flex flex-wrap justify-content-end gap-2">
+                                                @if ($donHang->trang_thai === 'da_giao' && !$donHang->yeu_cau_tra)
+                                                    <form action="{{ route('order.confirm', $donHang->id) }}"
+                                                        method="post"
+                                                        onsubmit="return confirm('Bạn xác nhận đã nhận đủ hàng và đồng ý hoàn tất đơn này?');">
+                                                        @csrf<button type="submit"
+                                                            class="btn btn-success btn-sm px-3 rounded-pill">
+                                                            <i class="bi bi-check2-circle me-1"></i>
+                                                            Xác nhận nhận hàng
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                                @if ($donHang->trang_thai_thanh_toan === 'chua_thanh_toan' && $donHang->trang_thai !== 'da_huy')
+                                                    <a href="{{ route('order.repay', $donHang->id) }}"
+                                                        class="btn btn-danger btn-sm px-3 rounded-pill">
+                                                        <i class="bi bi-credit-card me-1"></i>
+                                                        Thanh toán lại
+                                                    </a>
+                                                @endif
+                                                <a href="{{ route('order.show', $donHang->id) }}"
+                                                    class="btn btn-outline-primary btn-sm px-4 rounded-pill">
+                                                    Chi tiết <i class="bi bi-arrow-right ms-2"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card-body p-4">
+                                        <div class="row g-4 align-items-center mb-4">
+                                            <div class="col-md-4">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm"
+                                                        style="width: 64px; height: 64px;">
+                                                        <i class="bi bi-bag-fill text-primary fs-3"></i>
                                                     </div>
-                                                    <div class="d-flex flex-column align-items-end gap-2">
-                                                        <div class="d-flex flex-wrap justify-content-end gap-2">
-                                                            @if ($donHang->trang_thai === 'da_giao' && !$donHang->yeu_cau_tra)
-                                                                <form action="{{ route('order.confirm', $donHang->id) }}"
-                                                                    method="post"
-                                                                    onsubmit="return confirm('Bạn xác nhận đã nhận đủ hàng và đồng ý hoàn tất đơn này?');">
-                                                                    @csrf<button type="submit"
-                                                                        class="btn btn-success btn-sm px-3 rounded-pill">
-                                                                        <i class="bi bi-check2-circle me-1"></i>
-                                                                        Xác nhận nhận hàng
-                                                                    </button>
-                                                                </form>
-                                                            @endif
-                                                            <a href="{{ route('order.show', $donHang->id) }}"
-                                                                class="btn btn-outline-primary btn-sm px-4 rounded-pill">
-                                                                Chi tiết <i class="bi bi-arrow-right ms-2"></i>
-                                                            </a>
-                                                        </div>
+                                                    <div>
+                                                        <h6 class="fw-bold mb-1">
+                                                            {{ $donHang->chiTietDonHangs->count() }} sản
+                                                            phẩm</h6>
+                                                        <small class="text-muted">Tổng cộng</small>
                                                     </div>
                                                 </div>
+                                            </div>
 
-                                                <div class="card-body p-4">
-                                                    <div class="row g-4 align-items-center mb-4">
-                                                        <div class="col-md-4">
-                                                            <div class="d-flex align-items-center">
-                                                                <div class="bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm"
-                                                                    style="width: 64px; height: 64px;">
-                                                                    <i class="bi bi-bag-fill text-primary fs-3"></i>
+                                            <div class="col-md-4 text-md-center">
+                                                <h5 class="fw-bold text-dark mb-1">
+                                                    {{ number_format($donHang->tong_tien, 0, ',', '.') }} ₫</h5>
+                                                <small class="text-muted">Tổng thanh toán</small>
+                                            </div>
+
+                                            <div class="col-md-4 d-flex justify-content-md-end">
+                                                @php
+                                                    $statusMap = [
+                                                        'cho_xac_nhan' => [
+                                                            'Chờ xác nhận',
+                                                            'warning',
+                                                            'bi bi-hourglass-split',
+                                                        ],
+                                                        'dang_xu_ly' => ['Đang xử lý', 'info', 'bi bi-gear'],
+                                                        'dang_giao' => ['Đang giao', 'primary', 'bi bi-truck'],
+                                                        'da_giao' => ['Đã giao', 'success', 'bi bi-check2-circle'],
+                                                        'da_hoan_thanh' => [
+                                                            'Đã hoàn thành',
+                                                            'success',
+                                                            'bi bi-check2-all',
+                                                        ],
+                                                        'da_huy' => ['Đã hủy', 'danger', 'bi bi-x-circle'],
+                                                    ];
+                                                    $st = $statusMap[$donHang->trang_thai] ?? [
+                                                        'Không xác định',
+                                                        'secondary',
+                                                        'bi bi-question-circle',
+                                                    ];
+                                                @endphp
+                                                <span
+                                                    class="badge bg-{{ $st[1] }}-subtle text-{{ $st[1] }} border border-{{ $st[1] }} fs-6 px-4 py-2 d-flex align-items-center rounded-pill">
+                                                    <i class="{{ $st[2] }} me-2 fs-5"></i>
+                                                    {{ $st[0] }}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-3">
+                                            <h6 class="fw-semibold mb-3">Sản phẩm trong đơn</h6>
+                                            <div class="row g-3">
+                                                @foreach ($donHang->chiTietDonHangs as $ct)
+                                                    <div class="col-12">
+                                                        <div
+                                                            class="d-flex align-items-start gap-3 bg-light rounded-3 p-3 hover-bg-white transition-all border">
+                                                            @if ($ct->sanPham->hinh_anh_chinh ?? false)
+                                                                <img src="{{ asset('storage/' . $ct->sanPham->hinh_anh_chinh) }}"
+                                                                    alt="{{ $ct->sanPham->ten_san_pham }}"
+                                                                    class="rounded object-fit-cover flex-shrink-0"
+                                                                    style="width: 80px; height: 80px; border: 1px solid #e9ecef;">
+                                                            @else
+                                                                <div class="bg-secondary-subtle rounded d-flex align-items-center justify-content-center flex-shrink-0"
+                                                                    style="width: 80px; height: 80px;">
+                                                                    <i class="bi bi-image text-secondary fs-4"></i>
                                                                 </div>
-                                                                <div>
-                                                                    <h6 class="fw-bold mb-1">
-                                                                        {{ $donHang->chiTietDonHangs->count() }} sản
-                                                                        phẩm</h6>
-                                                                    <small class="text-muted">Tổng cộng</small>
+                                                            @endif
+
+                                                            <div class="flex-grow-1">
+                                                                <h6 class="fw-semibold mb-1 text-truncate"
+                                                                    style="max-width: 300px;">
+                                                                    {{ $ct->sanPham->ten_san_pham ?? 'Sản phẩm' }}
+                                                                </h6>
+
+                                                                <div class="d-flex flex-wrap gap-3 mb-2 small">
+                                                                    @if ($ct->bienThe && $ct->bienThe->color)
+                                                                        <div class="d-flex align-items-center gap-2">
+                                                                            <div class="rounded-circle border shadow-sm"
+                                                                                style="width: 18px; height: 18px; background-color: {{ $ct->bienThe->color->ma_mau ?? '#ccc' }}; border: 1px solid #dee2e6;">
+                                                                            </div>
+                                                                            <span>{{ $ct->bienThe->color->ten_mau ?? 'Không có màu' }}</span>
+                                                                        </div>
+                                                                    @endif
+
+                                                                    @if ($ct->bienThe && $ct->bienThe->size)
+                                                                        <div>
+                                                                            <span
+                                                                                class="badge bg-secondary-subtle text-secondary border">
+                                                                                Size:
+                                                                                {{ $ct->bienThe->size->ten_kich_thuoc ?? '—' }}
+                                                                            </span>
+                                                                        </div>
+                                                                    @endif
+
+                                                                    <div>
+                                                                        <span
+                                                                            class="badge bg-primary-subtle text-primary border">x{{ $ct->so_luong }}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="fw-medium text-dark">
+                                                                    {{ number_format($ct->thanh_tien, 0, ',', '.') }}
+                                                                    ₫
+                                                                    <small class="text-muted ms-2">
+                                                                        ({{ number_format($ct->don_gia, 0, ',', '.') }}
+                                                                        ₫ × {{ $ct->so_luong }})
+                                                                    </small>
                                                                 </div>
                                                             </div>
                                                         </div>
-
-                                                        <div class="col-md-4 text-md-center">
-                                                            <h5 class="fw-bold text-dark mb-1">
-                                                                {{ number_format($donHang->tong_tien, 0, ',', '.') }} ₫</h5>
-                                                            <small class="text-muted">Tổng thanh toán</small>
-                                                        </div>
-
-                                                        <div class="col-md-4 d-flex justify-content-md-end">
-                                                            @php
-                                                                $statusMap = [
-                                                                    'cho_xac_nhan' => [
-                                                                        'Chờ xác nhận',
-                                                                        'warning',
-                                                                        'bi bi-hourglass-split',
-                                                                    ],
-                                                                    'dang_xu_ly' => [
-                                                                        'Đang xử lý',
-                                                                        'info',
-                                                                        'bi bi-gear',
-                                                                    ],
-                                                                    'dang_giao' => [
-                                                                        'Đang giao',
-                                                                        'primary',
-                                                                        'bi bi-truck',
-                                                                    ],
-                                                                    'da_giao' => [
-                                                                        'Đã giao',
-                                                                        'success',
-                                                                        'bi bi-check2-circle',
-                                                                    ],
-                                                                    'da_hoan_thanh' => [
-                                                                        'Đã hoàn thành',
-                                                                        'success',
-                                                                        'bi bi-check2-all',
-                                                                    ],
-                                                                    'da_huy' => ['Đã hủy', 'danger', 'bi bi-x-circle'],
-                                                                ];
-                                                                $st = $statusMap[$donHang->trang_thai] ?? [
-                                                                    'Không xác định',
-                                                                    'secondary','bi bi-question-circle',
-                                                                ];
-                                                            @endphp
-                                                            <span
-                                                                class="badge bg-{{ $st[1] }}-subtle text-{{ $st[1] }} border border-{{ $st[1] }} fs-6 px-4 py-2 d-flex align-items-center rounded-pill">
-                                                                <i class="{{ $st[2] }} me-2 fs-5"></i>
-                                                                {{ $st[0] }}
-                                                            </span>
-                                                        </div>
                                                     </div>
-
-                                                    <div class="mt-3">
-                                                        <h6 class="fw-semibold mb-3">Sản phẩm trong đơn</h6>
-                                                        <div class="row g-3">
-                                                            @foreach ($donHang->chiTietDonHangs as $ct)
-                                                                <div class="col-12">
-                                                                    <div
-                                                                        class="d-flex align-items-start gap-3 bg-light rounded-3 p-3 hover-bg-white transition-all border">
-                                                                        @if ($ct->sanPham->hinh_anh_chinh ?? false)
-                                                                            <img src="{{ asset('storage/' . $ct->sanPham->hinh_anh_chinh) }}"
-                                                                                alt="{{ $ct->sanPham->ten_san_pham }}"
-                                                                                class="rounded object-fit-cover flex-shrink-0"
-                                                                                style="width: 80px; height: 80px; border: 1px solid #e9ecef;">
-                                                                        @else
-                                                                            <div class="bg-secondary-subtle rounded d-flex align-items-center justify-content-center flex-shrink-0"
-                                                                                style="width: 80px; height: 80px;">
-                                                                                <i
-                                                                                    class="bi bi-image text-secondary fs-4"></i>
-                                                                            </div>
-                                                                        @endif
-
-                                                                        <div class="flex-grow-1"><h6 class="fw-semibold mb-1 text-truncate"
-                                                                                style="max-width: 300px;">
-                                                                                {{ $ct->sanPham->ten_san_pham ?? 'Sản phẩm' }}
-                                                                            </h6>
-
-                                                                            <div
-                                                                                class="d-flex flex-wrap gap-3 mb-2 small">
-                                                                                @if ($ct->bienThe && $ct->bienThe->color)
-                                                                                    <div
-                                                                                        class="d-flex align-items-center gap-2">
-                                                                                        <div class="rounded-circle border shadow-sm"
-                                                                                            style="width: 18px; height: 18px; background-color: {{ $ct->bienThe->color->ma_mau ?? '#ccc' }}; border: 1px solid #dee2e6;">
-                                                                                        </div>
-                                                                                        <span>{{ $ct->bienThe->color->ten_mau ?? 'Không có màu' }}</span>
-                                                                                    </div>
-                                                                                @endif
-
-                                                                                @if ($ct->bienThe && $ct->bienThe->size)
-                                                                                    <div>
-                                                                                        <span
-                                                                                            class="badge bg-secondary-subtle text-secondary border">
-                                                                                            Size:
-                                                                                            {{ $ct->bienThe->size->ten_kich_thuoc ?? '—' }}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                @endif
-
-                                                                                <div>
-                                                                                    <span
-                                                                                        class="badge bg-primary-subtle text-primary border">x{{ $ct->so_luong }}
-                                                                                    </span>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <div class="fw-medium text-dark">
-                                                                                {{ number_format($ct->thanh_tien, 0, ',', '.') }}
-                                                                                ₫
-                                                                                <small class="text-muted ms-2">
-                                                                                    ({{ number_format($ct->don_gia, 0, ',', '.') }}
-                                                                                    ₫ × {{ $ct->so_luong }})
-                                                                                </small>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            @endforeach
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div class="card-footer bg-light border-0 px-4 py-3">
-                                                    <div
-                                                        class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                                                        <small class="text-muted">
-                                                            <i class="bi bi-credit-card-2-front me-1"></i>
-                                                            {{ $donHang->phuong_thuc_thanh_toan === 'cod' ? 'Thanh toán khi nhận hàng' : ucfirst(str_replace('_', ' ', $donHang->phuong_thuc_thanh_toan)) }}
-                                                        </small>
-                                                        @if ($donHang->voucher_id)
-                                                            <small
-                                                                class="badge bg-success-subtle text-success border border-success rounded-pill px-3">
-                                                                <i class="bi bi-ticket-perforated me-1"></i>Đã áp dụng
-                                                                voucher
-                                                            </small>
-                                                        @endif</div>
-                                                </div>
+                                                @endforeach
                                             </div>
                                         </div>
+                                    </div>
+
+                                    <div class="card-footer bg-light border-0 px-4 py-3">
+                                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                            <small class="text-muted">
+                                                <i class="bi bi-credit-card-2-front me-1"></i>
+                                                {{ $donHang->phuong_thuc_thanh_toan === 'cod' ? 'Thanh toán khi nhận hàng' : ucfirst(str_replace('_', ' ', $donHang->phuong_thuc_thanh_toan)) }}
+                                            </small>
+                                            @if ($donHang->voucher_id)
+                                                <small
+                                                    class="badge bg-success-subtle text-success border border-success rounded-pill px-3">
+                                                    <i class="bi bi-ticket-perforated me-1"></i>Đã áp dụng
+                                                    voucher
+                                                </small>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         @endforeach
                     @endif
                 </div>

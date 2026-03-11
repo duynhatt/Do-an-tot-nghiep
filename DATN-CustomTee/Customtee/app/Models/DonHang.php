@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+
+use function Symfony\Component\Clock\now;
 
 class DonHang extends Model
 {
@@ -102,5 +105,32 @@ class DonHang extends Model
     public function chiTietDonHangs()
     {
         return $this->hasMany(ChiTietDonHang::class, 'don_hang_id');
+    }
+
+    public function checkAutoCancel()
+    {
+        if (
+            $this->trang_thai_thanh_toan === 'chua_thanh_toan' &&
+            $this->trang_thai === 'cho_xac_nhan' &&
+            $this->created_at->addMinutes(15)->isPast()
+        ) {
+
+            DB::transaction(function () {
+
+                foreach ($this->chiTietDonHangs as $item) {
+
+                    if ($item->bienThe) {
+                        $item->bienThe->increment('so_luong', $item->so_luong);
+                    }
+                }
+
+                $this->update([
+                    'trang_thai' => 'da_huy',
+                    'ly_do_tra' => 'Hết hạn thanh toán',
+                    'ngay_yeu_cau_tra' => now(),
+                    'ghi_chu' => 'Tự động hủy đơn hàng vì khách hàng quá hạn thanh toán'
+                ]);
+            });
+        }
     }
 }

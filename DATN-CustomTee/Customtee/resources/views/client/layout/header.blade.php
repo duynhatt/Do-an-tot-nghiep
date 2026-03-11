@@ -22,10 +22,58 @@
 
     <link rel="stylesheet" href="{{ asset('css/fontawesome.min.css') }}">
 
-  
+
 </head>
 
 <body>
+    <style>
+        .custom-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            min-width: 250px;
+            max-width: 320px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 9999;
+            animation: slideIn 0.4s ease;
+        }
+
+        .custom-toast.success {
+            background: #28a745;
+        }
+
+        .custom-toast.error {
+            background: #dc3545;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .fade-out {
+            animation: fadeOut 0.5s forwards;
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+        }
+    </style>
+
 
     <!-- Header -->
     <nav class="navbar navbar-expand-lg navbar-light shadow">
@@ -153,6 +201,18 @@
     </nav>
     <!-- Close Header -->
 
+    @if (session('success'))
+        <div class="custom-toast success">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="custom-toast error">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <!-- Modal -->
     <div class="modal fade bg-white" id="templatemo_search" tabindex="-1" role="dialog"
         aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -171,3 +231,13 @@
             </form>
         </div>
     </div>
+    <script>
+        setTimeout(function() {
+            const toasts = document.querySelectorAll('.custom-toast');
+            toasts.forEach(function(toast) {
+                toast.classList.add('fade-out');
+                setTimeout(() => toast.remove(), 500);
+            });
+        }, 3000);
+    </script>
+</body>

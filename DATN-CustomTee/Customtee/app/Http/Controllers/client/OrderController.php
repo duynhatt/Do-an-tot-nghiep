@@ -38,6 +38,10 @@ class OrderController extends Controller
 
         $donHangs = $query->paginate(8)->withQueryString();
 
+        foreach ($donHangs as $order) {
+            $order->checkAutoCancel();
+        }
+
         return view('client.order.index', [
             'donHangs' => $donHangs,
             'currentStatus' => $trangThai,
