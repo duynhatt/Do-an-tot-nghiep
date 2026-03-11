@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\BienThe;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -24,7 +25,7 @@ class DashboardController extends Controller
             '30days'  => Carbon::now()->subDays(30),
             '90days'  => Carbon::now()->subDays(90),
             'thisyear' => Carbon::now()->startOfYear(),
-            default   => Carbon::now()->subDays(7), 
+            default   => Carbon::now()->subDays(7),
         };
 
         $stats = $this->getQuickStats($startDate, $endDate);
@@ -39,6 +40,14 @@ class DashboardController extends Controller
 
         $topProducts = $this->getTopProducts(10, $startDate, $endDate);
 
+        $lowStockVariants = BienThe::with('sanPham')
+            ->where('so_luong', '<', 10)
+            ->orderBy('so_luong')
+            ->take(5)
+            ->get();
+
+        $lowStockCount = BienThe::where('so_luong', '<', 10)->count();
+
         return view('admin.dashboard.index', compact(
             'stats',
             'revenueByDate',
@@ -48,10 +57,11 @@ class DashboardController extends Controller
             'topProducts',
             'period',
             'startDate',
-            'endDate'
+            'endDate',
+            'lowStockVariants',
+            'lowStockCount'
         ));
     }
-
 
     private function getQuickStats($start, $end)
     {
@@ -79,7 +89,6 @@ class DashboardController extends Controller
             'conversion_rate' => $conversionRate . '%',
         ];
     }
-
 
     private function getRevenueByDate($start, $end)
     {
@@ -181,9 +190,6 @@ class DashboardController extends Controller
             ->get();
     }
 
-    /**
-     * Đếm đơn hàng theo từng trạng thái trong khoảng thời gian.
-     */
     private function getOrdersByStatus($start, $end)
     {
         $statuses = [
@@ -209,9 +215,6 @@ class DashboardController extends Controller
         return $result;
     }
 
-    /**
-     * Top sản phẩm bán chạy (theo số lượng & doanh thu) trong đơn đã giao/hoàn thành.
-     */
     private function getTopProducts($limit = 10, $start, $end)
     {
         return ChiTietDonHang::query()
@@ -232,5 +235,40 @@ class DashboardController extends Controller
             ->orderByDesc('total_quantity')
             ->limit($limit)
             ->get();
+    }
+
+    public function ordersByStatus(Request $request)
+    {
+        $status = $request->status;
+
+        $donHangs = DonHang::with('nguoiDung')
+            ->where('trang_thai', $status)
+            ->latest()
+            ->paginate(5, [
+                'id',
+                'ma_don_hang',
+                'ten_nguoi_nhan',
+                'so_dien_thoai_nhan_hang',
+                'tong_tien',
+                'trang_thai',
+                'trang_thai_thanh_toan',
+                'created_at'
+            ]);
+
+        return response()->json($donHangs);
+    }
+
+    public function lowStockVariants(Request $request)
+    {
+        $variants = BienThe::with([
+            'product.category',
+            'color',
+            'size'
+        ])
+            ->where('so_luong', '<', 10)
+            ->orderBy('so_luong')
+            ->paginate(5);
+
+        return response()->json($variants);
     }
 }

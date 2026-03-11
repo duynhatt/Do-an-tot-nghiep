@@ -7,6 +7,9 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <link rel="stylesheet" href="{{ asset('AdminAssets/css/bootstrap.min.css') }}">
+
 
         <style>
             :root {
@@ -104,6 +107,99 @@
                     padding: 1.5rem;
                 }
             }
+
+            #orderStatusModal .modal-header {
+                background: #3c8dbc;
+                color: white;
+            }
+
+            #orderStatusModal table {
+                font-size: 14px;
+            }
+
+            #orderStatusModal tbody tr:hover {
+                background: #f5f5f5;
+                cursor: pointer;
+            }
+
+            .badge-status {
+                padding: 6px 10px;
+                border-radius: 8px;
+                font-size: 12px;
+                font-weight: 500;
+            }
+
+            .status-cho_xac_nhan {
+                background: #fef3c7;
+                color: #b45309;
+            }
+
+            .status-dang_xu_ly {
+                background: #dbeafe;
+                color: #1d4ed8;
+            }
+
+            .status-dang_giao {
+                background: #e0e7ff;
+                color: #4338ca;
+            }
+
+            .status-da_giao {
+                background: #cffafe;
+                color: #0e7490;
+            }
+
+            .status-da_hoan_thanh {
+                background: #dcfce7;
+                color: #15803d;
+            }
+
+            .status-da_huy {
+                background: #fee2e2;
+                color: #b91c1c;
+            }
+
+            .badge-payment-paid {
+                background: #dcfce7;
+                color: #15803d;
+                padding: 5px 10px;
+                border-radius: 8px;
+                font-size: 12px;
+            }
+
+            .badge-payment-unpaid {
+                background: #fee2e2;
+                color: #b91c1c;
+                padding: 5px 10px;
+                border-radius: 8px;
+                font-size: 12px;
+            }
+
+            #orderStatusModal table {
+                font-size: 14px;
+            }
+
+            #orderStatusModal th,
+            #orderStatusModal td {
+                white-space: nowrap;
+                vertical-align: middle;
+            }
+
+            #orderStatusModal td:first-child a {
+                font-weight: 600;
+                color: #2563eb;
+            }
+
+            #orderStatusModal table {
+                width: 100%;
+                table-layout: auto;
+            }
+
+            #orderStatusModal th,
+            #orderStatusModal td {
+                white-space: nowrap;
+                vertical-align: middle;
+            }
         </style>
     </head>
 
@@ -126,67 +222,92 @@
                 </div>
             </div>
 
-            <div class="row g-4 mb-5">
-                <div class="col-xl-3 col-md-6">
+            <div class="row mb-5">
+
+                <div class="col">
                     <div class="card h-100">
                         <div class="stat-header">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-1 text-white-75 fw-medium">Doanh thu</h6>
-                                    <h3 class="mb-0 fw-bold">₫ {{ $stats['revenue'] }}</h3>
+                            <div class="clearfix">
+                                <div style="float:left">
+                                    <h6 class="mb-1 text-white-75">Doanh thu</h6>
+                                    <h3>₫ {{ $stats['revenue'] }}</h3>
                                 </div>
-                                <i class="fas fa-coins fa-2x text-white opacity-75"></i>
+                                <i class="fas fa-coins fa-2x text-white" style="float:right"></i>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6">
+                <div class="col">
                     <div class="card h-100">
                         <div class="stat-header"
                             style="background: linear-gradient(135deg, var(--success) 0%, #059669 100%);">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-1 text-white-75 fw-medium">Đơn hàng</h6>
-                                    <h3 class="mb-0 fw-bold">{{ $stats['orders_count'] }}</h3>
+                            <div class="clearfix">
+                                <div style="float:left">
+                                    <h6>Đơn hàng</h6>
+                                    <h3>{{ $stats['orders_count'] }}</h3>
                                 </div>
-                                <i class="fas fa-shopping-bag fa-2x text-white opacity-75"></i>
+                                <i class="fas fa-shopping-bag fa-2x text-white" style="float:right"></i>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6">
+                <div class="col">
                     <div class="card h-100">
                         <div class="stat-header" style="background: linear-gradient(135deg, var(--info) 0%, #2563eb 100%);">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-1 text-white-75 fw-medium">Khách mới</h6>
-                                    <h3 class="mb-0 fw-bold">{{ $stats['new_customers'] }}</h3>
+                            <div class="clearfix">
+                                <div style="float:left">
+                                    <h6>Khách mới</h6>
+                                    <h3>{{ $stats['new_customers'] }}</h3>
                                 </div>
-                                <i class="fas fa-user-plus fa-2x text-white opacity-75"></i>
+                                <i class="fas fa-user-plus fa-2x text-white" style="float:right"></i>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6">
+                <div class="col">
                     <div class="card h-100">
                         <div class="stat-header"
                             style="background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-1 text-white-75 fw-medium">Tỷ lệ chuyển đổi</h6>
-                                    <h3 class="mb-0 fw-bold">{{ $stats['conversion_rate'] }}</h3>
+                            <div class="clearfix">
+                                <div style="float:left">
+                                    <h6>Tỷ lệ chuyển đổi</h6>
+                                    <h3>{{ $stats['conversion_rate'] }}</h3>
                                 </div>
-                                <i class="fas fa-percentage fa-2x text-white opacity-75"></i>
+                                <i class="fas fa-percentage fa-2x text-white" style="float:right"></i>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <div class="col">
+
+                    <div class="card h-100 low-stock-card" style="cursor:pointer" data-toggle="modal"
+                        data-target="#lowStockModal">
+
+                        <div class="stat-header" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);">
+
+                            <div class="clearfix">
+
+                                <div style="float:left">
+                                    <h6>Sắp hết hàng</h6>
+                                    <h3>{{ $lowStockCount }}</h3>
+                                </div>
+
+                                <i class="fas fa-exclamation-triangle fa-2x text-white" style="float:right"></i>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
             </div>
 
-            {{-- Đơn hàng theo trạng thái --}}
             <div class="mb-5">
                 <h5 class="fw-semibold mb-3">Đơn hàng theo trạng thái</h5>
                 <div class="row g-3">
@@ -201,12 +322,17 @@
                         ];
                     @endphp
                     @foreach ($statusLabels as $statusKey => $label)
-                        <div class="col-6 col-md-4 col-lg-2">
-                            <div class="card h-100 border-0 shadow-sm">
-                                <div class="card-body text-center py-3">
-                                    <div class="text-muted small mb-1">{{ $label[0] }}</div>
-                                    <div class="fw-bold fs-4 text-{{ $label[1] }}">{{ $ordersByStatus[$statusKey] ?? 0 }}</div>
+                        <div class="col-md-2">
+                            <div class="card order-status-card" style="cursor:pointer" data-status="{{ $statusKey }}"
+                                data-status-name="{{ $label[0] }}" data-toggle="modal" data-target="#orderStatusModal">
+
+                                <div class="card-body text-center">
+                                    <div class="text-muted small">{{ $label[0] }}</div>
+                                    <div class="fw-bold text-{{ $label[1] }}">
+                                        {{ $ordersByStatus[$statusKey] ?? 0 }}
+                                    </div>
                                 </div>
+
                             </div>
                         </div>
                     @endforeach
@@ -259,11 +385,13 @@
                                             <td>{{ $index + 1 }}</td>
                                             <td><strong>{{ $product->ten_san_pham }}</strong></td>
                                             <td class="text-end">{{ number_format($product->total_quantity) }}</td>
-                                            <td class="text-end fw-bold">{{ number_format($product->total_revenue, 0, ',', '.') }} ₫</td>
+                                            <td class="text-end fw-bold">
+                                                {{ number_format($product->total_revenue, 0, ',', '.') }} ₫</td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="4" class="text-center text-muted py-4">Chưa có dữ liệu trong khoảng thời gian này</td>
+                                            <td colspan="4" class="text-center text-muted py-4">Chưa có dữ liệu trong
+                                                khoảng thời gian này</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
@@ -314,15 +442,103 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Modal các đơn hàng theo trạng thái --}}
+            <div class="modal fade" id="orderStatusModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered modal-xl" style="width: auto">
+                    <div class="modal-content">
+
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-bold">
+                                Danh sách đơn hàng - <span id="modalStatusName"></span>
+                            </h5>
+                        </div>
+
+                        <div class="modal-body">
+
+                            <div class="table-responsive">
+
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Mã đơn</th>
+                                            <th>Khách hàng</th>
+                                            <th>SĐT</th>
+                                            <th class="text-end">Tổng tiền</th>
+                                            <th>Trạng thái</th>
+                                            <th>Thanh toán</th>
+                                            <th>Ngày đặt</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody id="ordersTableBody"></tbody>
+
+                                </table>
+
+                            </div>
+
+                            <div class="d-flex justify-content-center mt-3">
+                                <ul class="pagination" id="ordersPagination"></ul>
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            {{-- Modal các biến thể sản phẩm có số lượng < 10 --}}
+            <div class="modal fade" id="lowStockModal" tabindex="-1">
+
+                <div class="modal-dialog modal-dialog-centered modal-xl" style="width: auto">
+
+                    <div class="modal-content">
+
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title fw-bold">
+                                Sản phẩm sắp hết hàng
+                            </h5>
+                        </div>
+
+                        <div class="modal-body">
+
+                            <div class="table-responsive">
+
+                                <table class="table table-hover align-middle">
+
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Ảnh</th>
+                                            <th>Sản phẩm</th>
+                                            <th>Danh mục</th>
+                                            <th>Màu</th>
+                                            <th>Kích thước</th>
+                                            <th>Giá</th>
+                                            <th>Giá KM</th>
+                                            <th>Số lượng</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody id="lowStockTableBody"></tbody>
+
+                                </table>
+
+                            </div>
+
+                            <div class="d-flex justify-content-center mt-3">
+                                <ul class="pagination" id="lowStockPagination"></ul>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
         </main>
 
         <script>
-            function toggleTheme() {
-                const body = document.body;
-                const current = body.getAttribute('data-theme');
-                body.setAttribute('data-theme', current === 'dark' ? '' : 'dark');
-            }
-
             const ctxRevenue = document.getElementById('revenueChart').getContext('2d');
             new Chart(ctxRevenue, {
                 type: 'line',
@@ -417,8 +633,260 @@
                     }
                 }
             });
+
+            let currentStatus = '';
+
+            $('.order-status-card').click(function() {
+
+                let status = $(this).data('status');
+                let statusName = $(this).data('status-name');
+
+                $('#modalStatusName').text(statusName);
+
+                currentStatus = status;
+
+                loadOrders(status, 1);
+
+            });
+
+
+            function loadOrders(status, page = 1) {
+
+                $('#ordersTableBody').html(
+                    '<tr><td colspan="7" class="text-center py-3">Đang tải...</td></tr>'
+                );
+
+                $.get("{{ route('admin.dashboard.orders-by-status') }}", {
+                    status: status,
+                    page: page
+                }, function(res) {
+
+                    let html = '';
+
+                    const statusMap = {
+                        'cho_xac_nhan': 'Chờ xác nhận',
+                        'dang_xu_ly': 'Đang xử lý',
+                        'dang_giao': 'Đang giao',
+                        'da_giao': 'Đã giao',
+                        'da_hoan_thanh': 'Đã hoàn thành',
+                        'da_huy': 'Đã hủy'
+                    };
+
+                    if (res.data.length === 0) {
+
+                        html = `<tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                    Không có đơn hàng
+                    </td>
+                    </tr>`;
+
+                    } else {
+
+                        res.data.forEach(order => {
+
+                            let statusBadge = `
+                <span class="badge-status status-${order.trang_thai}">
+                    ${statusMap[order.trang_thai]}
+                </span>
+                `;
+
+                            let paymentBadge = order.trang_thai_thanh_toan === 'da_thanh_toan' ?
+                                '<span class="badge-payment-paid">Đã thanh toán</span>' :
+                                '<span class="badge-payment-unpaid">Chưa thanh toán</span>';
+
+                            html += `
+                <tr onclick="window.location='/admin/don-hang/${order.id}'" style="cursor:pointer">
+
+                <td>
+                <a class="fw-semibold text-primary" href="/admin/don-hang/${order.id}">
+                ${order.ma_don_hang}
+                </a>
+                </td>
+
+                <td>${order.ten_nguoi_nhan}</td>
+
+                <td>${order.so_dien_thoai_nhan_hang}</td>
+
+                <td class="text-end fw-bold">
+                ${Number(order.tong_tien).toLocaleString()} ₫
+                </td>
+
+                <td>${statusBadge}</td>
+
+                <td>${paymentBadge}</td>
+
+                <td>
+                ${new Date(order.created_at).toLocaleDateString('vi-VN')}
+                </td>
+
+                </tr>`;
+                        });
+                    }
+
+                    $('#ordersTableBody').html(html);
+
+                    renderPagination(res);
+                });
+            }
+
+
+            function renderPagination(res) {
+
+                let html = '';
+
+                if (res.last_page > 1) {
+
+                    for (let i = 1; i <= res.last_page; i++) {
+
+                        html += `
+                            <li class="page-item ${i === res.current_page ? 'active' : ''}">
+                                <a class="page-link" href="#" onclick="loadOrders('${currentStatus}', ${i}); return false;">
+                                ${i}
+                                </a>
+                            </li>`;
+                    }
+
+                }
+
+                $('#ordersPagination').html(html);
+            }
+
+            let lowStockPage = 1;
+
+            $('.low-stock-card').click(function() {
+
+                $('#lowStockModal').modal('show');
+
+                loadLowStock(1);
+
+            });
+
+
+            function loadLowStock(page = 1) {
+
+                $('#lowStockTableBody').html(
+                    '<tr><td colspan="8" class="text-center py-3">Đang tải...</td></tr>'
+                );
+
+                $.get("{{ route('admin.dashboard.low-stock-variants') }}", {
+                    page: page
+                }, function(res) {
+
+                    let html = '';
+
+                    if (res.data.length === 0) {
+
+                        html = `
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">
+                                    Không có sản phẩm sắp hết hàng
+                                </td>
+                            </tr>`;
+
+                    } else {
+
+                        res.data.forEach(variant => {
+
+                            let image = variant.product?.hinh_anh_chinh ?
+                                `/storage/${variant.product.hinh_anh_chinh}` :
+                                '/images/no-image.png';
+
+                            let category = variant.product?.category?.ten_danh_muc ?? '-';
+
+                            let colorName = variant.color?.ten_mau ?? '-';
+                            let colorCode = variant.color?.ma_mau ?? '#ccc';
+
+                            let size = variant.size?.ten_kich_thuoc ?? '-';
+
+                            let price = Number(variant.gia).toLocaleString();
+
+                            let salePrice = variant.gia_khuyen_mai ?
+                                Number(variant.gia_khuyen_mai).toLocaleString() + ' ₫' :
+                                '-';
+
+                            let stockClass = variant.so_luong < 5 ? 'text-danger' : 'text-warning';
+
+                            html += `
+                                <tr onclick="window.location='{{ url('admin/variants/edit') }}/${variant.id}'"
+                                    style="cursor:pointer">
+
+                                    <td>
+                                        <img src="${image}"
+                                            style="width:50px;height:50px;object-fit:cover;border-radius:6px">
+                                    </td>
+
+                                    <td>
+                                        <strong>${variant.product?.ten_san_pham ?? '-'}</strong>
+                                    </td>
+
+                                    <td>
+                                        ${category}
+                                    </td>
+
+                                    <td>
+                                        <span style="
+                                            display:inline-block;
+                                            width:18px;
+                                            height:18px;
+                                            background:${colorCode};
+                                            border-radius:4px;
+                                            margin-right:6px;
+                                            border:1px solid #ddd;
+                                        "></span>
+                                        ${colorName}
+                                    </td>
+
+                                    <td>
+                                        ${size}
+                                    </td>
+
+                                    <td class="fw-bold">
+                                        ${price} ₫
+                                    </td>
+
+                                    <td class="text-success fw-bold">
+                                        ${salePrice}
+                                    </td>
+
+                                    <td class="fw-bold ${stockClass}">
+                                        ${variant.so_luong}
+                                    </td>
+
+                                </tr>`;
+                        });
+
+                    }
+
+                    $('#lowStockTableBody').html(html);
+
+                    renderLowStockPagination(res);
+
+                });
+
+            }
+
+            function renderLowStockPagination(res) {
+
+                let html = '';
+
+                if (res.last_page > 1) {
+
+                    for (let i = 1; i <= res.last_page; i++) {
+
+                        html += `
+                            <li class="page-item ${i === res.current_page ? 'active' : ''}">
+                                <a class="page-link" href="#" onclick="loadLowStock(${i}); return false;">
+                                ${i}
+                                </a>
+                            </li>`;
+                    }
+
+                }
+
+                $('#lowStockPagination').html(html);
+
+            }
         </script>
 
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     </body>
 @endsection
