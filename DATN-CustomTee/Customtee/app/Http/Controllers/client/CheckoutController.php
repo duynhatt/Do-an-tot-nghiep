@@ -192,7 +192,7 @@ class CheckoutController extends Controller
                 $vnp_BankCode   = 'NCB';
 
                 $vnp_CreateDate = now();
-                $vnp_ExpireDate = $vnp_CreateDate->copy()->addMinute(1);
+                $vnp_ExpireDate = $vnp_CreateDate->copy()->addMinute(5);
                 $inputData = [
                     "vnp_Version"    => "2.1.0",
                     "vnp_TmnCode"    => $vnp_TmnCode,
