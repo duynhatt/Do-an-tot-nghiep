@@ -154,5 +154,8 @@ Route::get('/admin/variants/by-product/{id}', function ($id) {
     ]);
 })->middleware(['auth', 'admin']);
 
-Route::get('/admin/dashboard/orders-by-status', [DashboardController::class,'ordersByStatus'])
-->name('admin.dashboard.orders-by-status');
+Route::get('/admin/dashboard/orders-by-status', [DashboardController::class, 'ordersByStatus'])
+    ->name('admin.dashboard.orders-by-status');
+
+Route::get('/admin/dashboard/low-stock-variants', [DashboardController::class, 'lowStockVariants'])
+    ->name('admin.dashboard.low-stock-variants');

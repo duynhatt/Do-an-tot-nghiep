@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\BienThe;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -39,7 +40,13 @@ class DashboardController extends Controller
 
         $topProducts = $this->getTopProducts(10, $startDate, $endDate);
 
-        Log::info($topProducts);
+        $lowStockVariants = BienThe::with('sanPham')
+            ->where('so_luong', '<', 10)
+            ->orderBy('so_luong')
+            ->take(5)
+            ->get();
+
+        $lowStockCount = BienThe::where('so_luong', '<', 10)->count();
 
         return view('admin.dashboard.index', compact(
             'stats',
@@ -50,7 +57,9 @@ class DashboardController extends Controller
             'topProducts',
             'period',
             'startDate',
-            'endDate'
+            'endDate',
+            'lowStockVariants',
+            'lowStockCount'
         ));
     }
 
@@ -247,5 +256,19 @@ class DashboardController extends Controller
             ]);
 
         return response()->json($donHangs);
+    }
+
+    public function lowStockVariants(Request $request)
+    {
+        $variants = BienThe::with([
+            'product.category',
+            'color',
+            'size'
+        ])
+            ->where('so_luong', '<', 10)
+            ->orderBy('so_luong')
+            ->paginate(5);
+
+        return response()->json($variants);
     }
 }

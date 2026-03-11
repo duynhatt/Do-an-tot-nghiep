@@ -224,7 +224,7 @@
 
             <div class="row mb-5">
 
-                <div class="col-md-3">
+                <div class="col">
                     <div class="card h-100">
                         <div class="stat-header">
                             <div class="clearfix">
@@ -238,7 +238,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col">
                     <div class="card h-100">
                         <div class="stat-header"
                             style="background: linear-gradient(135deg, var(--success) 0%, #059669 100%);">
@@ -253,7 +253,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col">
                     <div class="card h-100">
                         <div class="stat-header" style="background: linear-gradient(135deg, var(--info) 0%, #2563eb 100%);">
                             <div class="clearfix">
@@ -267,7 +267,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col">
                     <div class="card h-100">
                         <div class="stat-header"
                             style="background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);">
@@ -280,6 +280,30 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div class="col">
+
+                    <div class="card h-100 low-stock-card" style="cursor:pointer" data-toggle="modal"
+                        data-target="#lowStockModal">
+
+                        <div class="stat-header" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);">
+
+                            <div class="clearfix">
+
+                                <div style="float:left">
+                                    <h6>Sắp hết hàng</h6>
+                                    <h3>{{ $lowStockCount }}</h3>
+                                </div>
+
+                                <i class="fas fa-exclamation-triangle fa-2x text-white" style="float:right"></i>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
                 </div>
 
             </div>
@@ -419,6 +443,7 @@
                 </div>
             </div>
 
+            {{-- Modal các đơn hàng theo trạng thái --}}
             <div class="modal fade" id="orderStatusModal" tabindex="-1">
                 <div class="modal-dialog modal-dialog-centered modal-xl" style="width: auto">
                     <div class="modal-content">
@@ -460,6 +485,56 @@
 
                     </div>
                 </div>
+            </div>
+
+            {{-- Modal các biến thể sản phẩm có số lượng < 10 --}}
+            <div class="modal fade" id="lowStockModal" tabindex="-1">
+
+                <div class="modal-dialog modal-dialog-centered modal-xl" style="width: auto">
+
+                    <div class="modal-content">
+
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title fw-bold">
+                                Sản phẩm sắp hết hàng
+                            </h5>
+                        </div>
+
+                        <div class="modal-body">
+
+                            <div class="table-responsive">
+
+                                <table class="table table-hover align-middle">
+
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Ảnh</th>
+                                            <th>Sản phẩm</th>
+                                            <th>Danh mục</th>
+                                            <th>Màu</th>
+                                            <th>Kích thước</th>
+                                            <th>Giá</th>
+                                            <th>Giá KM</th>
+                                            <th>Số lượng</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody id="lowStockTableBody"></tbody>
+
+                                </table>
+
+                            </div>
+
+                            <div class="d-flex justify-content-center mt-3">
+                                <ul class="pagination" id="lowStockPagination"></ul>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
             </div>
         </main>
 
@@ -674,6 +749,142 @@
                 }
 
                 $('#ordersPagination').html(html);
+            }
+
+            let lowStockPage = 1;
+
+            $('.low-stock-card').click(function() {
+
+                $('#lowStockModal').modal('show');
+
+                loadLowStock(1);
+
+            });
+
+
+            function loadLowStock(page = 1) {
+
+                $('#lowStockTableBody').html(
+                    '<tr><td colspan="8" class="text-center py-3">Đang tải...</td></tr>'
+                );
+
+                $.get("{{ route('admin.dashboard.low-stock-variants') }}", {
+                    page: page
+                }, function(res) {
+
+                    let html = '';
+
+                    if (res.data.length === 0) {
+
+                        html = `
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">
+                                    Không có sản phẩm sắp hết hàng
+                                </td>
+                            </tr>`;
+
+                    } else {
+
+                        res.data.forEach(variant => {
+
+                            let image = variant.product?.hinh_anh_chinh ?
+                                `/storage/${variant.product.hinh_anh_chinh}` :
+                                '/images/no-image.png';
+
+                            let category = variant.product?.category?.ten_danh_muc ?? '-';
+
+                            let colorName = variant.color?.ten_mau ?? '-';
+                            let colorCode = variant.color?.ma_mau ?? '#ccc';
+
+                            let size = variant.size?.ten_kich_thuoc ?? '-';
+
+                            let price = Number(variant.gia).toLocaleString();
+
+                            let salePrice = variant.gia_khuyen_mai ?
+                                Number(variant.gia_khuyen_mai).toLocaleString() + ' ₫' :
+                                '-';
+
+                            let stockClass = variant.so_luong < 5 ? 'text-danger' : 'text-warning';
+
+                            html += `
+                                <tr onclick="window.location='{{ url('admin/variants/edit') }}/${variant.id}'"
+                                    style="cursor:pointer">
+
+                                    <td>
+                                        <img src="${image}"
+                                            style="width:50px;height:50px;object-fit:cover;border-radius:6px">
+                                    </td>
+
+                                    <td>
+                                        <strong>${variant.product?.ten_san_pham ?? '-'}</strong>
+                                    </td>
+
+                                    <td>
+                                        ${category}
+                                    </td>
+
+                                    <td>
+                                        <span style="
+                                            display:inline-block;
+                                            width:18px;
+                                            height:18px;
+                                            background:${colorCode};
+                                            border-radius:4px;
+                                            margin-right:6px;
+                                            border:1px solid #ddd;
+                                        "></span>
+                                        ${colorName}
+                                    </td>
+
+                                    <td>
+                                        ${size}
+                                    </td>
+
+                                    <td class="fw-bold">
+                                        ${price} ₫
+                                    </td>
+
+                                    <td class="text-success fw-bold">
+                                        ${salePrice}
+                                    </td>
+
+                                    <td class="fw-bold ${stockClass}">
+                                        ${variant.so_luong}
+                                    </td>
+
+                                </tr>`;
+                        });
+
+                    }
+
+                    $('#lowStockTableBody').html(html);
+
+                    renderLowStockPagination(res);
+
+                });
+
+            }
+
+            function renderLowStockPagination(res) {
+
+                let html = '';
+
+                if (res.last_page > 1) {
+
+                    for (let i = 1; i <= res.last_page; i++) {
+
+                        html += `
+                            <li class="page-item ${i === res.current_page ? 'active' : ''}">
+                                <a class="page-link" href="#" onclick="loadLowStock(${i}); return false;">
+                                ${i}
+                                </a>
+                            </li>`;
+                    }
+
+                }
+
+                $('#lowStockPagination').html(html);
+
             }
         </script>
 
