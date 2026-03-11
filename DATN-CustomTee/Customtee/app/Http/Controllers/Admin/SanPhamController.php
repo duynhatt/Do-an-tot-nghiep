@@ -16,13 +16,34 @@ class SanPhamController extends Controller
 {
     public function index()
     {
-        $sanPhams = SanPham::with('danhMuc')->orderBy('id', 'desc')->get();
+        $sanPhams = SanPham::query()
+            ->with([
+                'danhMuc',
+                'variants' => function ($query) {
+                    $query->select('san_pham_id', 'so_luong', 'trang_thai');
+                }
+            ])
+            ->orderBy('id', 'desc')
+            ->get();
 
-        $danhMucs = Category::where('trang_thai', 1)->get();
-        $colors = MauSac::all();
-        $sizes = KichThuoc::all();
+        $danhMucs = Category::where('trang_thai', 1)
+            ->orderBy('ten_danh_muc')
+            ->get();
 
-        return view('admin.product.list', compact('sanPhams', 'danhMucs', 'colors', 'sizes'));
+        $colors = MauSac::where('trang_thai', 1)
+            ->orderBy('ten_mau')
+            ->get();
+
+        $sizes = KichThuoc::where('trang_thai', 1)
+            ->orderBy('ten_kich_thuoc')
+            ->get();
+
+        return view('admin.product.list', compact(
+            'sanPhams',
+            'danhMucs',
+            'colors',
+            'sizes'
+        ));
     }
 
     public function create()
