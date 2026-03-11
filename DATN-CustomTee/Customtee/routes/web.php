@@ -95,6 +95,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('dat-hang');
     Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
     Route::get('/checkout/vnpay/return', [CheckoutController::class, 'vnpayReturn'])->name('vnpay.return');
+    Route::get('/order/{id}/repay', [CheckoutController::class, 'repay'])
+    ->name('order.repay');
 
     Route::get('/order/success/{ma_don_hang}', function ($ma_don_hang) {
         $donHang = \App\Models\DonHang::where('ma_don_hang', $ma_don_hang)->firstOrFail();
