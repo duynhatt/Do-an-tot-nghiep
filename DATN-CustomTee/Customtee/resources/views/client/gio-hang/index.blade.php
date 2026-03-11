@@ -49,7 +49,8 @@
                 $maxStock = $item->bienThe ? $item->bienThe->so_luong : 0;
                 $isOutOfStock = $maxStock < 1;
                     $displayQty=$isOutOfStock ? 0 : $item->so_luong;
-                    $isChecked = !$isOutOfStock && (!$useSelection || isset($selectedSet[$item->id]));
+                    // Mặc định không chọn: chỉ chọn khi đã có lưu session và item nằm trong danh sách đã chọn
+                    $isChecked = !$isOutOfStock && $useSelection && isset($selectedSet[$item->id]);
                     @endphp
                     <tr data-item-id="{{ $item->id }}">
                         <td class="text-center">

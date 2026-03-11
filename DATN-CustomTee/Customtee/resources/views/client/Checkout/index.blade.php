@@ -217,11 +217,11 @@
                                             Color: {{ $item->bienThe->color->ten_mau ?? 'N/A' }}
                                         </span>
                                         <span class="fw-bold text-danger">
-                                            × {{ $item->so_luong }}
+                                            × {{ $item->checkout_qty ?? $item->so_luong }}
                                         </span>
                                     </small>
                                     <div class="fw-bold text-primary mt-1">
-                                        {{ number_format($item->thanh_tien) }} ₫
+                                        {{ number_format($item->checkout_thanh_tien ?? $item->thanh_tien) }} ₫
                                     </div>
                                 </div>
                             </div>

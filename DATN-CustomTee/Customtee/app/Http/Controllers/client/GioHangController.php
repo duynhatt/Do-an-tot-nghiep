@@ -86,17 +86,29 @@ class GioHangController extends Controller
 
         if ($existing) {
             $newSoLuong = $existing->so_luong + $validated['so_luong'];
+            $buyNow = $request->boolean('buy_now');
             if ($newSoLuong > $soLuongTon) {
-                throw ValidationException::withMessages([
-                    'so_luong' => "Tổng số lượng vượt tồn kho (tối đa {$soLuongTon}).",
-                ]);
+                if ($buyNow) {
+                    // Mua ngay: đã có trong giỏ (có thể đủ tồn kho), chỉ cần trả cart_item_id để chuyển checkout
+                    $existing->syncGiaMoi();
+                    if ($existing->isDirty()) {
+                        $existing->save();
+                    }
+                    $cartItemId = $existing->id;
+                    $message = 'Chuyển đến thanh toán.';
+                } else {
+                    throw ValidationException::withMessages([
+                        'so_luong' => "Tổng số lượng vượt tồn kho (tối đa {$soLuongTon}).",
+                    ]);
+                }
+            } else {
+                $existing->so_luong = $newSoLuong;
+                $existing->don_gia = $donGia;
+                $existing->thanh_tien = $newSoLuong * $donGia;
+                $existing->save();
+                $message = 'Đã cập nhật số lượng trong giỏ hàng.';
+                $cartItemId = $existing->id;
             }
-            $existing->so_luong = $newSoLuong;
-            $existing->don_gia = $donGia;
-            $existing->thanh_tien = $newSoLuong * $donGia;
-            $existing->save();
-            $message = 'Đã cập nhật số lượng trong giỏ hàng.';
-            $cartItemId = $existing->id;
         } else {
             $item = GioHang::create([
                 'nguoi_dung_id' => Auth::id(),
