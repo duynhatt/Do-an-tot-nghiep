@@ -321,7 +321,8 @@
                 body: JSON.stringify({
                     san_pham_id: {{ $sanPham->id }},
                     bien_the_id: currentVariantId,
-                    so_luong: qty
+                    so_luong: qty,
+                    buy_now: true
                 })
             })
             .then(r => {
@@ -334,7 +335,8 @@
             .then(data => {
                 if (!data) return;
                 if (data.success && data.cart_item_id) {
-                    window.location.href = '{{ route("dat-hang") }}?items=' + data.cart_item_id;
+                    const itemsParam = data.cart_item_id + (qty > 0 ? ':' + qty : '');
+                    window.location.href = '{{ route("dat-hang") }}?items=' + encodeURIComponent(itemsParam);
                 } else if (data.success) {
                     alert(data.message || 'Đã thêm vào giỏ hàng!');
                 } else {

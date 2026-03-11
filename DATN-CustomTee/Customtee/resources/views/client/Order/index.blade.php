@@ -97,7 +97,11 @@
                                                         </button>
                                                     </form>
                                                 @endif
-                                                @if ($donHang->trang_thai_thanh_toan === 'chua_thanh_toan' && $donHang->trang_thai !== 'da_huy')
+                                                @if (
+                                                    $donHang->phuong_thuc_thanh_toan === 'vnpay'
+                                                    && $donHang->trang_thai_thanh_toan === 'chua_thanh_toan'
+                                                    && $donHang->trang_thai !== 'da_huy'
+                                                )
                                                     <a href="{{ route('order.repay', $donHang->id) }}"
                                                         class="btn btn-danger btn-sm px-3 rounded-pill">
                                                         <i class="bi bi-credit-card me-1"></i>

@@ -24,11 +24,12 @@ class CheckoutController extends Controller
             return redirect()->route('login')->with('warning', 'Vui lòng đăng nhập để thanh toán');
         }
 
-        $selectedIds = $request->query('items');
-        $selectedIdsArray = $selectedIds ? explode(',', $selectedIds) : [];
+        $itemsParam = $request->query('items', '');
+        $itemQuantities = $this->parseItemsQuantities($itemsParam);
+        $selectedIdsArray = array_keys($itemQuantities);
 
         if (empty($selectedIdsArray)) {
-            return redirect()->route('cart.index')
+            return redirect()->route('gio-hang.index')
                 ->with('error', 'Vui lòng chọn ít nhất một sản phẩm để thanh toán');
         }
 
@@ -44,13 +45,13 @@ class CheckoutController extends Controller
             ->get();
 
         if ($cartItems->isEmpty()) {
-            return redirect()->route('cart.index')
+            return redirect()->route('gio-hang.index')
                 ->with('error', 'Không tìm thấy sản phẩm nào hợp lệ để thanh toán');
         }
 
         $foundIds = $cartItems->pluck('id')->toArray();
         if (count($foundIds) !== count($selectedIdsArray)) {
-            return redirect()->route('cart.index')
+            return redirect()->route('gio-hang.index')
                 ->with('warning', 'Một số sản phẩm bạn chọn không còn tồn tại trong giỏ hàng');
         }
 
@@ -58,7 +59,7 @@ class CheckoutController extends Controller
             $item->syncGiaMoi();
 
             if ($item->so_luong <= 0 || $item->bienThe?->so_luong < $item->so_luong) {
-                return redirect()->route('cart.index')
+                return redirect()->route('gio-hang.index')
                     ->with('error', 'Sản phẩm "' . $item->sanPham->ten_san_pham . '" không đủ số lượng hoặc đã hết hàng');
             }
 
@@ -68,10 +69,21 @@ class CheckoutController extends Controller
         }
 
         $cartItems = $cartItems->fresh();
+        foreach ($cartItems as $item) {
+            $requestedQty = $itemQuantities[$item->id] ?? null;
+            $item->checkout_qty = $requestedQty !== null ? (int) $requestedQty : $item->so_luong;
+            if ($item->checkout_qty > $item->so_luong) {
+                $item->checkout_qty = $item->so_luong;
+            }
+            if ($item->checkout_qty < 1) {
+                $item->checkout_qty = 1;
+            }
+            $item->checkout_thanh_tien = (int) round($item->don_gia * $item->checkout_qty);
+        }
 
-        $subtotal    = $cartItems->sum('thanh_tien');
+        $subtotal    = $cartItems->sum('checkout_thanh_tien');
         $shippingFee = $this->calculateShippingFee($subtotal);
-        $discount    = $this->calculateDiscount($cartItems);
+        $discount    = $this->calculateDiscountForCheckout($cartItems);
         $total       = $subtotal + $shippingFee - $discount;
 
         return view('client.checkout.index', compact(
@@ -103,8 +115,8 @@ class CheckoutController extends Controller
             'selected_items' => 'required|string',
         ]);
 
-        $selectedIds = array_filter(explode(',', $request->selected_items));
-        $selectedIds = array_map('intval', $selectedIds);
+        $itemQuantities = $this->parseItemsQuantities($request->selected_items);
+        $selectedIds = array_keys($itemQuantities);
 
         if (empty($selectedIds)) {
             return back()->with('error', 'Không có sản phẩm nào được chọn để đặt hàng');
@@ -120,14 +132,30 @@ class CheckoutController extends Controller
             return back()->with('error', 'Các sản phẩm bạn chọn không hợp lệ hoặc đã thay đổi');
         }
 
+        $orderMeta = [];
+        foreach ($cartItems as $item) {
+            $orderQty = $itemQuantities[$item->id] ?? $item->so_luong;
+            if ($orderQty === null || $orderQty > $item->so_luong) {
+                $orderQty = $item->so_luong;
+            }
+            if ($orderQty < 1) {
+                $orderQty = 1;
+            }
+            $orderThanhTien = (int) round($item->don_gia * $orderQty);
+            $orderMeta[$item->id] = [
+                'qty'    => $orderQty,
+                'amount' => $orderThanhTien,
+            ];
+        }
+
+        $subtotal = array_sum(array_column($orderMeta, 'amount'));
+        $shippingFee = $this->calculateShippingFee($subtotal);
+        $discount    = $this->calculateDiscountForProcess($orderMeta);
+        $total       = $subtotal + $shippingFee - $discount;
+
         DB::beginTransaction();
 
         try {
-            $subtotal    = $cartItems->sum('thanh_tien');
-            $shippingFee = $this->calculateShippingFee($subtotal);
-            $discount    = $this->calculateDiscount($cartItems);
-            $total       = $subtotal + $shippingFee - $discount;
-
             $fullAddress = trim("{$request->address}, {$request->ward}, {$request->district}, {$request->province}");
 
             $maDonHang = 'DH' . date('ymd') . strtoupper(\Illuminate\Support\Str::random(6));
@@ -149,26 +177,39 @@ class CheckoutController extends Controller
             ]);
 
             foreach ($cartItems as $item) {
+                $meta = $orderMeta[$item->id] ?? ['qty' => $item->so_luong, 'amount' => (int) round($item->don_gia * $item->so_luong)];
+                $orderQty = $meta['qty'];
+                $orderThanhTien = $meta['amount'];
+
                 ChiTietDonHang::create([
                     'don_hang_id' => $donHang->id,
                     'san_pham_id' => $item->san_pham_id,
                     'bien_the_id' => $item->bien_the_id,
                     'don_gia'     => $item->don_gia,
-                    'so_luong'    => $item->so_luong,
-                    'thanh_tien'  => $item->thanh_tien,
+                    'so_luong'    => $orderQty,
+                    'thanh_tien'  => $orderThanhTien,
                 ]);
-
-                if ($item->bienThe) {
-                    $oldStock = $item->bienThe->so_luong;
-                    $item->bienThe->decrement('so_luong', $item->so_luong);
-                }
-
-                $item->update(['trang_thai' => GioHang::TRANG_THAI_DA_DAT_HANG]);
             }
 
-            GioHang::whereIn('id', $selectedIds)
-                ->where('nguoi_dung_id', $user->id)
-                ->delete();
+            // Với COD: trừ tồn kho và cập nhật giỏ ngay tại thời điểm đặt hàng
+            if ($request->payment_method === 'cod') {
+                foreach ($cartItems as $item) {
+                    $meta = $orderMeta[$item->id] ?? ['qty' => $item->so_luong, 'amount' => (int) round($item->don_gia * $item->so_luong)];
+                    $orderQty = $meta['qty'];
+
+                    if ($item->bienThe) {
+                        $item->bienThe->decrement('so_luong', $orderQty);
+                    }
+
+                    if ($orderQty >= $item->so_luong) {
+                        $item->delete();
+                    } else {
+                        $item->so_luong -= $orderQty;
+                        $item->thanh_tien = (int) round($item->don_gia * $item->so_luong);
+                        $item->save();
+                    }
+                }
+            }
 
             DB::commit();
 
@@ -241,7 +282,12 @@ class CheckoutController extends Controller
                 ->with('success', 'Đặt hàng thành công!');
         } catch (\Throwable $e) {
             DB::rollBack();
-
+            \Log::error('Checkout error', [
+                'user_id'   => $user->id ?? null,
+                'message'   => $e->getMessage(),
+                'trace'     => $e->getTraceAsString(),
+                'request'   => $request->all(),
+            ]);
             return back()->with('error', 'Đặt hàng thất bại. Vui lòng thử lại. (Lỗi đã được ghi log)');
         }
     }
@@ -258,6 +304,70 @@ class CheckoutController extends Controller
     {
         if ($cartItems->sum('so_luong') >= 3) {
             return $cartItems->sum('thanh_tien') * 0.10;
+        }
+        return 0;
+    }
+
+    /**
+     * Parse items param (e.g. "123" or "123:1" or "123:1,456:2") to [ cart_id => qty|null ].
+     * null = lấy hết dòng.
+     */
+    private function parseItemsQuantities(string $itemsParam): array
+    {
+        $result = [];
+        $parts = array_filter(array_map('trim', explode(',', $itemsParam)));
+        foreach ($parts as $part) {
+            if (strpos($part, ':') !== false) {
+                [$id, $qty] = explode(':', $part, 2);
+                $id = (int) trim($id);
+                $qty = (int) trim($qty);
+                if ($id > 0) {
+                    $result[$id] = $qty > 0 ? $qty : null;
+                }
+            } else {
+                $id = (int) trim($part);
+                if ($id > 0) {
+                    $result[$id] = null;
+                }
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Tính giảm giá theo số lượng đang thanh toán (checkout_qty / checkout_thanh_tien).
+     */
+    private function calculateDiscountForCheckout($cartItems): float
+    {
+        $totalQty = 0;
+        $totalAmount = 0;
+        foreach ($cartItems as $item) {
+            $qty = $item->checkout_qty ?? $item->so_luong;
+            $amount = $item->checkout_thanh_tien ?? $item->thanh_tien;
+            $totalQty += $qty;
+            $totalAmount += $amount;
+        }
+        if ($totalQty >= 3) {
+            return round($totalAmount * 0.10, 0);
+        }
+        return 0;
+    }
+
+    /**
+     * Tính giảm giá theo dữ liệu đặt hàng (trong process).
+     *
+     * @param array<int, array{qty:int, amount:int}> $orderMeta
+     */
+    private function calculateDiscountForProcess(array $orderMeta): float
+    {
+        $totalQty = 0;
+        $totalAmount = 0;
+        foreach ($orderMeta as $meta) {
+            $totalQty += $meta['qty'];
+            $totalAmount += $meta['amount'];
+        }
+        if ($totalQty >= 3) {
+            return round($totalAmount * 0.10, 0);
         }
         return 0;
     }
@@ -300,10 +410,21 @@ class CheckoutController extends Controller
             $responseCode = $request->vnp_ResponseCode ?? '99';
 
             if ($responseCode === '00') {
+                // Thanh toán thành công: cập nhật trạng thái đơn
                 $donHang->update([
                     'trang_thai_thanh_toan' => 'da_thanh_toan',
                     'trang_thai'            => 'dang_xu_ly',
                 ]);
+
+                // Sau khi thanh toán online thành công mới trừ tồn kho
+                foreach ($donHang->chiTietDonHangs as $chiTiet) {
+                    if ($chiTiet->bien_the_id) {
+                        $bienThe = \App\Models\BienThe::find($chiTiet->bien_the_id);
+                        if ($bienThe) {
+                            $bienThe->decrement('so_luong', $chiTiet->so_luong);
+                        }
+                    }
+                }
 
                 return redirect()->route('order.success', $donHang->ma_don_hang)
                     ->with('success', 'Thanh toán VNPAY thành công! Đơn hàng đã được xác nhận.');
