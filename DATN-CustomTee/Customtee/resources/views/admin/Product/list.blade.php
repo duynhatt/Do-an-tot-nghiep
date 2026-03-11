@@ -20,29 +20,16 @@
                             <th>Hình ảnh</th>
                             <th>Tên sản phẩm</th>
                             <th>Danh mục</th>
-                            <th width="12%">Tồn kho</th>
-                            <th width="14%">Cảnh báo</th>
+                            {{-- <th>màu</th>
+                        <th>kích cỡ</th>
+                        <th>số lượng</th>
+                        <th>giá</th> --}}
                             <th>Trạng thái</th>
                             <th width="15%">Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($sanPhams as $key => $sp)
-                            @php
-                                $totalStock = $sp->variants->where('trang_thai', 1)->sum('so_luong');
-
-                                $stockClass = '';
-                                $stockLabel = $totalStock;
-
-                                if ($totalStock == 0) {
-                                    $stockClass = 'text-danger font-weight-bold';
-                                    $stockLabel = 'Hết hàng';
-                                } elseif ($totalStock <= 9) {
-                                    $stockClass = 'text-warning font-weight-bold';
-                                    $stockLabel = $totalStock . ' (sắp hết)';
-                                }
-                            @endphp
-
                             <tr>
                                 <td>{{ $key + 1 }}</td>
                                 <td>
@@ -56,21 +43,6 @@
                                 </td>
                                 <td class="text-center">{{ $sp->ten_san_pham }}</td>
                                 <td>{{ $sp->danhMuc->ten_danh_muc ?? '—' }}</td>
-
-                                <td class="{{ $stockClass }}">
-                                    {{ $stockLabel }}
-                                </td>
-
-                                <td>
-                                    @if ($totalStock == 0)
-                                        <span class="badge badge-danger">Hết hàng</span>
-                                    @elseif ($totalStock <= 9)
-                                        <span class="badge badge-warning">Sắp hết (< 10)</span>
-                                            @else
-                                                <span class="badge badge-success">Đủ hàng</span>
-                                    @endif
-                                </td>
-
                                 <td>
                                     @if ($sp->trang_thai)
                                         <span class="badge badge-success">Hiển thị</span>
@@ -78,7 +50,6 @@
                                         <span class="badge badge-secondary">Ẩn</span>
                                     @endif
                                 </td>
-
                                 <td>
                                     <a href="{{ route('variants.create', ['san_pham_id' => $sp->id]) }}"
                                         class="btn btn-sm btn-info" title="Thêm biến thể">
@@ -331,7 +302,7 @@
                 $('#variantsSection').find('select, input').prop('disabled', !isEnabled);
                 $('#variantsSection').find(
                         'select[name$="[mau_sac_id]"], select[name$="[kich_thuoc_id]"], input[name$="[gia]"], input[name$="[so_luong]"]'
-                    )
+                        )
                     .prop('required', isEnabled);
             }
 

@@ -68,7 +68,7 @@ Route::get('/api/product-variant', function (Request $request) {
             ]
         ]);
     }
-return response()->json([
+    return response()->json([
         'success' => false
     ]);
 })->name('api.product.variant');
@@ -117,7 +117,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 Route::prefix('admin/variants')->name('variants.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [VariantController::class, 'index'])->name('index');
     Route::get('/create', [VariantController::class, 'create'])->name('create');
-Route::post('/store', [VariantController::class, 'store'])->name('store');
+    Route::post('/store', [VariantController::class, 'store'])->name('store');
     Route::get('/edit/{id}', [VariantController::class, 'edit'])->name('edit');
     Route::post('/update/{id}', [VariantController::class, 'update'])->name('update');
     Route::delete('/delete/{id}', [VariantController::class, 'destroy'])->name('delete');
@@ -153,3 +153,6 @@ Route::get('/admin/variants/by-product/{id}', function ($id) {
         })->values(),
     ]);
 })->middleware(['auth', 'admin']);
+
+Route::get('/admin/dashboard/orders-by-status', [DashboardController::class,'ordersByStatus'])
+->name('admin.dashboard.orders-by-status');
