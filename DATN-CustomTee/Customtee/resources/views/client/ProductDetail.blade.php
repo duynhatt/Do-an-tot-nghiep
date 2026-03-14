@@ -29,9 +29,19 @@
         <div class="col-lg-7">
             <h1 class="fw-bold mb-2">{{ $sanPham->ten_san_pham }}</h1>
 
-            <div class="mb-3">
-                <span class="text-warning">★★★★★</span>
-                <span class="text-muted ms-2">(128 đánh giá)</span>
+            <div class="mb-3 d-flex align-items-center">
+                <div class="text-warning me-2 fs-5">
+                    @for ($i = 1; $i <= 5; $i++)
+                        @if ($i <= floor($avgRating))
+                            ★
+                        @else
+                            ☆
+                        @endif
+                    @endfor
+                </div>
+                <span class="text-muted">
+                    {{ $avgRating }}/5 ({{ $totalRating }} đánh giá)
+                </span>
             </div>
 
             <div class="mb-4">
@@ -125,6 +135,55 @@
                 </div>
             </div>
             @endif
+
+            <div class="mt-5">
+                <h4 class="fw-bold mb-4">Đánh giá sản phẩm</h4>
+
+                @if($danhGias->count() > 0)
+
+                    @foreach($danhGias as $dg)
+
+                    <div class="border rounded p-3 mb-3 shadow-sm">
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <strong>{{ $dg->user->name ?? 'Khách hàng' }}</strong>
+
+                            <small class="text-muted">
+                                {{ $dg->created_at->format('d/m/Y') }}
+                            </small>
+                        </div>
+
+                        {{-- Sao --}}
+                        <div class="text-warning mb-2">
+                            @for($i=1;$i<=5;$i++)
+                                @if($i <= $dg->so_sao)
+                                    ⭐
+                                @else
+                                    ☆
+                                @endif
+                            @endfor
+                        </div>
+
+                        <p class="mb-0 text-secondary">
+                            {{ $dg->noi_dung }}
+                        </p>
+
+                    </div>
+
+                    @endforeach
+
+                    {{-- Pagination --}}
+                    <div class="mt-4">
+                        {{ $danhGias->links('pagination::bootstrap-5') }}
+                    </div>
+
+                @else
+
+                    <p class="text-muted">Chưa có đánh giá nào cho sản phẩm này.</p>
+
+                @endif
+            </div>
+
         </div>
     </div>
 </div>

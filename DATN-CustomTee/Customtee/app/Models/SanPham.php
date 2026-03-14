@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\BinhLuan;
 use Illuminate\Support\Str;
 
 class SanPham extends Model
@@ -54,5 +55,10 @@ public function category()
 {
     return $this->belongsTo(Category::class, 'danh_muc_id');
 }
+
+    public function binhLuans()
+    {
+        return $this->hasMany(BinhLuan::class);
+    }
 
 }

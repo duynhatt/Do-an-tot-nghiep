@@ -4,6 +4,7 @@ namespace App\Http\Controllers\client;
 
 use App\Http\Controllers\Controller;
 use App\Models\SanPham;
+use App\Models\BinhLuan;
 
 class SanPhamController extends Controller
 {
@@ -16,18 +17,18 @@ class SanPhamController extends Controller
             },
             'category'
         ])
-            ->where('slug', $slug)
-            ->where('trang_thai', true)
-            ->firstOrFail();
+        ->where('slug', $slug)
+        ->where('trang_thai', true)
+        ->firstOrFail();
 
-        // Kiểm tra xem danh mục có được hiển thị hay không
         if (!$sanPham->category || !$sanPham->category->trang_thai) {
             abort(404);
         }
+
         $variants = $sanPham->variants;
 
         if ($variants->isEmpty()) {
-            $giaMacDinh = (object) [
+            $giaMacDinh = (object)[
                 'gia' => 0,
                 'gia_khuyen_mai' => null,
                 'so_luong' => 0
@@ -50,11 +51,24 @@ class SanPhamController extends Controller
             $totalStock = $variants->sum('so_luong');
         }
 
+        // LẤY ĐÁNH GIÁ
+        $danhGias = BinhLuan::where('san_pham_id',$sanPham->id)
+            ->where('trang_thai',1)
+            ->latest()
+            ->paginate(5);
+
+        $avgRating = BinhLuan::where('san_pham_id', $sanPham->id)->avg('so_sao');
+        $totalRating = BinhLuan::where('san_pham_id', $sanPham->id)->count();
+        $avgRating = round($avgRating, 1);
+
         return view('client.productdetail', compact(
             'sanPham',
             'giaMacDinh',
             'priceRange',
-            'totalStock'
+            'totalStock',
+            'danhGias',
+            'avgRating',
+            'totalRating'
         ));
     }
 }

@@ -151,6 +151,17 @@
                                 <li><a href="{{ route('admin.don-hang.index') }}">Danh sách đơn hàng</a></li>
                             </ul>
                         </li>
+
+                        {{-- bình luận --}}
+                        <li class="sub-menu">
+                            <a href="javascript:;">
+                                <i class="fa fa-comment"></i>
+                                <span>Bình luận</span>
+                            </a>
+                            <ul class="sub">
+                                <li><a href="{{ route('admin.binh-luan.index') }}">Quản lí bình luận</a></li>
+                            </ul>
+                        </li>
                         <!-- Extra Pages -->
                         <li class="sub-menu">
                             <a href="javascript:;">
