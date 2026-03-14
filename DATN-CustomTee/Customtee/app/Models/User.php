@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\BinhLuan;
 
 class User extends Authenticatable
 {
@@ -58,5 +59,10 @@ class User extends Authenticatable
     public function gioHangs()
     {
         return $this->hasMany(GioHang::class, 'nguoi_dung_id');
+    }
+
+    public function binhLuans()
+    {
+        return $this->hasMany(BinhLuan::class);
     }
 }

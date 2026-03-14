@@ -236,7 +236,7 @@ class="timeline-step {{ in_array($donHang->trang_thai, ['dang_xu_ly', 'dang_giao
                                     <span class="small text-danger">
                                         -{{ number_format($donHang->tien_giam ?? 0, 0, ',', '.') }} ₫
                                     </span>
-</div>
+                                </div>
                                 <div class="d-flex justify-content-between mb-3">
                                     <span class="text-muted small">Phí vận chuyển</span>
                                     <span class="small">
@@ -316,6 +316,73 @@ class="timeline-step {{ in_array($donHang->trang_thai, ['dang_xu_ly', 'dang_giao
                                     </div>
                                 @endif
                             </div>
+
+                            @if($donHang->trang_thai === 'da_hoan_thanh')
+                                <div class="card border-0 shadow-sm rounded-3 mt-4">
+                                    <div class="card-header bg-light py-3 px-4">
+                                        <h5 class="mb-0 fw-semibold">Đánh giá sản phẩm</h5>
+                                    </div>
+
+                                    <div class="card-body">
+                                        @foreach ($donHang->chiTietDonHangs as $chiTiet)
+
+                                        @php
+                                            $daDanhGia = \App\Models\BinhLuan::where('user_id', auth()->id())
+                                                            ->where('san_pham_id', $chiTiet->sanPham->id)
+                                                            ->where('don_hang_id', $donHang->id)
+                                                            ->exists();
+                                            @endphp
+                                        <div class="border rounded p-3 mb-3">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <img src="{{ $chiTiet->sanPham->hinh_anh_chinh ? asset('storage/'.$chiTiet->sanPham->hinh_anh_chinh) : 'https://via.placeholder.com/60' }}"
+                                                    width="60"
+                                                    height="60"
+                                                    class="rounded me-3"
+                                                    style="object-fit:cover">
+                                                <div>
+                                                    <strong>{{ $chiTiet->sanPham->ten_san_pham }}</strong>
+                                                </div>
+                                            </div>
+                                            @if($daDanhGia)
+                                                <div class="alert alert-success mb-0">
+                                                    <i class="bi bi-check-circle"></i>
+                                                    Bạn đã đánh giá sản phẩm này
+                                                </div>
+                                            @else
+                                                <form action="{{ route('binh-luan.store') }}" method="POST">
+                                                    @csrf
+                                                    <input type="hidden" name="san_pham_id" value="{{ $chiTiet->sanPham->id }}">
+                                                    <input type="hidden" name="don_hang_id" value="{{ $donHang->id }}">
+                                                    {{-- Chọn sao --}}
+                                                    <div class="mb-2">
+                                                        <label class="form-label fw-semibold">Số sao</label>
+                                                        <select name="so_sao" class="form-select w-auto">
+                                                            <option value="5">⭐⭐⭐⭐⭐ (5 sao)</option>
+                                                            <option value="4">⭐⭐⭐⭐ (4 sao)</option>
+                                                            <option value="3">⭐⭐⭐ (3 sao)</option>
+                                                            <option value="2">⭐⭐ (2 sao)</option>
+                                                            <option value="1">⭐ (1 sao)</option>
+                                                        </select>
+                                                    </div>
+                                                    {{-- Nội dung --}}
+                                                    <div class="mb-2">
+                                                        <textarea name="noi_dung"
+                                                            class="form-control"
+                                                            rows="3"
+                                                            placeholder="Viết đánh giá của bạn..."></textarea>
+                                                    </div>
+                                                    <button class="btn btn-primary btn-sm">
+                                                        <i class="bi bi-send"></i> Gửi đánh giá
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </div>
+
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+
                         </div>
                     </div>
                 </div>
