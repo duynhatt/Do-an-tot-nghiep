@@ -19,6 +19,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\client\CheckoutController;
 use App\Http\Controllers\client\OrderController;
 use App\Models\BienThe;
+use App\Http\Controllers\Admin\VoucherController;
 use Illuminate\Http\Request;
 
 // Client Authentication
@@ -31,7 +32,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('About', [AboutController::class, 'About']);
 Route::get('Contact', [ContactController::class, 'Contact']);
 Route::get('Shop', [ShopController::class, 'Shop']);
-// Route::get('ShopSingle/{id}', [ShopController::class, 'ShopSingle'])->name('shop.single');
+
 Route::get('/san-pham/{slug}', [ClientSanPhamController::class, 'showProduct'])
     ->name('sanpham.chitiet');
 
@@ -39,16 +40,14 @@ Route::get('/api/product-variant', function (Request $request) {
     $productId = $request->query('product_id');
     $colorId   = $request->query('color');
     $sizeId    = $request->query('size');
-    // Kiểm tra sản phẩm có tồn tại và được hiển thị hay không
+    
     $product = \App\Models\SanPham::where('id', $productId)
         ->where('trang_thai', true)
         ->whereHas('danhMuc', fn($q) => $q->where('trang_thai', 1))
         ->first();
 
     if (!$product) {
-        return response()->json([
-            'success' => false
-        ]);
+        return response()->json(['success' => false]);
     }
 
     $variant = BienThe::where('san_pham_id', $productId)
@@ -68,12 +67,8 @@ Route::get('/api/product-variant', function (Request $request) {
             ]
         ]);
     }
-    return response()->json([
-        'success' => false
-    ]);
+    return response()->json(['success' => false]);
 })->name('api.product.variant');
-
-// routes/web.php
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
@@ -85,7 +80,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/order/{id}/cancel', [OrderController::class, 'cancel'])->name('order.cancel');
     Route::post('/order/{id}/confirm', [OrderController::class, 'confirm'])->name('order.confirm');
 
-    // Giỏ hàng (lưu DB, gắn user)
     Route::get('/gio-hang', [GioHangController::class, 'index'])->name('gio-hang.index');
     Route::post('/gio-hang', [GioHangController::class, 'store'])->name('gio-hang.store');
     Route::put('/gio-hang/{gioHang}', [GioHangController::class, 'update'])->name('gio-hang.update');
@@ -95,14 +89,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('dat-hang');
     Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
     Route::get('/checkout/vnpay/return', [CheckoutController::class, 'vnpayReturn'])->name('vnpay.return');
-    Route::get('/order/{id}/repay', [CheckoutController::class, 'repay'])
-    ->name('order.repay');
+    Route::get('/order/{id}/repay', [CheckoutController::class, 'repay'])->name('order.repay');
+
+    // ROUTE ÁP DỤNG VOUCHER CHO CLIENT (ĐÃ THÊM)
+    Route::post('/apply-voucher', [VoucherController::class, 'applyVoucher'])->name('voucher.apply');
 
     Route::get('/order/success/{ma_don_hang}', function ($ma_don_hang) {
         $donHang = \App\Models\DonHang::where('ma_don_hang', $ma_don_hang)->firstOrFail();
         return view('client.checkout.success', compact('donHang'));
     })->name('order.success');
 });
+
+// KHU VỰC ADMIN
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [DashboardController::class, 'home'])->name('home');
     Route::get('/dashboard', [DashboardController::class, 'Dashboard'])->name('dashboard');
@@ -110,12 +108,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('mau-sac', MauSacController::class);
     Route::resource('kich-thuoc', KichThuocController::class);
     Route::resource('san-pham', SanPhamController::class);
+    
+    Route::resource('vouchers', VoucherController::class);
 
-    // Đơn hàng: danh sách, chi tiết, cập nhật trạng thái
     Route::get('don-hang', [DonHangController::class, 'index'])->name('don-hang.index');
     Route::get('don-hang/{donHang}', [DonHangController::class, 'show'])->name('don-hang.show');
     Route::patch('don-hang/{donHang}/status', [DonHangController::class, 'updateStatus'])->name('don-hang.update-status');
 });
+
 Route::prefix('admin/variants')->name('variants.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [VariantController::class, 'index'])->name('index');
     Route::get('/create', [VariantController::class, 'create'])->name('create');
@@ -125,14 +125,12 @@ Route::prefix('admin/variants')->name('variants.')->middleware(['auth', 'admin']
     Route::delete('/delete/{id}', [VariantController::class, 'destroy'])->name('delete');
 });
 
-
-
+// Các Route API bổ trợ cho Admin
 Route::get('/admin/products/info/{id}', function ($id) {
     $product = \App\Models\SanPham::with('category')->findOrFail($id);
-
     return response()->json([
         'name'     => $product->ten_san_pham,
-        'image'    => $product->hinh_anh_chinh, // ví dụ: san-pham/abc.jpg
+        'image'    => $product->hinh_anh_chinh,
         'category' => $product->category->ten_danh_muc ?? '',
         'desc'     => $product->mo_ta_ngan,
     ]);
@@ -140,7 +138,6 @@ Route::get('/admin/products/info/{id}', function ($id) {
 
 Route::get('/admin/variants/by-product/{id}', function ($id) {
     $product = \App\Models\SanPham::with(['variants.color', 'variants.size'])->findOrFail($id);
-
     return response()->json([
         'variants' => $product->variants->map(function ($variant) {
             return [

@@ -151,6 +151,16 @@
                                 <li><a href="{{ route('admin.don-hang.index') }}">Danh sách đơn hàng</a></li>
                             </ul>
                         </li>
+                        <li class="sub-menu">
+    <a href="javascript:;">
+        <i class="fa fa-ticket"></i>
+        <span>Quản lý Voucher</span>
+    </a>
+    <ul class="sub">
+        <li><a href="{{ route('admin.vouchers.index') }}">Danh sách Voucher</a></li>
+        <li><a href="{{ route('admin.vouchers.create') }}">Thêm Voucher mới</a></li>
+    </ul>
+</li>
                         <!-- Extra Pages -->
                         <li class="sub-menu">
                             <a href="javascript:;">
