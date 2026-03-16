@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\ChiTietDonHang;
 use App\Models\DonHang;
 use App\Models\GioHang;
+use App\Models\BienThe;
 use App\Models\Voucher; // Thêm Model Voucher
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Session;
 use Carbon\Carbon;
 
 class CheckoutController extends Controller
@@ -33,30 +35,162 @@ class CheckoutController extends Controller
             ->where('nguoi_dung_id', $userId)
             ->whereIn('id', $selectedIdsArray)
             ->dangTrongGio()
+            // Chỉ cho phép checkout các dòng giỏ còn hợp lệ:
+            // - Sản phẩm đang bật và danh mục đang bật
+            // - Biến thể đang bật
+            ->whereHas('sanPham', function ($q) {
+                $q->where('trang_thai', true)
+                  ->whereHas('danhMuc', function ($q2) {
+                      $q2->where('trang_thai', 1);
+                  });
+            })
+            ->whereHas('bienThe', function ($q) {
+                $q->where('trang_thai', true);
+            })
             ->get();
 
-        foreach ($cartItems as $item) {
+        // Đồng bộ giá và kiểm tra lại tồn kho cho từng dòng giỏ hàng
+        $validCartItems = $cartItems->filter(function ($item) use ($itemQuantities) {
             $item->syncGiaMoi();
+            $stock = $item->bienThe?->so_luong ?? 0;
+
+            // Hết hàng hoàn toàn -> loại khỏi danh sách checkout
+            if ($stock <= 0) {
+                $item->checkout_qty = 0;
+                $item->checkout_thanh_tien = 0;
+                return false;
+            }
+
             $requestedQty = $itemQuantities[$item->id] ?? $item->so_luong;
-            $item->checkout_qty = max(1, min($requestedQty, $item->bienThe?->so_luong ?? 0));
+            $requestedQty = (int) max(1, $requestedQty);
+
+            // Không cho vượt quá tồn kho hiện tại
+            $item->checkout_qty = min($requestedQty, $stock);
             $item->checkout_thanh_tien = (int) round($item->don_gia * $item->checkout_qty);
+
+            return $item->checkout_qty > 0;
+        });
+
+        // Nếu sau khi kiểm tra tồn kho mà không còn sản phẩm hợp lệ -> quay lại giỏ hàng
+        if ($validCartItems->isEmpty()) {
+            return redirect()->route('gio-hang.index')->with('error', 'Sản phẩm trong giỏ đã hết hàng hoặc không còn hợp lệ. Vui lòng kiểm tra lại.');
         }
+
+        $cartItems = $validCartItems->values();
 
         $subtotal = $cartItems->sum('checkout_thanh_tien');
         $shippingFee = $this->calculateShippingFee($subtotal);
-
-        // Giảm giá mặc định (mua trên 3 sp giảm 10%)
-        $systemDiscount = $this->calculateDiscountForCheckout($cartItems);
-
-        $total = $subtotal + $shippingFee - $systemDiscount;
+        $total = $subtotal + $shippingFee;
 
         return view('client.checkout.index', compact(
             'cartItems',
             'subtotal',
             'shippingFee',
-            'systemDiscount',
             'total'
         ));
+    }
+
+    /**
+     * Lưu thông tin "mua ngay" vào session, không dùng giỏ hàng.
+     */
+    public function buyNow(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json([
+                'success'  => false,
+                'redirect' => route('login'),
+            ], 401);
+        }
+
+        $data = $request->validate([
+            'san_pham_id' => 'required|integer',
+            'bien_the_id' => 'required|integer',
+            'so_luong'    => 'required|integer|min:1',
+        ]);
+
+        $variant = BienThe::with(['SanPham', 'size', 'color'])
+            ->where('id', $data['bien_the_id'])
+            ->where('san_pham_id', $data['san_pham_id'])
+            ->where('trang_thai', true)
+            ->firstOrFail();
+
+        $stock = (int) $variant->so_luong;
+        $qty   = min((int) $data['so_luong'], $stock);
+
+        if ($qty < 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sản phẩm đã hết hàng.',
+            ], 422);
+        }
+
+        $unitPrice = (int) ($variant->gia_khuyen_mai ?? $variant->gia);
+
+        Session::put('buy_now', [
+            'user_id'    => $user->id,
+            'product_id' => $variant->san_pham_id,
+            'variant_id' => $variant->id,
+            'qty'        => $qty,
+            'unit_price' => $unitPrice,
+        ]);
+
+        return response()->json([
+            'success'  => true,
+            'redirect' => route('checkout.buy-now'),
+        ]);
+    }
+
+    /**
+     * Trang checkout cho "mua ngay" (đọc từ session buy_now).
+     */
+    public function checkoutBuyNow(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return redirect()->route('login')->with('warning', 'Vui lòng đăng nhập để thanh toán');
+        }
+
+        $buyNow = Session::get('buy_now');
+        if (!$buyNow || ($buyNow['user_id'] ?? null) !== $user->id) {
+            return redirect()->route('home')->with('error', 'Không tìm thấy sản phẩm mua ngay.');
+        }
+
+        $variant = BienThe::with(['SanPham', 'size', 'color'])
+            ->where('id', $buyNow['variant_id'])
+            ->where('san_pham_id', $buyNow['product_id'])
+            ->where('trang_thai', true)
+            ->firstOrFail();
+
+        $stock = (int) $variant->so_luong;
+        if ($stock <= 0) {
+            return redirect()->route('home')->with('error', 'Sản phẩm đã hết hàng.');
+        }
+
+        $qty       = min((int) $buyNow['qty'], $stock);
+        $unitPrice = (int) $buyNow['unit_price'];
+        $lineTotal = (int) ($unitPrice * $qty);
+
+        $cartItems = collect([
+            (object) [
+                'sanPham'             => $variant->SanPham,
+                'bienThe'             => $variant,
+                'checkout_qty'        => $qty,
+                'checkout_thanh_tien' => $lineTotal,
+            ],
+        ]);
+
+        $subtotal    = $lineTotal;
+        $shippingFee = $this->calculateShippingFee($subtotal);
+        $total       = $subtotal + $shippingFee;
+
+        return view('client.checkout.index', [
+            'cartItems'   => $cartItems,
+            'subtotal'    => $subtotal,
+            'shippingFee' => $shippingFee,
+            'total'       => $total,
+            'buyNowMode'  => true,
+        ]);
     }
 
     public function process(Request $request)
@@ -75,19 +209,49 @@ class CheckoutController extends Controller
         ]);
 
         $itemQuantities = $this->parseItemsQuantities($request->selected_items);
-        $cartItems = GioHang::whereIn('id', array_keys($itemQuantities))->get();
+        $cartItems = GioHang::with(['bienThe', 'sanPham.danhMuc'])
+            ->whereIn('id', array_keys($itemQuantities))
+            ->dangTrongGio()
+            // Không cho tạo đơn từ các dòng giỏ đã bị ẩn:
+            // - Sản phẩm hoặc danh mục ẩn
+            // - Biến thể ẩn
+            ->whereHas('sanPham', function ($q) {
+                $q->where('trang_thai', true)
+                  ->whereHas('danhMuc', function ($q2) {
+                      $q2->where('trang_thai', 1);
+                  });
+            })
+            ->whereHas('bienThe', function ($q) {
+                $q->where('trang_thai', true);
+            })
+            ->get();
 
         $subtotal = 0;
         $orderMeta = [];
         foreach ($cartItems as $item) {
-            $qty = $itemQuantities[$item->id] ?? $item->so_luong;
+            $stock = $item->bienThe?->so_luong ?? 0;
+            $requestedQty = $itemQuantities[$item->id] ?? $item->so_luong;
+            $requestedQty = (int) max(1, $requestedQty);
+
+            // Nếu hết hàng hoặc không đủ tồn kho -> dừng và yêu cầu người dùng kiểm tra lại giỏ
+            if ($stock <= 0 || $requestedQty > $stock) {
+                return redirect()->route('gio-hang.index')
+                    ->with('error', 'Sản phẩm "' . ($item->sanPham->ten_san_pham ?? '') . '" không đủ tồn kho. Vui lòng kiểm tra lại giỏ hàng.');
+            }
+
+            $qty = min($requestedQty, $stock);
             $amount = (int) round($item->don_gia * $qty);
             $subtotal += $amount;
             $orderMeta[$item->id] = ['qty' => $qty, 'amount' => $amount];
         }
 
+        // Nếu sau khi kiểm tra mà không còn dòng hợp lệ (phòng trường hợp hiếm)
+        if (empty($orderMeta)) {
+            return redirect()->route('gio-hang.index')
+                ->with('error', 'Giỏ hàng không còn sản phẩm hợp lệ để thanh toán.');
+        }
+
         $shippingFee = $this->calculateShippingFee($subtotal);
-        $systemDiscount = $this->calculateDiscountForProcess($orderMeta);
 
         // --- XỬ LÝ VOUCHER (BẮT BUỘC KHỚP HOA THƯỜNG) ---
         $voucherDiscount = 0;
@@ -113,7 +277,7 @@ class CheckoutController extends Controller
             }
         }
 
-        $totalDiscount = $systemDiscount + $voucherDiscount;
+        $totalDiscount = $voucherDiscount;
         $total = max(0, $subtotal + $shippingFee - $totalDiscount);
 
         DB::beginTransaction();
@@ -155,14 +319,148 @@ class CheckoutController extends Controller
 
             if ($request->payment_method === 'cod') {
                 foreach ($cartItems as $item) {
-                    if ($item->bienThe) $item->bienThe->decrement('so_luong', $orderMeta[$item->id]['qty']);
-                    $item->delete();
+                    $purchasedQty = $orderMeta[$item->id]['qty'] ?? 0;
+
+                    if ($item->bienThe && $purchasedQty > 0) {
+                        $item->bienThe->decrement('so_luong', $purchasedQty);
+                    }
+
+                    // Giữ lại phần chưa mua trong giỏ (nếu có)
+                    $remaining = max(0, $item->so_luong - $purchasedQty);
+                    if ($remaining > 0) {
+                        $item->so_luong = $remaining;
+                        $item->save();
+                    } else {
+                        $item->delete();
+                    }
                 }
+
                 DB::commit();
                 return redirect()->route('order.success', $donHang->ma_don_hang);
             }
 
             // Xử lý VNPAY (Tiền gửi sang đã trừ voucher)
+            if ($request->payment_method === 'vnpay') {
+                DB::commit();
+                return $this->initiateVnpay($donHang, $total);
+            }
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->with('error', 'Lỗi đặt hàng: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Xử lý đặt hàng cho "mua ngay" (không dùng giỏ hàng).
+     */
+    public function processBuyNow(Request $request)
+    {
+        $user = Auth::user();
+        $validated = $request->validate([
+            'full_name'      => 'required|string|max:100',
+            'phone'          => 'required|regex:/^0[0-9]{9,10}$/',
+            'province'       => 'required|string|max:100',
+            'district'       => 'required|string|max:100',
+            'ward'           => 'required|string|max:100',
+            'address'        => 'required|string|max:255',
+            'payment_method' => 'required|in:cod,vnpay',
+            'voucher_code_applied' => 'nullable|string',
+        ]);
+
+        $buyNow = Session::get('buy_now');
+        if (!$buyNow || ($buyNow['user_id'] ?? null) !== $user->id) {
+            return redirect()->route('home')->with('error', 'Không tìm thấy sản phẩm mua ngay để thanh toán.');
+        }
+
+        $variant = BienThe::with(['SanPham'])
+            ->where('id', $buyNow['variant_id'])
+            ->where('san_pham_id', $buyNow['product_id'])
+            ->where('trang_thai', true)
+            ->firstOrFail();
+
+        $stock = (int) $variant->so_luong;
+        if ($stock <= 0) {
+            return redirect()->route('home')->with('error', 'Sản phẩm đã hết hàng.');
+        }
+
+        $qty       = min((int) $buyNow['qty'], $stock);
+        $unitPrice = (int) $buyNow['unit_price'];
+        $subtotal  = (int) ($unitPrice * $qty);
+
+        $shippingFee = $this->calculateShippingFee($subtotal);
+
+        // Xử lý voucher giống process()
+        $voucherDiscount = 0;
+        $voucherId = null;
+        if ($request->voucher_code_applied) {
+            $voucher = Voucher::whereRaw('BINARY ma = ?', [$request->voucher_code_applied])
+                ->where('bat_dau', '<=', now())
+                ->where('ket_thuc', '>=', now())
+                ->where('trang_thai', 1)
+                ->first();
+
+            if ($voucher && $voucher->da_su_dung < $voucher->so_luong) {
+                if ($voucher->loai == 'phan_tram') {
+                    $voucherDiscount = ($subtotal * $voucher->gia_tri) / 100;
+                    if ($voucher->giam_toi_da > 0 && $voucherDiscount > $voucher->giam_toi_da) {
+                        $voucherDiscount = $voucher->giam_toi_da;
+                    }
+                } else {
+                    $voucherDiscount = $voucher->gia_tri;
+                }
+                $voucherId = $voucher->id;
+            }
+        }
+
+        $totalDiscount = $voucherDiscount;
+        $total = max(0, $subtotal + $shippingFee - $totalDiscount);
+
+        DB::beginTransaction();
+        try {
+            $fullAddress = "{$request->address}, {$request->ward}, {$request->district}, {$request->province}";
+            $maDonHang = 'DH' . date('ymd') . strtoupper(\Illuminate\Support\Str::random(6));
+
+            $donHang = DonHang::create([
+                'nguoi_dung_id'           => $user->id,
+                'ma_don_hang'             => $maDonHang,
+                'tam_tinh'                => $subtotal,
+                'tien_giam'               => $totalDiscount,
+                'phi_van_chuyen'          => $shippingFee,
+                'tong_tien'               => $total,
+                'phuong_thuc_thanh_toan'  => $request->payment_method,
+                'trang_thai_thanh_toan'   => 'chua_thanh_toan',
+                'trang_thai'              => 'cho_xac_nhan',
+                'dia_chi_chi_tiet'        => $fullAddress,
+                'so_dien_thoai_nhan_hang' => $request->phone,
+                'ten_nguoi_nhan'          => $request->full_name,
+                'ghi_chu'                 => $request->note . ($request->voucher_code_applied ? " (Voucher: {$request->voucher_code_applied})" : ""),
+            ]);
+
+            ChiTietDonHang::create([
+                'don_hang_id' => $donHang->id,
+                'san_pham_id' => $variant->san_pham_id,
+                'bien_the_id' => $variant->id,
+                'don_gia'     => $unitPrice,
+                'so_luong'    => $qty,
+                'thanh_tien'  => $subtotal,
+            ]);
+
+            if ($voucherId) {
+                Voucher::find($voucherId)->increment('da_su_dung');
+            }
+
+            // Xóa session buy_now sau khi tạo đơn
+            Session::forget('buy_now');
+
+            if ($request->payment_method === 'cod') {
+                // Trừ tồn kho trực tiếp cho biến thể
+                $variant->so_luong = max(0, (int) $variant->so_luong - $qty);
+                $variant->save();
+
+                DB::commit();
+                return redirect()->route('order.success', $donHang->ma_don_hang);
+            }
+
             if ($request->payment_method === 'vnpay') {
                 DB::commit();
                 return $this->initiateVnpay($donHang, $total);
@@ -230,18 +528,6 @@ class CheckoutController extends Controller
         return $result;
     }
 
-    private function calculateDiscountForCheckout($cartItems): float
-    {
-        return ($cartItems->sum('checkout_qty') >= 3) ? round($cartItems->sum('checkout_thanh_tien') * 0.1, 0) : 0;
-    }
-
-    private function calculateDiscountForProcess($orderMeta): float
-    {
-        $qty = array_sum(array_column($orderMeta, 'qty'));
-        $amt = array_sum(array_column($orderMeta, 'amount'));
-        return ($qty >= 3) ? round($amt * 0.1, 0) : 0;
-    }
-
     public function vnpayReturn(Request $request)
     {
         $vnp_HashSecret = "QIN1IHTRN9CSYSUGV2EK6MV3ZC2OKNLT";
@@ -267,7 +553,6 @@ class CheckoutController extends Controller
         $secureHash = hash_hmac('sha512', $hashData, $vnp_HashSecret);
 
         $txnRef = $request->vnp_TxnRef ?? null;
-
         $maDonHang = explode('_', $txnRef)[0] ?? null;
 
         $donHang = $maDonHang ? DonHang::where('ma_don_hang', $maDonHang)->first() : null;
@@ -276,25 +561,71 @@ class CheckoutController extends Controller
             return redirect()->route('home')->with('error', 'Không tìm thấy đơn hàng.');
         }
 
-        if (strtolower($secureHash) === strtolower($vnp_SecureHash)) {
-            $responseCode = $request->vnp_ResponseCode ?? '99';
-
-            if ($responseCode === '00') {
-                $donHang->update([
-                    'trang_thai_thanh_toan' => 'da_thanh_toan',
-                    'trang_thai'            => 'dang_xu_ly',
-                ]);
-
-                return redirect()->route('order.success', $donHang->ma_don_hang)
-                    ->with('success', 'Thanh toán VNPAY thành công! Đơn hàng đã được xác nhận.');
-            } else {
-                return redirect()->route('home')
-                    ->with('error', 'Thanh toán thất bại, hãy thực hiện thanh toán lại trong 15 phút');
-            }
+        // Nếu đơn đã được xử lý thanh toán trước đó thì không làm lại
+        if ($donHang->trang_thai_thanh_toan === 'da_thanh_toan') {
+            return redirect()->route('order.success', $donHang->ma_don_hang);
         }
 
-        return redirect()->route('home')
-            ->with('error', 'Chữ ký giao dịch không hợp lệ. Vui lòng liên hệ hỗ trợ.');
+        if (strtolower($secureHash) !== strtolower($vnp_SecureHash)) {
+            return redirect()->route('home')
+                ->with('error', 'Chữ ký giao dịch không hợp lệ. Vui lòng liên hệ hỗ trợ.');
+        }
+
+        $responseCode = $request->vnp_ResponseCode ?? '99';
+
+        if ($responseCode !== '00') {
+            return redirect()->route('home')
+                ->with('error', 'Thanh toán thất bại, hãy thực hiện thanh toán lại trong 15 phút');
+        }
+
+        // Thanh toán VNPAY thành công -> trừ tồn kho + cập nhật giỏ hàng giống COD
+        DB::beginTransaction();
+        try {
+            $donHang->load('chiTietDonHangs.bienThe', 'chiTietDonHangs.sanPham');
+
+            foreach ($donHang->chiTietDonHangs as $ct) {
+                $purchasedQty = max(0, (int) $ct->so_luong);
+
+                if ($ct->bienThe && $purchasedQty > 0) {
+                    $currentStock = (int) $ct->bienThe->so_luong;
+                    $newStock = max(0, $currentStock - $purchasedQty);
+                    $ct->bienThe->so_luong = $newStock;
+                    $ct->bienThe->save();
+                }
+
+                // Cập nhật giỏ hàng của người dùng cho biến thể tương ứng (nếu còn trong giỏ)
+                $cartItems = GioHang::where('nguoi_dung_id', $donHang->nguoi_dung_id)
+                    ->where('san_pham_id', $ct->san_pham_id)
+                    ->where('bien_the_id', $ct->bien_the_id)
+                    ->dangTrongGio()
+                    ->get();
+
+                foreach ($cartItems as $item) {
+                    $remaining = max(0, $item->so_luong - $purchasedQty);
+                    if ($remaining > 0) {
+                        $item->so_luong = $remaining;
+                        $item->save();
+                    } else {
+                        $item->delete();
+                    }
+                }
+            }
+
+            $donHang->update([
+                'trang_thai_thanh_toan' => 'da_thanh_toan',
+                'trang_thai'            => 'dang_xu_ly',
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('order.success', $donHang->ma_don_hang)
+                ->with('success', 'Thanh toán VNPAY thành công! Đơn hàng đã được xác nhận.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return redirect()->route('home')
+                ->with('error', 'Lỗi xử lý sau thanh toán: ' . $e->getMessage());
+        }
     }
 
     public function repay($id)

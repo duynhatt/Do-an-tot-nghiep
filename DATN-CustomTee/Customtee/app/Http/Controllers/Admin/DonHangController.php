@@ -79,6 +79,23 @@ class DonHangController extends Controller
             return back()->with('error', 'Chỉ khách hàng mới có thể xác nhận hoàn thành đơn hàng.');
         }
 
+        // Với đơn thanh toán online (VNPAY), nếu CHƯA thanh toán thành công thì
+        // KHÔNG cho phép admin chuyển sang các trạng thái xử lý/giao hàng.
+        if (
+            $donHang->phuong_thuc_thanh_toan === 'vnpay'
+            && $donHang->trang_thai_thanh_toan !== 'da_thanh_toan'
+            && in_array($trangThaiMoi, [
+                DonHang::TRANG_THAI_DANG_XU_LY,
+                DonHang::TRANG_THAI_DANG_GIAO,
+                DonHang::TRANG_THAI_DA_GIAO,
+            ], true)
+        ) {
+            return back()->with(
+                'error',
+                'Đơn thanh toán online chưa được thanh toán thành công, không thể chuyển sang trạng thái xử lý/giao hàng.'
+            );
+        }
+
         if (!DonHang::coTheChuyenSang($donHang->trang_thai, $trangThaiMoi)) {
             return back()->with('error', 'Không thể chuyển từ "' . DonHang::tenTrangThai($donHang->trang_thai) . '" sang "' . DonHang::tenTrangThai($trangThaiMoi) . '".');
         }

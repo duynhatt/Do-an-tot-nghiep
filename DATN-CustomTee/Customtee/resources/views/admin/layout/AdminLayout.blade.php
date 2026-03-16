@@ -152,6 +152,15 @@
                             </ul>
                         </li>
                         <li class="sub-menu">
+                            <a href="javascript:;">
+                                <i class="fa fa-shopping-cart"></i>
+                                <span>bình luận</span>
+                            </a>
+                            <ul class="sub">
+                                <li><a href="{{ route('admin.binh-luan.index') }}"> bình luận</a></li>
+                            </ul>
+                        </li>
+                        <li class="sub-menu">
     <a href="javascript:;">
         <i class="fa fa-ticket"></i>
         <span>Quản lý Voucher</span>

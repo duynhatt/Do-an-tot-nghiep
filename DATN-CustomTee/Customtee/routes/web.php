@@ -89,6 +89,10 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('dat-hang');
     Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
+    // Mua ngay (không dùng giỏ hàng)
+    Route::post('/buy-now', [CheckoutController::class, 'buyNow'])->name('buy-now');
+    Route::get('/checkout/buy-now', [CheckoutController::class, 'checkoutBuyNow'])->name('checkout.buy-now');
+    Route::post('/checkout/buy-now/process', [CheckoutController::class, 'processBuyNow'])->name('checkout.buy-now.process');
     Route::get('/checkout/vnpay/return', [CheckoutController::class, 'vnpayReturn'])->name('vnpay.return');
     Route::get('/order/{id}/repay', [CheckoutController::class, 'repay'])->name('order.repay');
 

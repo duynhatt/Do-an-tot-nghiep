@@ -80,11 +80,16 @@
                             <span class="step-number">1</span> Thông tin nhận hàng
                         </h4>
 
-                        <form method="POST" action="{{ route('checkout.process') }}" id="checkoutForm">
+                        <form method="POST" action="{{ !empty($buyNowMode) ? route('checkout.buy-now.process') : route('checkout.process') }}" id="checkoutForm">
                             @csrf
+                            @if(!empty($buyNowMode))
+                                <input type="hidden" name="mode" value="buy_now">
+                            @endif
                             <input type="hidden" name="voucher_code_applied" id="hidden-voucher-code">
                             
-                            <input type="hidden" name="selected_items" value="{{ request()->query('items', '') }}">
+                            @if(empty($buyNowMode))
+                                <input type="hidden" name="selected_items" value="{{ request()->query('items', '') }}">
+                            @endif
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Họ và tên <span class="text-danger">*</span></label>
@@ -98,25 +103,34 @@
                                         name="phone" value="{{ old('phone') }}" required>
                                 </div>
 
-                                <div class="col-md-4">
+                               <div class="col-md-4">
                                     <label class="form-label">Tỉnh/Thành phố <span class="text-danger">*</span></label>
-                                    <select class="form-select" name="province" id="province" required>
+                                    <select class="form-select @error('province') is-invalid @enderror" name="province" id="province" required>
                                         <option value="">Chọn tỉnh/thành</option>
                                     </select>
+                                    @error('province')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
                                 <div class="col-md-4">
                                     <label class="form-label">Quận/Huyện <span class="text-danger">*</span></label>
-                                    <select class="form-select" name="district" id="district" required disabled>
+                                    <select class="form-select @error('district') is-invalid @enderror" name="district" id="district" required disabled>
                                         <option value="">Chọn quận/huyện</option>
                                     </select>
+                                    @error('district')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
                                 <div class="col-md-4">
                                     <label class="form-label">Phường/Xã <span class="text-danger">*</span></label>
-                                    <select class="form-select" name="ward" id="ward" required disabled>
+                                    <select class="form-select @error('ward') is-invalid @enderror" name="ward" id="ward" required disabled>
                                         <option value="">Chọn phường/xã</option>
                                     </select>
+                                    @error('ward')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
                                 <div class="col-12">
