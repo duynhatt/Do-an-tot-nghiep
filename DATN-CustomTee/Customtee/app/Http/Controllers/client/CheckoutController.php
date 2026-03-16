@@ -296,4 +296,78 @@ class CheckoutController extends Controller
         return redirect()->route('home')
             ->with('error', 'Chữ ký giao dịch không hợp lệ. Vui lòng liên hệ hỗ trợ.');
     }
+
+    public function repay($id)
+    {
+
+        $donHang = DonHang::with('chiTietDonHangs')->findOrFail($id);
+
+        $donHang->checkAutoCancel();
+
+        if ($donHang->trang_thai === 'da_huy') {
+            return back()->with('error', 'Đơn hàng đã hết thời gian thanh toán và đã bị hủy.');
+        }
+
+        if ($donHang->trang_thai_thanh_toan !== 'chua_thanh_toan') {
+            return redirect()->back()->with('error', 'Đơn hàng này đã được thanh toán.');
+        }
+
+        if ($donHang->phuong_thuc_thanh_toan !== 'vnpay') {
+            return redirect()->back()->with('error', 'Đơn hàng này không sử dụng VNPAY.');
+        }
+
+        $vnp_Url        = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
+        $vnp_TmnCode    = "KE8AMY5Q";
+        $vnp_HashSecret = "QIN1IHTRN9CSYSUGV2EK6MV3ZC2OKNLT";
+        $vnp_ReturnUrl  = route('vnpay.return');
+
+        $vnp_TxnRef = $donHang->ma_don_hang . '_' . time();
+        $vnp_OrderInfo  = "Thanh toan don hang " . $donHang->ma_don_hang;
+        $vnp_OrderType  = "order";
+        $vnp_Amount     = $donHang->tong_tien * 100;
+        $vnp_Locale     = 'vn';
+
+        $vnp_CreateDate = now();
+        $vnp_ExpireDate = $vnp_CreateDate->copy()->addMinute(5);
+
+        $inputData = [
+            "vnp_Version"    => "2.1.0",
+            "vnp_TmnCode"    => $vnp_TmnCode,
+            "vnp_Amount"     => $vnp_Amount,
+            "vnp_Command"    => "pay",
+            "vnp_CreateDate" => $vnp_CreateDate->format('YmdHis'),
+            "vnp_ExpireDate" => $vnp_ExpireDate->format('YmdHis'),
+            "vnp_CurrCode"   => "VND",
+            "vnp_IpAddr"     => request()->ip(),
+            "vnp_Locale"     => $vnp_Locale,
+            "vnp_OrderInfo"  => $vnp_OrderInfo,
+            "vnp_OrderType"  => $vnp_OrderType,
+            "vnp_ReturnUrl"  => $vnp_ReturnUrl,
+            "vnp_TxnRef"     => $vnp_TxnRef,
+        ];
+
+        ksort($inputData);
+
+        $hashdata = '';
+        $query = '';
+        $first = true;
+
+        foreach ($inputData as $key => $value) {
+            if ($first) {
+                $first = false;
+            } else {
+                $hashdata .= '&';
+                $query .= '&';
+            }
+
+            $hashdata .= urlencode($key) . "=" . urlencode($value);
+            $query    .= urlencode($key) . "=" . urlencode($value);
+        }
+
+        $vnpSecureHash = hash_hmac('sha512', $hashdata, $vnp_HashSecret);
+
+        $vnp_Url = $vnp_Url . "?" . $query . '&vnp_SecureHash=' . $vnpSecureHash;
+
+        return redirect($vnp_Url);
+    }
 }
