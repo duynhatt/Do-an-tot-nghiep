@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <title>CustomTee</title>
+    <title>FashionTee</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -80,7 +80,7 @@
         <div class="container d-flex justify-content-between align-items-center">
 
             <a class="navbar-brand text-success logo h1 align-self-center" href="{{ url('/') }}">
-                CustomTee
+                FashionTee
             </a>
 
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse"

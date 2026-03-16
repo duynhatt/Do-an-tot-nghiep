@@ -1,7 +1,34 @@
 @extends('admin.layout.AdminLayout')
 
 @section('AdminContent')
+<style>
+    .form-group{
+    margin-bottom:15px;
+    width: 1400px;
+}
 
+#variantsContainer .variant-row{
+    padding:10px;
+    border:1px dashed #ddd;
+    margin-bottom:10px;
+    background:#fcfcfc;
+}
+.variant-header{
+    font-size:12px;
+    color:#666;
+    margin-bottom:6px;
+}
+.variant-header .col-md-1,
+.variant-header .col-md-2,
+.variant-header .col-md-3{
+    padding-top:2px;
+    padding-bottom:2px;
+}
+.variant-actions{
+    margin-top:8px;
+}
+
+</style>
 <div class="d-flex justify-content-between align-items-center" style="margin-bottom:20px;">
     <h3 class="mb-0">Cập nhật biến thể</h3>
     <a href="{{ route('admin.san-pham.index') }}" class="btn btn-outline-secondary btn-sm">

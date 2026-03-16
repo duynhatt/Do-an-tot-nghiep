@@ -40,7 +40,7 @@ class DonHangController extends Controller
             }
         }
 
-        $donHangs = $query->paginate(10)->withQueryString();
+        $donHangs = $query->paginate(9)->withQueryString();
 
         return view('admin.don-hang.index', compact('donHangs'));
     }

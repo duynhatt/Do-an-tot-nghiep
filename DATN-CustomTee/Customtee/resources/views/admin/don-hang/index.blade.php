@@ -60,6 +60,8 @@
                         <th>Mã đơn</th>
                         <th>Khách hàng</th>
                         <th>Tổng tiền</th>
+                        <th>TT thanh toán</th>
+                        <th>PT thanh toán</th>
                         <th>Trạng thái</th>
                         <th width="12%">Hành động</th>
                     </tr>
@@ -82,6 +84,21 @@
                             @endif
                         </td>
                         <td class="text-right align-middle">{{ number_format($donHang->tong_tien, 0, ',', '.') }} ₫</td>
+                        <td class="text-center align-middle">
+                            @php
+                                $paymentBadge = match ($donHang->trang_thai_thanh_toan) {
+                                    'da_thanh_toan' => ['class' => 'success', 'text' => 'Đã thanh toán'],
+                                    'that_bai' => ['class' => 'danger', 'text' => 'Thanh toán thất bại'],
+                                    default => ['class' => 'warning', 'text' => 'Chưa thanh toán'],
+                                };
+                            @endphp
+                            <span class="badge badge-{{ $paymentBadge['class'] }}">{{ $paymentBadge['text'] }}</span>
+                        </td>
+                        <td class="text-center align-middle">
+                            <span class="badge badge-light border">
+                                {{ $donHang->phuong_thuc_thanh_toan === 'cod' ? 'COD' : strtoupper($donHang->phuong_thuc_thanh_toan) }}
+                            </span>
+                        </td>
                         <td class="text-center align-middle">
                             @php
                                 $badge = [
@@ -114,7 +131,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">Chưa có đơn hàng nào.</td>
+                        <td colspan="8" class="text-center text-muted py-4">Chưa có đơn hàng nào.</td>
                     </tr>
                     @endforelse
                 </tbody>

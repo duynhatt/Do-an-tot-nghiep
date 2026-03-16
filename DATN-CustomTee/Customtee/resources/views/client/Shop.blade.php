@@ -28,6 +28,32 @@
                 color: #28a745 !important;
                 padding-left: 10px !important;
             }
+
+            /* Đồng bộ chiều cao card sản phẩm */
+            .product-wap {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+            }
+
+            .product-wap > .card {
+                border: 0;
+            }
+
+            .product-wap .card-body {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+            }
+
+            .product-wap .product-title {
+                min-height: 56px; /* giữ phần tên 2 dòng cho đều */
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
         </style>
 
         <div class="col-lg-9">
@@ -56,8 +82,8 @@
             </div>
             <div class="row">
                 @forelse($sanPhams as $sp)
-                <div class="col-md-4">
-                    <div class="card mb-4 product-wap rounded-0">
+                <div class="col-md-4 mb-4">
+                    <div class="card product-wap rounded-0">
                         <div class="card rounded-0">
                             <img class="card-img rounded-0 img-fluid" src="{{ $sp->hinh_anh_chinh ? asset('storage/' . $sp->hinh_anh_chinh) : asset('img/shop_01.jpg') }}" alt="{{ $sp->ten_san_pham }}">
                             <div class="card-img-overlay rounded-0 product-overlay d-flex align-items-center justify-content-center">
@@ -74,20 +100,11 @@
                             </div>
                         </div>
                         <div class="card-body">
-                            <a  href="{{ route('sanpham.chitiet', $sp->slug) }}" class="h3 text-decoration-none">{{ $sp->ten_san_pham }}</a>
+                            <a  href="{{ route('sanpham.chitiet', $sp->slug) }}" class="h3 text-decoration-none product-title">{{ $sp->ten_san_pham }}</a>
                             {{-- <ul class="w-100 list-unstyled d-flex justify-content-between mb-0">
                                     <li class="text-muted small">{{ $sp->category->ten_danh_muc ?? '' }}</li>
                             </ul> --}}
-                            <ul class="list-unstyled d-flex justify-content-center mb-1">
-                                <li>
-                                    <i class="text-warning fa fa-star"></i>
-                                    <i class="text-warning fa fa-star"></i>
-                                    <i class="text-warning fa fa-star"></i>
-                                    <i class="text-muted fa fa-star"></i>
-                                    <i class="text-muted fa fa-star"></i>
-                                </li>
-                            </ul>
-                            <p class="text-center mb-0">
+                            <p class="text-center mb-0 mt-2">
                                 @if($sp->variants_min_gia)
                                 {{ number_format($sp->variants_min_gia, 0, ',', '.') }}đ
                                 @else

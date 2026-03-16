@@ -1,47 +1,48 @@
- <!-- Start Footer -->
+<!-- Start Footer -->
     <footer class="bg-dark" id="tempaltemo_footer">
         <div class="container">
             <div class="row">
 
                 <div class="col-md-4 pt-5">
-                    <h2 class="h2 text-success border-bottom pb-3 border-light logo">Zay Shop</h2>
+                    <h2 class="h2 text-success border-bottom pb-3 border-light logo">fashionTee</h2>
+                    <p class="text-light small mb-3">Thương hiệu thời trang trẻ, chất lượng. Áo thun, áo khoác, quần áo unisex — phong cách của bạn.</p>
                     <ul class="list-unstyled text-light footer-link-list">
                         <li>
                             <i class="fas fa-map-marker-alt fa-fw"></i>
-                            123 Consectetur at ligula 10660
+                            Việt Nam
                         </li>
                         <li>
                             <i class="fa fa-phone fa-fw"></i>
-                            <a class="text-decoration-none" href="tel:010-020-0340">010-020-0340</a>
+                            <a class="text-decoration-none text-light" href="tel:1900-xxxx">1900-xxxx</a>
                         </li>
                         <li>
                             <i class="fa fa-envelope fa-fw"></i>
-                            <a class="text-decoration-none" href="mailto:info@company.com">info@company.com</a>
+                            <a class="text-decoration-none text-light" href="mailto:hello@fashiontee.vn">hello@fashiontee.vn</a>
                         </li>
                     </ul>
                 </div>
 
                 <div class="col-md-4 pt-5">
-                    <h2 class="h2 text-light border-bottom pb-3 border-light">Products</h2>
+                    <h2 class="h2 text-light border-bottom pb-3 border-light">Sản phẩm</h2>
                     <ul class="list-unstyled text-light footer-link-list">
-                        <li><a class="text-decoration-none" href="#">Luxury</a></li>
-                        <li><a class="text-decoration-none" href="#">Sport Wear</a></li>
-                        <li><a class="text-decoration-none" href="#">Men's Shoes</a></li>
-                        <li><a class="text-decoration-none" href="#">Women's Shoes</a></li>
-                        <li><a class="text-decoration-none" href="#">Popular Dress</a></li>
-                        <li><a class="text-decoration-none" href="#">Gym Accessories</a></li>
-                        <li><a class="text-decoration-none" href="#">Sport Shoes</a></li>
+                        <li><a class="text-decoration-none text-light" href="{{ url('/Shop') }}">Tất cả sản phẩm</a></li>
+                        <li><a class="text-decoration-none text-light" href="{{ url('/Shop') }}">Áo thun</a></li>
+                        <li><a class="text-decoration-none text-light" href="{{ url('/Shop') }}">Áo khoác</a></li>
+                        <li><a class="text-decoration-none text-light" href="{{ url('/Shop') }}">Quần</a></li>
+                        <li><a class="text-decoration-none text-light" href="{{ url('/Shop') }}">Phụ kiện</a></li>
                     </ul>
                 </div>
 
                 <div class="col-md-4 pt-5">
-                    <h2 class="h2 text-light border-bottom pb-3 border-light">Further Info</h2>
+                    <h2 class="h2 text-light border-bottom pb-3 border-light">Liên kết</h2>
                     <ul class="list-unstyled text-light footer-link-list">
-                        <li><a class="text-decoration-none" href="#">Home</a></li>
-                        <li><a class="text-decoration-none" href="#">About Us</a></li>
-                        <li><a class="text-decoration-none" href="#">Shop Locations</a></li>
-                        <li><a class="text-decoration-none" href="#">FAQs</a></li>
-                        <li><a class="text-decoration-none" href="#">Contact</a></li>
+                        <li><a class="text-decoration-none text-light" href="{{ url('/') }}">Trang chủ</a></li>
+                        <li><a class="text-decoration-none text-light" href="{{ url('/About') }}">Về chúng tôi</a></li>
+                        <li><a class="text-decoration-none text-light" href="{{ url('/Shop') }}">Cửa hàng</a></li>
+                        <li><a class="text-decoration-none text-light" href="{{ url('/Contact') }}">Liên hệ</a></li>
+                        @auth
+                        <li><a class="text-decoration-none text-light" href="{{ route('order') }}">Đơn hàng của tôi</a></li>
+                        @endauth
                     </ul>
                 </div>
 
@@ -54,24 +55,21 @@
                 <div class="col-auto me-auto">
                     <ul class="list-inline text-left footer-icons">
                         <li class="list-inline-item border border-light rounded-circle text-center">
-                            <a class="text-light text-decoration-none" target="_blank" href="http://facebook.com/"><i class="fab fa-facebook-f fa-lg fa-fw"></i></a>
+                            <a class="text-light text-decoration-none" target="_blank" rel="noopener" href="https://facebook.com/"><i class="fab fa-facebook-f fa-lg fa-fw"></i></a>
                         </li>
                         <li class="list-inline-item border border-light rounded-circle text-center">
-                            <a class="text-light text-decoration-none" target="_blank" href="https://www.instagram.com/"><i class="fab fa-instagram fa-lg fa-fw"></i></a>
+                            <a class="text-light text-decoration-none" target="_blank" rel="noopener" href="https://www.instagram.com/"><i class="fab fa-instagram fa-lg fa-fw"></i></a>
                         </li>
                         <li class="list-inline-item border border-light rounded-circle text-center">
-                            <a class="text-light text-decoration-none" target="_blank" href="https://twitter.com/"><i class="fab fa-twitter fa-lg fa-fw"></i></a>
-                        </li>
-                        <li class="list-inline-item border border-light rounded-circle text-center">
-                            <a class="text-light text-decoration-none" target="_blank" href="https://www.linkedin.com/"><i class="fab fa-linkedin fa-lg fa-fw"></i></a>
+                            <a class="text-light text-decoration-none" target="_blank" rel="noopener" href="https://twitter.com/"><i class="fab fa-twitter fa-lg fa-fw"></i></a>
                         </li>
                     </ul>
                 </div>
                 <div class="col-auto">
-                    <label class="sr-only" for="subscribeEmail">Email address</label>
+                    <label class="sr-only" for="subscribeEmail">Email đăng ký nhận tin</label>
                     <div class="input-group mb-2">
-                        <input type="text" class="form-control bg-dark border-light" id="subscribeEmail" placeholder="Email address">
-                        <div class="input-group-text btn-success text-light">Subscribe</div>
+                        <input type="text" class="form-control bg-dark border-light" id="subscribeEmail" placeholder="Email nhận tin khuyến mãi">
+                        <div class="input-group-text btn-success text-light">Đăng ký</div>
                     </div>
                 </div>
             </div>
@@ -81,9 +79,8 @@
             <div class="container">
                 <div class="row pt-2">
                     <div class="col-12">
-                        <p class="text-left text-light">
-                            Copyright &copy; 2021 Company Name 
-                            | Designed by <a rel="sponsored" href="https://templatemo.com" target="_blank">TemplateMo</a>
+                        <p class="text-left text-light mb-0">
+                            &copy; {{ date('Y') }} <strong>fashionTee</strong>. Bản quyền thuộc fashionTee.
                         </p>
                     </div>
                 </div>

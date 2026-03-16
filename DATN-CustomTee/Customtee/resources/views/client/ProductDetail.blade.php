@@ -1,15 +1,17 @@
 @include('client.layout.header')
 
-<div class="container">
-    <nav aria-label="breadcrumb" class="my-4">
-        <ol class="breadcrumb bg-transparent p-0 mb-0">
-            <li class="breadcrumb-item"><a href="{{ url('/') }}" class="text-decoration-none">Trang chủ</a></li>
+<div class="container my-4">
+    <nav aria-label="breadcrumb" class="product-breadcrumb">
+        <ol class="breadcrumb bg-transparent px-0 mb-0">
+            <li class="breadcrumb-item">
+                <a href="{{ url('/') }}" class="text-decoration-none">Trang chủ</a>
+            </li>
             <li class="breadcrumb-item">
                 <a href="{{ url('/Shop') }}" class="text-decoration-none">
                     {{ $sanPham->category->ten_danh_muc ?? 'Danh mục' }}
                 </a>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">{{ $sanPham->ten_san_pham }}</li>
+            <li class="breadcrumb-item active fw-semibold text-dark" aria-current="page">{{ $sanPham->ten_san_pham }}</li>
         </ol>
     </nav>
 </div>
@@ -92,7 +94,7 @@
                 </div>
                 <small class="text-muted d-block mt-2" id="ton-kho-info">
                     @if($totalStock > 0)
-                    Còn {{ $totalStock }} sản phẩm (tổng tất cả biến thể)
+                    Còn {{ $totalStock }} sản phẩm (tổng tất cả)
                     @else
                     Hết hàng
                     @endif
@@ -189,8 +191,37 @@
 </div>
 
 <style>
+    .product-breadcrumb {
+        padding: 1rem 0;
+        border-bottom: 0px solid #eee;
+    }
+
+    .product-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
+        content: "›";
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .product-breadcrumb .breadcrumb a {
+        font-size: 1.05rem;
+        font-weight: 500;
+        color: #6c757d;
+    }
+
+    .product-breadcrumb .breadcrumb a:hover {
+        color: #198754;
+        text-decoration: none;
+    }
+
+    .product-breadcrumb .breadcrumb-item.active {
+        font-size: 1.2rem;
+        color: #212529;
+    }
+
     .product-main-img {
         transition: transform 0.3s ease;
+         border: 1px solid #555555;
+    border-radius: 6px;
     }
 
     .product-main-img:hover {
@@ -287,7 +318,7 @@
                 giaHienTai.textContent = '{{ $priceRange }}';
                 giaGoc.classList.add('d-none');
                 phanTramGiam.classList.add('d-none');
-                tonKhoInfo.innerHTML = '{{ $totalStock > 0 ? "Còn $totalStock sản phẩm (tổng tất cả biến thể)" : "Hết hàng" }}';
+                tonKhoInfo.innerHTML = '{{ $totalStock > 0 ? "Còn $totalStock sản phẩm (tổng tất cả)" : "Hết hàng" }}';
                 quantityInput.disabled = false;
                 addToCartBtn.disabled = false;
                 buyNowBtn.disabled = false;
