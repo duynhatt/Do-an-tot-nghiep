@@ -15,6 +15,16 @@
         // Không cho admin chuyển đơn sang "Đã hoàn thành" – chỉ khách mới được xác nhận
         unset($trangThaiTiepTheo[\App\Models\DonHang::TRANG_THAI_DA_HOAN_THANH]);
 
+        // Nếu là đơn VNPAY nhưng CHƯA thanh toán thành công,
+        // chỉ cho phép hiển thị lựa chọn "Đã hủy" (nếu có) để tránh nhầm xác nhận.
+        if ($donHang->phuong_thuc_thanh_toan === 'vnpay' && $donHang->trang_thai_thanh_toan !== 'da_thanh_toan') {
+            $trangThaiTiepTheo = array_filter(
+                $trangThaiTiepTheo,
+                fn($key) => $key === \App\Models\DonHang::TRANG_THAI_DA_HUY,
+                ARRAY_FILTER_USE_KEY
+            );
+        }
+
         $tenTrangThaiHienTai = \App\Models\DonHang::tenTrangThai($donHang->trang_thai);
     @endphp
 

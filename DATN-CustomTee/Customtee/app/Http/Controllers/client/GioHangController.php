@@ -19,6 +19,19 @@ class GioHangController extends Controller
         $items = GioHang::with(['sanPham', 'bienThe.color', 'bienThe.size'])
             ->where('nguoi_dung_id', Auth::id())
             ->dangTrongGio()
+            // Chỉ hiển thị những dòng giỏ còn hợp lệ:
+            // - Sản phẩm đang bật (trang_thai = true)
+            // - Danh mục của sản phẩm đang bật (trang_thai = 1)
+            // - Biến thể đang bật (trang_thai = true)
+            ->whereHas('sanPham', function ($q) {
+                $q->where('trang_thai', true)
+                  ->whereHas('danhMuc', function ($q2) {
+                      $q2->where('trang_thai', 1);
+                  });
+            })
+            ->whereHas('bienThe', function ($q) {
+                $q->where('trang_thai', true);
+            })
             ->whereNotNull('bien_the_id')
             ->orderBy('updated_at', 'desc')
             ->get();
