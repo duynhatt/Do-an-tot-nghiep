@@ -44,14 +44,18 @@ class CheckoutController extends Controller
 
         $subtotal = $cartItems->sum('checkout_thanh_tien');
         $shippingFee = $this->calculateShippingFee($subtotal);
-        
+
         // Giảm giá mặc định (mua trên 3 sp giảm 10%)
         $systemDiscount = $this->calculateDiscountForCheckout($cartItems);
-        
+
         $total = $subtotal + $shippingFee - $systemDiscount;
 
         return view('client.checkout.index', compact(
-            'cartItems', 'subtotal', 'shippingFee', 'systemDiscount', 'total'
+            'cartItems',
+            'subtotal',
+            'shippingFee',
+            'systemDiscount',
+            'total'
         ));
     }
 
@@ -84,7 +88,7 @@ class CheckoutController extends Controller
 
         $shippingFee = $this->calculateShippingFee($subtotal);
         $systemDiscount = $this->calculateDiscountForProcess($orderMeta);
-        
+
         // --- XỬ LÝ VOUCHER (BẮT BUỘC KHỚP HOA THƯỜNG) ---
         $voucherDiscount = 0;
         $voucherId = null;
@@ -95,7 +99,7 @@ class CheckoutController extends Controller
                 ->where('ket_thuc', '>=', now())
                 ->where('trang_thai', 1)
                 ->first();
-            
+
             if ($voucher && $voucher->da_su_dung < $voucher->so_luong) {
                 if ($voucher->loai == 'phan_tram') {
                     $voucherDiscount = ($subtotal * $voucher->gia_tri) / 100;
@@ -163,18 +167,18 @@ class CheckoutController extends Controller
                 DB::commit();
                 return $this->initiateVnpay($donHang, $total);
             }
-
         } catch (\Throwable $e) {
             DB::rollBack();
             return back()->with('error', 'Lỗi đặt hàng: ' . $e->getMessage());
         }
     }
 
-    private function initiateVnpay($donHang, $total) {
+    private function initiateVnpay($donHang, $total)
+    {
         $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
         $vnp_TmnCode = "KE8AMY5Q";
         $vnp_HashSecret = "QIN1IHTRN9CSYSUGV2EK6MV3ZC2OKNLT";
-        
+
         $inputData = [
             "vnp_Version" => "2.1.0",
             "vnp_TmnCode" => $vnp_TmnCode,
@@ -188,6 +192,7 @@ class CheckoutController extends Controller
             "vnp_OrderType" => "order",
             "vnp_ReturnUrl" => route('vnpay.return'),
             "vnp_TxnRef" => $donHang->ma_don_hang,
+            "vnp_BankCode" => "NCB"
         ];
         ksort($inputData);
         $query = "";
@@ -195,38 +200,174 @@ class CheckoutController extends Controller
         $hashdata = "";
         foreach ($inputData as $key => $value) {
             if ($i == 1) $hashdata .= '&' . urlencode($key) . "=" . urlencode($value);
-            else { $hashdata .= urlencode($key) . "=" . urlencode($value); $i = 1; }
+            else {
+                $hashdata .= urlencode($key) . "=" . urlencode($value);
+                $i = 1;
+            }
             $query .= urlencode($key) . "=" . urlencode($value) . '&';
         }
         $vnp_Url = $vnp_Url . "?" . $query . 'vnp_SecureHash=' . hash_hmac('sha512', $hashdata, $vnp_HashSecret);
         return redirect($vnp_Url);
     }
 
-    private function calculateShippingFee($subtotal) { return $subtotal >= 1000000 ? 0 : 35000; }
-    
-    private function parseItemsQuantities(string $itemsParam): array {
+    private function calculateShippingFee($subtotal)
+    {
+        return $subtotal >= 1000000 ? 0 : 35000;
+    }
+
+    private function parseItemsQuantities(string $itemsParam): array
+    {
         $result = [];
         $parts = array_filter(explode(',', $itemsParam));
         foreach ($parts as $part) {
             if (strpos($part, ':') !== false) {
                 [$id, $qty] = explode(':', $part);
                 $result[(int)$id] = (int)$qty;
-            } else { $result[(int)$part] = null; }
+            } else {
+                $result[(int)$part] = null;
+            }
         }
         return $result;
     }
-    
-    private function calculateDiscountForCheckout($cartItems): float {
+
+    private function calculateDiscountForCheckout($cartItems): float
+    {
         return ($cartItems->sum('checkout_qty') >= 3) ? round($cartItems->sum('checkout_thanh_tien') * 0.1, 0) : 0;
     }
-    
-    private function calculateDiscountForProcess($orderMeta): float {
+
+    private function calculateDiscountForProcess($orderMeta): float
+    {
         $qty = array_sum(array_column($orderMeta, 'qty'));
         $amt = array_sum(array_column($orderMeta, 'amount'));
         return ($qty >= 3) ? round($amt * 0.1, 0) : 0;
     }
 
-    public function vnpayReturn(Request $request) {
-        // Giữ nguyên logic vnpayReturn hiện tại của bạn
+    public function vnpayReturn(Request $request)
+    {
+        $vnp_HashSecret = "QIN1IHTRN9CSYSUGV2EK6MV3ZC2OKNLT";
+
+        $inputData = $request->all();
+        $vnp_SecureHash = $inputData['vnp_SecureHash'] ?? null;
+
+        unset($inputData['vnp_SecureHash']);
+        unset($inputData['vnp_SecureHashType']);
+
+        ksort($inputData);
+        $hashData = '';
+        $i = 0;
+        foreach ($inputData as $key => $value) {
+            if ($i == 1) {
+                $hashData .= '&' . urlencode($key) . "=" . urlencode($value);
+            } else {
+                $hashData .= urlencode($key) . "=" . urlencode($value);
+                $i = 1;
+            }
+        }
+
+        $secureHash = hash_hmac('sha512', $hashData, $vnp_HashSecret);
+
+        $txnRef = $request->vnp_TxnRef ?? null;
+
+        $maDonHang = explode('_', $txnRef)[0] ?? null;
+
+        $donHang = $maDonHang ? DonHang::where('ma_don_hang', $maDonHang)->first() : null;
+
+        if (!$donHang) {
+            return redirect()->route('home')->with('error', 'Không tìm thấy đơn hàng.');
+        }
+
+        if (strtolower($secureHash) === strtolower($vnp_SecureHash)) {
+            $responseCode = $request->vnp_ResponseCode ?? '99';
+
+            if ($responseCode === '00') {
+                $donHang->update([
+                    'trang_thai_thanh_toan' => 'da_thanh_toan',
+                    'trang_thai'            => 'dang_xu_ly',
+                ]);
+
+                return redirect()->route('order.success', $donHang->ma_don_hang)
+                    ->with('success', 'Thanh toán VNPAY thành công! Đơn hàng đã được xác nhận.');
+            } else {
+                return redirect()->route('home')
+                    ->with('error', 'Thanh toán thất bại, hãy thực hiện thanh toán lại trong 15 phút');
+            }
+        }
+
+        return redirect()->route('home')
+            ->with('error', 'Chữ ký giao dịch không hợp lệ. Vui lòng liên hệ hỗ trợ.');
+    }
+
+    public function repay($id)
+    {
+
+        $donHang = DonHang::with('chiTietDonHangs')->findOrFail($id);
+
+        $donHang->checkAutoCancel();
+
+        if ($donHang->trang_thai === 'da_huy') {
+            return back()->with('error', 'Đơn hàng đã hết thời gian thanh toán và đã bị hủy.');
+        }
+
+        if ($donHang->trang_thai_thanh_toan !== 'chua_thanh_toan') {
+            return redirect()->back()->with('error', 'Đơn hàng này đã được thanh toán.');
+        }
+
+        if ($donHang->phuong_thuc_thanh_toan !== 'vnpay') {
+            return redirect()->back()->with('error', 'Đơn hàng này không sử dụng VNPAY.');
+        }
+
+        $vnp_Url        = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
+        $vnp_TmnCode    = "KE8AMY5Q";
+        $vnp_HashSecret = "QIN1IHTRN9CSYSUGV2EK6MV3ZC2OKNLT";
+        $vnp_ReturnUrl  = route('vnpay.return');
+
+        $vnp_TxnRef = $donHang->ma_don_hang . '_' . time();
+        $vnp_OrderInfo  = "Thanh toan don hang " . $donHang->ma_don_hang;
+        $vnp_OrderType  = "order";
+        $vnp_Amount     = $donHang->tong_tien * 100;
+        $vnp_Locale     = 'vn';
+
+        $vnp_CreateDate = now();
+        $vnp_ExpireDate = $vnp_CreateDate->copy()->addMinute(5);
+
+        $inputData = [
+            "vnp_Version"    => "2.1.0",
+            "vnp_TmnCode"    => $vnp_TmnCode,
+            "vnp_Amount"     => $vnp_Amount,
+            "vnp_Command"    => "pay",
+            "vnp_CreateDate" => $vnp_CreateDate->format('YmdHis'),
+            "vnp_ExpireDate" => $vnp_ExpireDate->format('YmdHis'),
+            "vnp_CurrCode"   => "VND",
+            "vnp_IpAddr"     => request()->ip(),
+            "vnp_Locale"     => $vnp_Locale,
+            "vnp_OrderInfo"  => $vnp_OrderInfo,
+            "vnp_OrderType"  => $vnp_OrderType,
+            "vnp_ReturnUrl"  => $vnp_ReturnUrl,
+            "vnp_TxnRef"     => $vnp_TxnRef,
+        ];
+
+        ksort($inputData);
+
+        $hashdata = '';
+        $query = '';
+        $first = true;
+
+        foreach ($inputData as $key => $value) {
+            if ($first) {
+                $first = false;
+            } else {
+                $hashdata .= '&';
+                $query .= '&';
+            }
+
+            $hashdata .= urlencode($key) . "=" . urlencode($value);
+            $query    .= urlencode($key) . "=" . urlencode($value);
+        }
+
+        $vnpSecureHash = hash_hmac('sha512', $hashdata, $vnp_HashSecret);
+
+        $vnp_Url = $vnp_Url . "?" . $query . '&vnp_SecureHash=' . $vnpSecureHash;
+
+        return redirect($vnp_Url);
     }
 }
