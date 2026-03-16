@@ -9,7 +9,19 @@
                 <i class="fas fa-plus"></i> Thêm sản phẩm
             </button>
         </div>
-
+<style>
+#modalAdd .modal-dialog{
+    
+    width: 1269px;
+}
+   .form-group{
+    margin-bottom:1px;
+    
+}
+        #variantsSection .variant-row select[name$="[trang_thai]"] {
+            min-width: 60px;
+        }
+    </style>
         {{-- Table --}}
         <div class="card shadow">
             <div class="card-body">
@@ -275,14 +287,6 @@
                                         <option value="0">Ẩn</option>
                                     </select>
                                 </div>
-
-                                <div class="form-group form-check">
-                                    <input type="checkbox" name="cho_phep_thiet_ke" value="1"
-                                        id="edit_cho_phep_thiet_ke" class="form-check-input">
-                                    <label class="form-check-label" for="edit_cho_phep_thiet_ke">Cho phép tùy chỉnh /
-                                        thiết kế</label>
-                                </div>
-                            </div>
                         </div>
                     </div>
 

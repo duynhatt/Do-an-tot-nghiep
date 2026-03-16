@@ -47,6 +47,14 @@
 </head>
 
 <body>
+    <style>
+        #sidebar{
+    width: 219px;
+}
+.brand{
+    width: 219px;
+}
+    </style>
     <section id="container">
     
         <!-- Header -->
@@ -68,7 +76,7 @@
                 <ul class="nav pull-right top-menu">
                     <a class="active" href="{{ url('/') }}">
                                 <i class="fa fa-dashboard"></i>
-                                <span>CustomTee</span>
+                                <span>fashitonTee</span>
                             </a>
                 </ul>
             </div>
