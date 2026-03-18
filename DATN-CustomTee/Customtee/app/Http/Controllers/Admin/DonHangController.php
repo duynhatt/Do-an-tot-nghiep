@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\DonHang;
+use App\Models\GioHang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -107,10 +108,29 @@ class DonHangController extends Controller
 
         if ($trangThaiMoi === DonHang::TRANG_THAI_DA_HUY) {
             DB::transaction(function () use ($donHang, $payload) {
+                // Chỉ hoàn tồn kho khi hệ thống đã trừ tồn trước đó.
+                // - COD: trừ ngay khi tạo đơn.
+                // - VNPAY: chỉ trừ tồn khi thanh toán thành công (trang_thai_thanh_toan = da_thanh_toan).
+                $shouldRefundInventory = $donHang->phuong_thuc_thanh_toan === 'cod'
+                    || $donHang->trang_thai_thanh_toan === 'da_thanh_toan';
+
+                // Với VNPAY chưa thanh toán: đã reserve giỏ bằng `da_dat_hang`,
+                // cần đưa lại các dòng giỏ về "đang trong giỏ" khi admin hủy.
+                $shouldRestoreCart = $donHang->phuong_thuc_thanh_toan === 'vnpay'
+                    && $donHang->trang_thai_thanh_toan !== 'da_thanh_toan';
+
                 $donHang->load('chiTietDonHangs.bienThe');
                 foreach ($donHang->chiTietDonHangs as $ct) {
-                    if ($ct->bienThe) {
+                    if ($shouldRefundInventory && $ct->bienThe) {
                         $ct->bienThe->increment('so_luong', $ct->so_luong);
+                    }
+
+                    if ($shouldRestoreCart) {
+                        GioHang::where('nguoi_dung_id', $donHang->nguoi_dung_id)
+                            ->where('san_pham_id', $ct->san_pham_id)
+                            ->where('bien_the_id', $ct->bien_the_id)
+                            ->where('trang_thai', GioHang::TRANG_THAI_DA_DAT_HANG)
+                            ->update(['trang_thai' => GioHang::TRANG_THAI_DANG_TRONG_GIO]);
                     }
                 }
                 $donHang->update($payload);

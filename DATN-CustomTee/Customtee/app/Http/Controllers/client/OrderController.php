@@ -4,6 +4,7 @@ namespace App\Http\Controllers\client;
 
 use App\Http\Controllers\Controller;
 use App\Models\DonHang;
+use App\Models\GioHang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -80,10 +81,33 @@ class OrderController extends Controller
         }
 
         DB::transaction(function () use ($donHang) {
+            // Chỉ hoàn tồn kho khi hệ thống đã trừ tồn trước đó.
+            // - COD: trừ tồn ngay khi tạo đơn, dù trang_thai_thanh_toan vẫn là 'chua_thanh_toan'
+            // - VNPAY: chỉ trừ tồn khi return thành công (khi trang_thai_thanh_toan = 'da_thanh_toan')
+            $shouldRefundInventory = $donHang->phuong_thuc_thanh_toan === 'cod'
+                || $donHang->trang_thai_thanh_toan === 'da_thanh_toan';
+
+            // Với VNPAY: khi đang "chờ thanh toán lại" thì chúng ta đã reserve giỏ bằng `da_dat_hang`.
+            // Khi hủy đơn thì cần đưa lại các dòng giỏ về trạng thái "đang trong giỏ".
+            $shouldRestoreCart = $donHang->phuong_thuc_thanh_toan === 'vnpay'
+                && $donHang->trang_thai_thanh_toan !== 'da_thanh_toan';
+
             $donHang->load('chiTietDonHangs.bienThe');
-            foreach ($donHang->chiTietDonHangs as $ct) {
-                if ($ct->bienThe) {
-                    $ct->bienThe->increment('so_luong', $ct->so_luong);
+            if ($shouldRefundInventory) {
+                foreach ($donHang->chiTietDonHangs as $ct) {
+                    if ($ct->bienThe) {
+                        $ct->bienThe->increment('so_luong', $ct->so_luong);
+                    }
+                }
+            }
+
+            if ($shouldRestoreCart) {
+                foreach ($donHang->chiTietDonHangs as $ct) {
+                    GioHang::where('nguoi_dung_id', $donHang->nguoi_dung_id)
+                        ->where('san_pham_id', $ct->san_pham_id)
+                        ->where('bien_the_id', $ct->bien_the_id)
+                        ->where('trang_thai', GioHang::TRANG_THAI_DA_DAT_HANG)
+                        ->update(['trang_thai' => GioHang::TRANG_THAI_DANG_TRONG_GIO]);
                 }
             }
             $donHang->update(['trang_thai' => DonHang::TRANG_THAI_DA_HUY]);
@@ -119,6 +143,6 @@ class OrderController extends Controller
             'trang_thai_thanh_toan' => 'da_thanh_toan',
         ]);
 
-        return back()->with('success', 'Cảm ơn bạn đã xác nhận. Đơn hàng đã được chuyển sang trạng thái "Đã hoàn thành".');
+        return back()->with('success', 'Cảm ơn bạn đã xác nhận');
     }
 }

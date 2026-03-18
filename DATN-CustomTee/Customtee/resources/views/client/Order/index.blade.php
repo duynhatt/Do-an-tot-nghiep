@@ -23,7 +23,7 @@
                     'da_giao' => ['Đã giao', 'success'],
                     'da_huy' => ['Đã hủy', 'danger'],
                     // Bộ lọc nâng cao
-                    'da_hoan_thanh' => ['Đã hoàn thành', 'success'],
+                    'da_hoan_thanh' => ['Đã nhận hàng', 'success'],
                     'tra_hang' => ['Trả hàng', 'secondary'],
                 ];
                 $currentStatus = $currentStatus ?? request('trang_thai');
@@ -99,7 +99,10 @@
                                                 @endif
                                                 @if (
                                                     $donHang->phuong_thuc_thanh_toan === 'vnpay'
-                                                    && $donHang->trang_thai_thanh_toan === 'chua_thanh_toan'
+                                                    && in_array($donHang->trang_thai_thanh_toan, [
+                                                        'chua_thanh_toan',
+                                                        'that_bai',
+                                                    ], true)
                                                     && $donHang->trang_thai !== 'da_huy'
                                                 )
                                                     <a href="{{ route('order.repay', $donHang->id) }}"

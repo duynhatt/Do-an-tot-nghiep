@@ -383,6 +383,25 @@
                 });
         }
 
+        // Nếu được chuyển từ checkout về, có thể kèm theo `color_id`/`size_id`
+        // để tự chọn lại đúng biến thể.
+        const params = new URLSearchParams(window.location.search);
+        const preColorId = params.get('color_id');
+        const preSizeId = params.get('size_id');
+        if (preColorId && preSizeId) {
+            selectedColor = preColorId;
+            selectedSize = preSizeId;
+
+            colorButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.colorId == preColorId);
+            });
+            sizeButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.sizeId == preSizeId);
+            });
+
+            updateVariantInfo();
+        }
+
         addToCartBtn.addEventListener('click', function() {
             if (!selectedColor || !selectedSize) {
                 alert('Vui lòng chọn màu sắc và kích thước!');

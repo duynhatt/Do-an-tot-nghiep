@@ -176,7 +176,14 @@ class CheckoutController extends Controller
             return redirect()->route('home')->with('error', 'Sản phẩm đã hết hàng.');
         }
 
-        $qty       = min((int) $buyNow['qty'], $stock);
+        $requestedQty = (int) ($buyNow['qty'] ?? 0);
+        if ($requestedQty < 1) {
+            return redirect()->route('home')->with('error', 'Số lượng đặt không hợp lệ.');
+        }
+
+        // Không redirect "back" khi tồn không đủ (tránh vòng lặp redirect).
+        // Render trang với qty được cap theo tồn kho để user thấy được tình trạng hiện tại.
+        $qty = min($requestedQty, $stock);
         $unitPrice = (int) $buyNow['unit_price'];
         $lineTotal = (int) ($unitPrice * $qty);
 
@@ -362,6 +369,14 @@ class CheckoutController extends Controller
 
             // Xử lý VNPAY (Tiền gửi sang đã trừ voucher)
             if ($request->payment_method === 'vnpay') {
+                // Reserve các dòng giỏ đã checkout để tránh người dùng quay lại rồi bấm đặt lần nữa
+                // gây tạo thêm nhiều đơn "chờ thanh toán lại".
+                foreach ($cartItems as $item) {
+                    if ($item instanceof GioHang) {
+                        $item->trang_thai = GioHang::TRANG_THAI_DA_DAT_HANG;
+                        $item->save();
+                    }
+                }
                 DB::commit();
                 return $this->initiateVnpay($donHang, $total);
             }
@@ -393,7 +408,7 @@ class CheckoutController extends Controller
             return redirect()->route('home')->with('error', 'Không tìm thấy sản phẩm mua ngay để thanh toán.');
         }
 
-        $variant = BienThe::with(['SanPham'])
+        $variant = BienThe::with(['SanPham', 'color', 'size'])
             ->where('id', $buyNow['variant_id'])
             ->where('san_pham_id', $buyNow['product_id'])
             ->where('trang_thai', true)
@@ -404,7 +419,28 @@ class CheckoutController extends Controller
             return redirect()->route('home')->with('error', 'Sản phẩm đã hết hàng.');
         }
 
-        $qty       = min((int) $buyNow['qty'], $stock);
+        $requestedQty = (int) ($buyNow['qty'] ?? 0);
+        if ($requestedQty < 1) {
+            return redirect()->route('checkout.buy-now')->with('error', 'Số lượng đặt không hợp lệ.');
+        }
+
+        // Chặn khi tồn đã bị admin cập nhật trong lúc user đang ở checkout.
+        if ($requestedQty > $stock) {
+            $tenSanPham = $variant->SanPham?->ten_san_pham ?? 'sản phẩm';
+            $slug = $variant->SanPham?->slug;
+
+            // Điều hướng về trang chi tiết để user chọn lại cùng size/color.
+            return redirect()->route('sanpham.chitiet', [
+                'slug' => $slug,
+                'color_id' => $variant->mau_sac_id,
+                'size_id' => $variant->kich_thuoc_id,
+            ])->with(
+                'error',
+                "Sản phẩm \"{$tenSanPham}\" không đủ sản phẩm. Vui lòng chọn lại."
+            );
+        }
+
+        $qty = $requestedQty;
         $unitPrice = (int) $buyNow['unit_price'];
         $subtotal  = (int) ($unitPrice * $qty);
 
@@ -422,7 +458,7 @@ class CheckoutController extends Controller
 
             if ($voucher && $voucher->da_su_dung < $voucher->so_luong) {
                 if ($voucher->don_hang_toi_thieu && $subtotal < $voucher->don_hang_toi_thieu) {
-                    return back()->with('error', 'Đơn hàng chưa đủ điều kiện tối thiểu ' . number_format($voucher->don_hang_toi_thieu) . 'đ để áp dụng voucher.');
+                        return redirect()->route('checkout.buy-now')->with('error', 'Đơn hàng chưa đủ điều kiện tối thiểu ' . number_format($voucher->don_hang_toi_thieu) . 'đ để áp dụng voucher.');
                 }
                 if ($voucher->loai == 'phan_tram') {
                     $voucherDiscount = ($subtotal * $voucher->gia_tri) / 100;
@@ -492,7 +528,7 @@ class CheckoutController extends Controller
             }
         } catch (\Throwable $e) {
             DB::rollBack();
-            return back()->with('error', 'Lỗi đặt hàng: ' . $e->getMessage());
+            return redirect()->route('checkout.buy-now')->with('error', 'Lỗi đặt hàng: ' . $e->getMessage());
         }
     }
 
@@ -608,27 +644,75 @@ class CheckoutController extends Controller
         try {
             $donHang->load('chiTietDonHangs.bienThe', 'chiTietDonHangs.sanPham');
 
+            // Không cho đánh dấu thanh toán thành công nếu kho không đủ.
+            // (Chặn case repay nhiều lần sau khi tồn đã về 0)
+            $isStockEnough = true;
+            foreach ($donHang->chiTietDonHangs as $ct) {
+                $purchasedQty = max(0, (int) $ct->so_luong);
+
+                if ($purchasedQty > 0) {
+                    if (!$ct->bienThe) {
+                        $isStockEnough = false;
+                        break;
+                    }
+
+                    $currentStock = (int) $ct->bienThe->so_luong;
+                    if ($currentStock < $purchasedQty) {
+                        $isStockEnough = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!$isStockEnough) {
+                $donHang->update([
+                    'trang_thai' => DonHang::TRANG_THAI_DA_HUY,
+                    'trang_thai_thanh_toan' => 'that_bai',
+                ]);
+
+                // Trả lại trạng thái giỏ cho các dòng đã reserve trước đó.
+                // (Trong trường hợp race-condition khiến kho không đủ tại thời điểm callback)
+                foreach ($donHang->chiTietDonHangs as $ct) {
+                    if ($ct->bienThe) {
+                        GioHang::where('nguoi_dung_id', $donHang->nguoi_dung_id)
+                            ->where('san_pham_id', $ct->san_pham_id)
+                            ->where('bien_the_id', $ct->bien_the_id)
+                            ->where('trang_thai', GioHang::TRANG_THAI_DA_DAT_HANG)
+                            ->update(['trang_thai' => GioHang::TRANG_THAI_DANG_TRONG_GIO]);
+                    }
+                }
+
+                DB::commit();
+                return redirect()->route('home')
+                    ->with('error', 'Vui lòng thử lại sau.');
+            }
+
             foreach ($donHang->chiTietDonHangs as $ct) {
                 $purchasedQty = max(0, (int) $ct->so_luong);
 
                 if ($ct->bienThe && $purchasedQty > 0) {
                     $currentStock = (int) $ct->bienThe->so_luong;
-                    $newStock = max(0, $currentStock - $purchasedQty);
-                    $ct->bienThe->so_luong = $newStock;
+                    $ct->bienThe->so_luong = (int) ($currentStock - $purchasedQty);
                     $ct->bienThe->save();
                 }
 
-                // Cập nhật giỏ hàng của người dùng cho biến thể tương ứng (nếu còn trong giỏ)
+                // Cập nhật giỏ hàng của người dùng cho biến thể tương ứng.
+                // Lưu ý: với VNPAY chúng ta có thể đã reserve các dòng giỏ bằng `da_dat_hang`,
+                // nên cần xử lý cả 2 trạng thái.
                 $cartItems = GioHang::where('nguoi_dung_id', $donHang->nguoi_dung_id)
                     ->where('san_pham_id', $ct->san_pham_id)
                     ->where('bien_the_id', $ct->bien_the_id)
-                    ->dangTrongGio()
+                    ->whereIn('trang_thai', [
+                        GioHang::TRANG_THAI_DA_DAT_HANG,
+                    ])
                     ->get();
 
                 foreach ($cartItems as $item) {
-                    $remaining = max(0, $item->so_luong - $purchasedQty);
+                    $remaining = max(0, (int) $item->so_luong - $purchasedQty);
                     if ($remaining > 0) {
                         $item->so_luong = $remaining;
+                        // Phần còn lại sau khi thanh toán cần quay lại trạng thái "đang trong giỏ".
+                        $item->trang_thai = GioHang::TRANG_THAI_DANG_TRONG_GIO;
                         $item->save();
                     } else {
                         $item->delete();
@@ -656,7 +740,7 @@ class CheckoutController extends Controller
     public function repay($id)
     {
 
-        $donHang = DonHang::with('chiTietDonHangs')->findOrFail($id);
+        $donHang = DonHang::with('chiTietDonHangs.bienThe')->findOrFail($id);
 
         $donHang->checkAutoCancel();
 
@@ -672,6 +756,35 @@ class CheckoutController extends Controller
             return redirect()->back()->with('error', 'Đơn hàng này không sử dụng VNPAY.');
         }
 
+        // Chặn trường hợp repay khi tồn đã về 0.
+        $isStockEnough = true;
+        foreach ($donHang->chiTietDonHangs as $ct) {
+            $need = max(0, (int) $ct->so_luong);
+            $stock = (int) ($ct->bienThe?->so_luong ?? 0);
+            if ($need > 0 && $stock < $need) {
+                $isStockEnough = false;
+                break;
+            }
+        }
+
+        if (!$isStockEnough) {
+            // Trả lại các dòng giỏ đang bị reserve (da_dat_hang) về giỏ thường.
+            foreach ($donHang->chiTietDonHangs as $ct) {
+                GioHang::where('nguoi_dung_id', $donHang->nguoi_dung_id)
+                    ->where('san_pham_id', $ct->san_pham_id)
+                    ->where('bien_the_id', $ct->bien_the_id)
+                    ->where('trang_thai', GioHang::TRANG_THAI_DA_DAT_HANG)
+                    ->update(['trang_thai' => GioHang::TRANG_THAI_DANG_TRONG_GIO]);
+            }
+
+            $donHang->update([
+                'trang_thai' => DonHang::TRANG_THAI_DA_HUY,
+                'trang_thai_thanh_toan' => 'that_bai',
+            ]);
+
+            return back()->with('error', 'không thể thanh toán lại đơn hàng này.');
+        }
+
         $vnp_Url        = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
         $vnp_TmnCode    = "KE8AMY5Q";
         $vnp_HashSecret = "QIN1IHTRN9CSYSUGV2EK6MV3ZC2OKNLT";
@@ -684,7 +797,7 @@ class CheckoutController extends Controller
         $vnp_Locale     = 'vn';
 
         $vnp_CreateDate = now();
-        $vnp_ExpireDate = $vnp_CreateDate->copy()->addMinute(5);
+        $vnp_ExpireDate = $vnp_CreateDate->copy()->addMinutes(5);
 
         $inputData = [
             "vnp_Version"    => "2.1.0",

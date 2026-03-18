@@ -116,11 +116,28 @@ class DonHang extends Model
         ) {
 
             DB::transaction(function () {
+                // Chỉ hoàn tồn kho khi hệ thống đã trừ tồn trước đó.
+                // - COD: đã trừ tồn ngay khi tạo đơn.
+                // - VNPAY chưa thanh toán: chưa trừ tồn, hoàn kho sẽ gây cộng gấp đôi.
+                $shouldRefundInventory = $this->phuong_thuc_thanh_toan === 'cod'
+                    || $this->trang_thai_thanh_toan === 'da_thanh_toan';
+
+                // Với VNPAY chưa thanh toán: đã reserve giỏ bằng `da_dat_hang`,
+                // cần đưa lại các dòng giỏ về "đang trong giỏ" khi auto-hủy.
+                $shouldRestoreCart = $this->phuong_thuc_thanh_toan === 'vnpay'
+                    && $this->trang_thai_thanh_toan !== 'da_thanh_toan';
 
                 foreach ($this->chiTietDonHangs as $item) {
-
-                    if ($item->bienThe) {
+                    if ($shouldRefundInventory && $item->bienThe) {
                         $item->bienThe->increment('so_luong', $item->so_luong);
+                    }
+
+                    if ($shouldRestoreCart) {
+                        GioHang::where('nguoi_dung_id', $this->nguoi_dung_id)
+                            ->where('san_pham_id', $item->san_pham_id)
+                            ->where('bien_the_id', $item->bien_the_id)
+                            ->where('trang_thai', GioHang::TRANG_THAI_DA_DAT_HANG)
+                            ->update(['trang_thai' => GioHang::TRANG_THAI_DANG_TRONG_GIO]);
                     }
                 }
 
