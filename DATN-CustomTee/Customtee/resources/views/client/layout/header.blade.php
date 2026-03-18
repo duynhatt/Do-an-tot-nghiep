@@ -94,7 +94,7 @@
                 <div class="flex-fill">
                     <ul class="nav navbar-nav d-flex justify-content-between mx-lg-auto">
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url('/') }}">Home</a>
+<a class="nav-link" href="{{ url('/') }}">Home</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url('/About') }}">About</a>
@@ -111,12 +111,15 @@
                 <div class="navbar align-self-center d-flex">
 
                     <div class="d-lg-none flex-sm-fill mt-3 mb-4 col-7 col-sm-auto pr-3">
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="inputMobileSearch" placeholder="Search ...">
-                            <div class="input-group-text">
-                                <i class="fa fa-fw fa-search"></i>
+                        <form action="{{ url('/Shop') }}" method="get">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="inputMobileSearch" name="q"
+                                    value="{{ request('q') }}" placeholder="Tìm sản phẩm...">
+                                <button class="input-group-text" type="submit">
+                                    <i class="fa fa-fw fa-search"></i>
+                                </button>
                             </div>
-                        </div>
+                        </form>
                     </div>
 
                     <a class="nav-icon d-none d-lg-inline" href="#" data-bs-toggle="modal"
@@ -147,7 +150,7 @@
                     @endauth
 
                     <!-- Auth Links -->
-                    @guest
+@guest
                         <a class="btn btn-outline-success me-2" href="{{ url('/login') }}">Đăng nhập</a>
                         <a class="btn btn-outline-primary me-2" href="{{ url('/register') }}">Đăng ký</a>
                     @else
@@ -217,13 +220,13 @@
     <div class="modal fade bg-white" id="templatemo_search" tabindex="-1" role="dialog"
         aria-labelledby="exampleModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
-            <div class="w-100 pt-1 mb-5 text-right">
+<div class="w-100 pt-1 mb-5 text-right">
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="" method="get" class="modal-content modal-body border-0 p-0">
+            <form action="{{ url('/Shop') }}" method="get" class="modal-content modal-body border-0 p-0">
                 <div class="input-group mb-2">
                     <input type="text" class="form-control" id="inputModalSearch" name="q"
-                        placeholder="Search ...">
+                        value="{{ request('q') }}" placeholder="Tìm sản phẩm...">
                     <button type="submit" class="input-group-text bg-success text-light">
                         <i class="fa fa-fw fa-search text-white"></i>
                     </button>

@@ -26,16 +26,19 @@ class VoucherController extends Controller
             'ma' => 'required|unique:vouchers,ma',
             'loai' => 'required|in:phan_tram,tien_mat',
             'gia_tri' => 'required|numeric|min:1',
+            'don_hang_toi_thieu' => 'nullable|numeric|min:0',
+            'giam_toi_da' => 'nullable|numeric|min:0|required_if:loai,phan_tram',
             'bat_dau' => 'required|date',
             'ket_thuc' => 'required|date|after_or_equal:bat_dau',
             'so_luong' => 'required|integer|min:1',
         ], [
             'ma.unique' => 'Mã voucher này đã tồn tại!',
-            'ket_thuc.after_or_equal' => 'Ngày kết thúc phải sau ngày bắt đầu!'
+            'ket_thuc.after_or_equal' => 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu!',
+            'giam_toi_da.required_if' => 'Voucher giảm theo % bắt buộc nhập số tiền giảm tối đa.',
         ]);
 
         $data = $request->all();
-        $data['ten'] = $request->ma; 
+        $data['ten'] = $request->ma;
         $data['trang_thai'] = 1;
 
         Voucher::create($data);
@@ -52,18 +55,23 @@ class VoucherController extends Controller
     public function update(Request $request, $id)
     {
         $voucher = Voucher::findOrFail($id);
-        
+
         $request->validate([
             'ma' => 'required|unique:vouchers,ma,' . $id,
             'loai' => 'required|in:phan_tram,tien_mat',
             'gia_tri' => 'required|numeric|min:1',
+            'don_hang_toi_thieu' => 'nullable|numeric|min:0',
+            'giam_toi_da' => 'nullable|numeric|min:0|required_if:loai,phan_tram',
             'bat_dau' => 'required|date',
             'ket_thuc' => 'required|date|after_or_equal:bat_dau',
             'so_luong' => 'required|integer|min:1',
+        ], [
+            'ket_thuc.after_or_equal' => 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu!',
+            'giam_toi_da.required_if' => 'Voucher giảm theo % bắt buộc nhập số tiền giảm tối đa.',
         ]);
 
         $data = $request->all();
-        $data['ten'] = $request->ma; 
+        $data['ten'] = $request->ma;
 
         $voucher->update($data);
 
@@ -75,7 +83,6 @@ class VoucherController extends Controller
         Voucher::findOrFail($id)->delete();
         return redirect()->back()->with('success', 'Đã xóa!');
     }
-
     // ==========================================
     // PHẦN DÀNH CHO CLIENT (NHẬP MÃ GIẢM GIÁ)
     // ==========================================

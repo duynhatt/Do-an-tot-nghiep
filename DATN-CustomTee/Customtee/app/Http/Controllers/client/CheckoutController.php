@@ -40,9 +40,9 @@ class CheckoutController extends Controller
             // - Biến thể đang bật
             ->whereHas('sanPham', function ($q) {
                 $q->where('trang_thai', true)
-                  ->whereHas('danhMuc', function ($q2) {
-                      $q2->where('trang_thai', 1);
-                  });
+                    ->whereHas('danhMuc', function ($q2) {
+                        $q2->where('trang_thai', 1);
+                    });
             })
             ->whereHas('bienThe', function ($q) {
                 $q->where('trang_thai', true);
@@ -75,18 +75,27 @@ class CheckoutController extends Controller
         if ($validCartItems->isEmpty()) {
             return redirect()->route('gio-hang.index')->with('error', 'Sản phẩm trong giỏ đã hết hàng hoặc không còn hợp lệ. Vui lòng kiểm tra lại.');
         }
-
         $cartItems = $validCartItems->values();
 
         $subtotal = $cartItems->sum('checkout_thanh_tien');
         $shippingFee = $this->calculateShippingFee($subtotal);
         $total = $subtotal + $shippingFee;
 
+        // Voucher đang hiệu lực, còn lượt dùng
+        $now = Carbon::now();
+        $availableVouchers = Voucher::where('trang_thai', 1)
+            ->where('bat_dau', '<=', $now)
+            ->where('ket_thuc', '>=', $now)
+            ->whereRaw('(so_luong IS NULL OR da_su_dung < so_luong)')
+            ->orderBy('ket_thuc')
+            ->get();
+
         return view('client.checkout.index', compact(
             'cartItems',
             'subtotal',
             'shippingFee',
-            'total'
+            'total',
+            'availableVouchers'
         ));
     }
 
@@ -184,12 +193,21 @@ class CheckoutController extends Controller
         $shippingFee = $this->calculateShippingFee($subtotal);
         $total       = $subtotal + $shippingFee;
 
+        $now = Carbon::now();
+        $availableVouchers = Voucher::where('trang_thai', 1)
+            ->where('bat_dau', '<=', $now)
+            ->where('ket_thuc', '>=', $now)
+            ->whereRaw('(so_luong IS NULL OR da_su_dung < so_luong)')
+            ->orderBy('ket_thuc')
+            ->get();
+
         return view('client.checkout.index', [
-            'cartItems'   => $cartItems,
-            'subtotal'    => $subtotal,
-            'shippingFee' => $shippingFee,
-            'total'       => $total,
-            'buyNowMode'  => true,
+            'cartItems'          => $cartItems,
+            'subtotal'           => $subtotal,
+            'shippingFee'        => $shippingFee,
+            'total'              => $total,
+            'buyNowMode'         => true,
+            'availableVouchers'   => $availableVouchers,
         ]);
     }
 
@@ -217,9 +235,9 @@ class CheckoutController extends Controller
             // - Biến thể ẩn
             ->whereHas('sanPham', function ($q) {
                 $q->where('trang_thai', true)
-                  ->whereHas('danhMuc', function ($q2) {
-                      $q2->where('trang_thai', 1);
-                  });
+                    ->whereHas('danhMuc', function ($q2) {
+                        $q2->where('trang_thai', 1);
+                    });
             })
             ->whereHas('bienThe', function ($q) {
                 $q->where('trang_thai', true);
@@ -265,6 +283,9 @@ class CheckoutController extends Controller
                 ->first();
 
             if ($voucher && $voucher->da_su_dung < $voucher->so_luong) {
+                if ($voucher->don_hang_toi_thieu && $subtotal < $voucher->don_hang_toi_thieu) {
+                    return back()->with('error', 'Đơn hàng chưa đủ điều kiện tối thiểu ' . number_format($voucher->don_hang_toi_thieu) . 'đ để áp dụng voucher.');
+                }
                 if ($voucher->loai == 'phan_tram') {
                     $voucherDiscount = ($subtotal * $voucher->gia_tri) / 100;
                     if ($voucher->giam_toi_da > 0 && $voucherDiscount > $voucher->giam_toi_da) {
@@ -284,10 +305,10 @@ class CheckoutController extends Controller
         try {
             $fullAddress = "{$request->address}, {$request->ward}, {$request->district}, {$request->province}";
             $maDonHang = 'DH' . date('ymd') . strtoupper(\Illuminate\Support\Str::random(6));
-
             $donHang = DonHang::create([
                 'nguoi_dung_id'           => $user->id,
                 'ma_don_hang'             => $maDonHang,
+                'voucher_id'              => $voucherId,
                 'tam_tinh'                => $subtotal,
                 'tien_giam'               => $totalDiscount, // Tổng giảm = hệ thống + voucher
                 'phi_van_chuyen'          => $shippingFee,
@@ -400,6 +421,9 @@ class CheckoutController extends Controller
                 ->first();
 
             if ($voucher && $voucher->da_su_dung < $voucher->so_luong) {
+                if ($voucher->don_hang_toi_thieu && $subtotal < $voucher->don_hang_toi_thieu) {
+                    return back()->with('error', 'Đơn hàng chưa đủ điều kiện tối thiểu ' . number_format($voucher->don_hang_toi_thieu) . 'đ để áp dụng voucher.');
+                }
                 if ($voucher->loai == 'phan_tram') {
                     $voucherDiscount = ($subtotal * $voucher->gia_tri) / 100;
                     if ($voucher->giam_toi_da > 0 && $voucherDiscount > $voucher->giam_toi_da) {
@@ -423,6 +447,7 @@ class CheckoutController extends Controller
             $donHang = DonHang::create([
                 'nguoi_dung_id'           => $user->id,
                 'ma_don_hang'             => $maDonHang,
+                'voucher_id'              => $voucherId,
                 'tam_tinh'                => $subtotal,
                 'tien_giam'               => $totalDiscount,
                 'phi_van_chuyen'          => $shippingFee,
