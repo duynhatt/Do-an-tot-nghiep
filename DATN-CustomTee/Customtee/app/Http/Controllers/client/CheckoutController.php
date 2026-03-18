@@ -515,7 +515,7 @@ class CheckoutController extends Controller
             "vnp_OrderType" => "order",
             "vnp_ReturnUrl" => route('vnpay.return'),
             "vnp_TxnRef" => $donHang->ma_don_hang,
-            "vnp_BankCode" => "NCB"
+            // "vnp_BankCode" => "NCB"
         ];
         ksort($inputData);
         $query = "";
