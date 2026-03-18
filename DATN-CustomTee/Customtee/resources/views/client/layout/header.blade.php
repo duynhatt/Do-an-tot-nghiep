@@ -136,8 +136,8 @@
                                     ->dangTrongGio()
                                     ->whereNotNull('bien_the_id')
                                     ->count();
-                            @endphp
-                            @if ($cartCount > 0)
+                            @endphp 
+                             @if ($cartCount > 0)
                                 <span
                                     class="position-absolute top-0 left-100 translate-middle badge rounded-pill bg-danger">{{ $cartCount > 99 ? '99+' : $cartCount }}</span>
                             @endif
