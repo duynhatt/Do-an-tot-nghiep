@@ -63,21 +63,24 @@
                         <li class="list-inline-item">
                             <a class="h3 text-dark text-decoration-none mr-3" href="{{ url('/Shop') }}">Tất cả</a>
                         </li>
-                        @foreach($danhMucs as $danhMuc)
-                        {{-- <li class="list-inline-item">
-                                <a class="h3 text-dark text-decoration-none mr-3" href="{{ url('/Shop?danh_muc=' . $danhMuc->id) }}">{{ $danhMuc->ten_danh_muc }}</a>
-                        </li> --}}
-                        @endforeach
                     </ul>
+                    @if(!empty($tuKhoa))
+                        <p class="mb-0 text-muted">Kết quả tìm kiếm cho: <strong>"{{ $tuKhoa }}"</strong></p>
+                    @endif
                 </div>
                 <div class="col-md-6 pb-4">
-                    <div class="d-flex">
-                        <select class="form-control">
-                            <option>Featured</option>
-                            <option>A to Z</option>
-                            <option>Item</option>
-                        </select>
-                    </div>
+                    <form action="{{ url('/Shop') }}" method="get" class="d-flex justify-content-end">
+                        @if(request('danh_muc'))
+                            <input type="hidden" name="danh_muc" value="{{ request('danh_muc') }}">
+                        @endif
+                        <div class="input-group" style="max-width: 280px;">
+                            <input type="text" name="q" class="form-control" placeholder="Tìm sản phẩm..."
+value="{{ old('q', $tuKhoa ?? request('q')) }}">
+                            <button type="submit" class="btn btn-success">
+                                Tìm
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
             <div class="row">
@@ -121,7 +124,7 @@
                 </div>
                 @endforelse
             </div>
-            <div class="row mt-5">
+<div class="row mt-5">
                 <div class="col-12 d-flex justify-content-center">
                     {{ $sanPhams->links('pagination::bootstrap-4') }}
                 </div>
@@ -177,7 +180,7 @@
                                     <div class="row">
                                         <div class="col-3 p-md-5">
                                             <a href="#"><img class="img-fluid brand-img" src=" /img/brand_01.png" alt="Brand Logo"></a>
-                                        </div>
+</div>
                                         <div class="col-3 p-md-5">
                                             <a href="#"><img class="img-fluid brand-img" src=" /img/brand_02.png" alt="Brand Logo"></a>
                                         </div>

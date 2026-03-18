@@ -14,7 +14,7 @@
                 <div class="row">
                     <div class="col-md-6 form-group">
                         <label>Loại</label>
-                        <select name="loai" class="form-control">
+                        <select name="loai" id="voucher-loai" class="form-control">
                             <option value="tien_mat">Tiền mặt (đ)</option>
                             <option value="phan_tram">Phần trăm (%)</option>
                         </select>
@@ -22,6 +22,18 @@
                     <div class="col-md-6 form-group">
                         <label>Giá trị giảm</label>
                         <input type="number" name="gia_tri" class="form-control" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label>Đơn hàng tối thiểu (đ)</label>
+                        <input type="number" name="don_hang_toi_thieu" class="form-control" min="0" value="{{ old('don_hang_toi_thieu') }}" placeholder="VD: 100000 – đơn từ 100k mới áp dụng">
+                        <small class="text-muted">Áp dụng cho cả % và tiền mặt. Để trống nếu không yêu cầu.</small>
+                    </div>
+                    <div class="col-md-6 form-group" id="giam-toi-da-wrap" style="display: none;">
+                        <label>Giảm tối đa (đ)</label>
+                        <input type="number" name="giam_toi_da" class="form-control" min="0" value="{{ old('giam_toi_da') }}" placeholder="VD: 50000">
+                        <small class="text-muted">Chỉ áp dụng cho loại Giảm theo % (VD: giảm 10%, tối đa 50.000đ).</small>
                     </div>
                 </div>
                 <div class="row">
@@ -38,9 +50,20 @@
                     <label>Số lượng</label>
                     <input type="number" name="so_luong" class="form-control" required>
                 </div>
-                <button type="submit" class="btn btn-info">Lưu Voucher</button>
+<button type="submit" class="btn btn-info">Lưu Voucher</button>
             </form>
         </div>
     </section>
 </div>
+<script>
+(function() {
+    var loai = document.getElementById('voucher-loai');
+    var wrap = document.getElementById('giam-toi-da-wrap');
+    function toggle() {
+        wrap.style.display = loai.value === 'phan_tram' ? 'block' : 'none';
+    }
+    loai.addEventListener('change', toggle);
+    toggle();
+})();
+</script>
 @endsection

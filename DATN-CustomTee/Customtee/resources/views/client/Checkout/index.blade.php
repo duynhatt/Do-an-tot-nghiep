@@ -92,7 +92,7 @@
                             @endif
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label">Họ và tên <span class="text-danger">*</span></label>
+<label class="form-label">Họ và tên <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control @error('full_name') is-invalid @enderror"
                                         name="full_name" value="{{ old('full_name') }}" required>
                                 </div>
@@ -135,7 +135,7 @@
 
                                 <div class="col-12">
                                     <label class="form-label">Địa chỉ chi tiết <span class="text-danger">*</span></label>
-                                    <textarea name="address" class="form-control" rows="3" required placeholder="Số nhà, tên đường...">{{ old('address') }}</textarea>
+<textarea name="address" class="form-control" rows="3" required placeholder="Số nhà, tên đường...">{{ old('address') }}</textarea>
                                 </div>
 
                                 <div class="col-12">
@@ -182,8 +182,8 @@
                                 <div class="flex-grow-1">
                                     <h6 class="mb-1">{{ $item->sanPham->ten_san_pham }}</h6>
                                     <small class="text-muted">
-                                        Size: {{ $item->bienThe->size->ten_kich_thuoc ?? 'N/A' }} | 
-                                        Color: {{ $item->bienThe->color->ten_mau ?? 'N/A' }} | 
+                                        Size: {{ $item->bienThe->size->ten_kich_thuoc ?? 'N/A' }} |
+Color: {{ $item->bienThe->color->ten_mau ?? 'N/A' }} | 
                                         SL: {{ $item->checkout_qty ?? $item->so_luong }}
                                     </small>
                                     <div class="fw-bold text-primary">{{ number_format($item->checkout_thanh_tien ?? $item->thanh_tien) }} ₫</div>
@@ -209,6 +209,28 @@
 
                         <div class="mb-4">
                             <label class="form-label fw-bold small">Mã giảm giá</label>
+                            @if(isset($availableVouchers) && $availableVouchers->isNotEmpty())
+                                <p class="small text-muted mb-2">Voucher được phép dùng:</p>
+                                <div class="voucher-list mb-3">
+                                    @foreach($availableVouchers as $v)
+                                        <div class="border rounded p-2 mb-2 voucher-item" data-code="{{ $v->ma }}" role="button" style="cursor: pointer;">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="fw-bold text-primary">{{ $v->ma }}</span>
+                                                <span class="badge bg-success">
+                                                    @if($v->loai == 'phan_tram')
+                                                        Giảm {{ (int)$v->gia_tri }}% @if($v->giam_toi_da) (tối đa {{ number_format($v->giam_toi_da) }}đ) @endif
+                                                    @else
+                                                        Giảm {{ number_format($v->gia_tri) }}đ
+                                                    @endif
+                                                </span>
+                                            </div>
+                                            @if($v->don_hang_toi_thieu)
+                                                <small class="text-muted">Đơn từ {{ number_format($v->don_hang_toi_thieu) }}đ</small>
+                                            @endif
+</div>
+                                    @endforeach
+                                </div>
+                            @endif
                             <div class="input-group">
                                 <input type="text" class="form-control" id="voucher-code" placeholder="Nhập mã...">
                                 <button class="btn btn-outline-primary" type="button" id="apply-voucher">Áp dụng</button>
@@ -227,7 +249,7 @@
                             <h4 class="mb-0 text-primary fw-bold" id="total-display">{{ number_format($total) }} ₫</h4>
                         </div>
 
-                        <button type="submit" form="checkoutForm" class="btn btn-primary btn-place-order w-100">ĐẶT HÀNG</button>
+                        <button type="submit" form="checkoutForm" class="btn btn-primary btn-place-order w-100" id="btn-place-order">ĐẶT HÀNG</button>
                     </div>
                 </div>
             </div>
@@ -236,20 +258,46 @@
 </div>
 
 <script>
+    var btnPlaceOrder = document.getElementById('btn-place-order');
+    var voucherBlockPlaceOrder = false;
+
+    function setPlaceOrderBlock(block) {
+        voucherBlockPlaceOrder = block;
+        btnPlaceOrder.disabled = block;
+        btnPlaceOrder.title = block ? 'Voucher chưa đủ điều kiện. Vui lòng xóa mã hoặc tăng giá trị đơn hàng.' : '';
+    }
+
+    // Khi xóa mã voucher -> cho phép đặt hàng lại
+    document.getElementById('voucher-code').addEventListener('input', function() {
+        if (!this.value.trim()) {
+            setPlaceOrderBlock(false);
+            document.getElementById('hidden-voucher-code').value = '';
+        }
+    });
+
+    // Click voucher trong danh sách -> điền mã và áp dụng
+    document.querySelectorAll('.voucher-item').forEach(function(el) {
+        el.addEventListener('click', function() {
+            const code = this.dataset.code;
+            document.getElementById('voucher-code').value = code;
+        });
+    });
+
     // Logic cho Voucher
     document.getElementById('apply-voucher').addEventListener('click', function() {
-        const code = document.getElementById('voucher-code').value;
-        const subtotal = {{ $subtotal }}; 
+        const code = document.getElementById('voucher-code').value.trim();
+        const subtotal = {{ $subtotal }};
         const msg = document.getElementById('voucher-message');
         const btn = this;
 
-        if(!code) {
+        if (!code) {
             msg.innerHTML = '<span class="text-danger">Vui lòng nhập mã!</span>';
+            setPlaceOrderBlock(false);
             return;
         }
 
         btn.disabled = true;
-        btn.innerText = '...';
+btn.innerText = '...';
 
         fetch("{{ route('voucher.apply') }}", {
             method: "POST",
@@ -261,26 +309,29 @@
         })
         .then(res => res.json())
         .then(data => {
-    btn.disabled = false;
-    btn.innerText = 'Áp dụng';
-    if (data.success) {
-        msg.innerHTML = `<span class="text-success">${data.message}</span>`;
-        document.getElementById('discount-row').style.display = 'flex';
-        document.getElementById('discount-display').innerText = '-' + data.discount.toLocaleString() + ' ₫';
-        
-        // --- ĐOẠN SỬA Ở ĐÂY ---
-        const shippingFee = {{ $shippingFee }}; // Lấy phí ship từ biến PHP
-        const finalTotal = data.new_total + shippingFee; // Tổng mới = (Tạm tính - Giảm giá) + Phí ship
-        
-        document.getElementById('total-display').innerText = finalTotal.toLocaleString() + ' ₫';
-        // ----------------------
-        
-        document.getElementById('hidden-voucher-code').value = data.voucher_ma;
-    } else {
-        msg.innerHTML = `<span class="text-danger">${data.message}</span>`;
-        document.getElementById('hidden-voucher-code').value = "";
-    }
-});
+            btn.disabled = false;
+            btn.innerText = 'Áp dụng';
+            document.getElementById('hidden-voucher-code').value = '';
+            if (data.success) {
+                setPlaceOrderBlock(false);
+                msg.innerHTML = '<span class="text-success">' + data.message + '</span>';
+                document.getElementById('discount-row').style.display = 'flex';
+                document.getElementById('discount-display').innerText = '-' + data.discount.toLocaleString() + ' ₫';
+                var shippingFee = {{ $shippingFee }};
+                var finalTotal = data.new_total + shippingFee;
+                document.getElementById('total-display').innerText = finalTotal.toLocaleString() + ' ₫';
+                document.getElementById('hidden-voucher-code').value = data.voucher_ma;
+            } else {
+                var isMinOrderError = (data.message || '').indexOf('tối thiểu') !== -1 || (data.message || '').indexOf('điều kiện') !== -1;
+                if (isMinOrderError) {
+                    setPlaceOrderBlock(true);
+                } else {
+                    setPlaceOrderBlock(false);
+                }
+                msg.innerHTML = '<span class="text-danger">' + data.message + '</span>';
+                document.getElementById('discount-row').style.display = 'none';
+            }
+        });
     });
 
     // Logic cho Payment Method
@@ -312,8 +363,7 @@
             provinceSelect.appendChild(opt);
         });
     }
-
-    provinceSelect.addEventListener('change', async function() {
+provinceSelect.addEventListener('change', async function() {
         const code = this.options[this.selectedIndex].dataset.code;
         districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
         wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
