@@ -155,6 +155,8 @@ Route::get('/admin/variants/by-product/{id}', function ($id) {
         'variants' => $product->variants->map(function ($variant) {
             return [
                 'id'             => $variant->id,
+                'mau_sac_id'     => $variant->mau_sac_id,
+                'kich_thuoc_id'  => $variant->kich_thuoc_id,
                 'mau'            => $variant->color->ten_mau ?? '',
                 'size'           => $variant->size->ten_kich_thuoc ?? '',
                 'gia'            => $variant->gia,

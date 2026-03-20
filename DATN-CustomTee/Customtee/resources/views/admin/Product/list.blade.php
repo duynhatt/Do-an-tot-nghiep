@@ -152,14 +152,67 @@
                         <div class="form-group mt-3">
                             <div class="d-flex justify-content-between align-items-center">
                                 <label class="mb-0">Biến thể ban đầu</label>
-                                <div class="form-check">
-                                    <input type="checkbox" id="enableInitialVariants" class="form-check-input">
-                                    <label class="form-check-label" for="enableInitialVariants">Có biến thể ban đầu</label>
+                                <div class="d-flex align-items-center">
+                                    <div class="form-check mb-0">
+                                        <input type="checkbox" id="enableInitialVariants" class="form-check-input">
+                                        <label class="form-check-label" for="enableInitialVariants">Có biến thể ban đầu</label>
+                                    </div>
+                                    <div class="form-check mb-0 ml-3">
+                                        <input type="checkbox" id="enableAutoVariants" class="form-check-input">
+                                        <label class="form-check-label" for="enableAutoVariants">Biến thể tự động</label>
+                                    </div>
                                 </div>
                             </div>
-                            <small class="text-muted">Bật để thêm biến thể ngay khi tạo sản phẩm.</small>
+                            <small class="text-muted"></small>
                         </div>
                         <div id="variantsSection" class="form-group" style="display:none;">
+                            <div id="autoVariantPanel" class="border p-3 mb-3" style="display:none;">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="font-weight-bold">Tự tạo biến thể từ màu & size</div>
+                                    <button type="button" id="btnCloseAutoVariantPanel" class="btn btn-sm btn-outline-secondary">Đóng</button>
+                                </div>
+                                <div id="autoVariantPreviewInfo" class="text-muted small mb-3">
+                                    Chọn màu và size để xem trước số biến thể.
+                                </div>
+                                <div class="row small">
+                                    <div class="col-md-6">
+                                        <div class="font-weight-bold mb-1">Màu sắc</div>
+                                        <div class="border p-2" style="max-height:140px; overflow:auto;">
+                                            @foreach ($colors as $c)
+                                                <div class="form-check">
+                                                    <input class="form-check-input auto-variant-color" type="checkbox" value="{{ $c->id }}" id="autoColor_{{ $c->id }}">
+                                                    <label class="form-check-label" for="autoColor_{{ $c->id }}">{{ $c->ten_mau }}</label>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="font-weight-bold mb-1">Kích thước</div>
+                                        <div class="border p-2" style="max-height:140px; overflow:auto;">
+                                            @foreach ($sizes as $s)
+                                                <div class="form-check">
+                                                    <input class="form-check-input auto-variant-size" type="checkbox" value="{{ $s->id }}" id="autoSize_{{ $s->id }}">
+                                                    <label class="form-check-label" for="autoSize_{{ $s->id }}">{{ $s->ten_kich_thuoc }}</label>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="font-weight-bold mb-1">Giá</div>
+                                        <input type="number" id="autoVariantGiaChung" class="form-control form-control-sm" min="0" placeholder="Ví dụ: 10000">
+                                        <div class="text-muted small mt-2"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="font-weight-bold mb-1">Số lượng</div>
+                                        <input type="number" id="autoVariantSoLuongChung" class="form-control form-control-sm" min="0" placeholder="Ví dụ: 10">
+                                        <div class="text-muted small mt-2"></div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button type="button" id="btnGenerateAutoVariants" class="btn btn-primary btn-sm">Tạo biến thể</button>
+                                </div>
+                            </div>
+
                             <div class="row small text-muted mb-2">
                                 <div class="col-md-3">Màu</div>
                                 <div class="col-md-2">Size</div>
@@ -356,7 +409,113 @@
             }
 
             $('#enableInitialVariants').on('change', function() {
-                setVariantsEnabled($(this).is(':checked'));
+                const enabled = $(this).is(':checked');
+                setVariantsEnabled(enabled);
+                if (!enabled) {
+                    $('#autoVariantPanel').hide();
+                    $('#enableAutoVariants').prop('checked', false);
+                    $('#autoVariantGiaChung').val('');
+                    $('#autoVariantSoLuongChung').val('');
+                    $('#autoVariantPanel .auto-variant-color').prop('checked', false);
+                    $('#autoVariantPanel .auto-variant-size').prop('checked', false);
+                    $('#autoVariantPreviewInfo').text('Chọn màu và size để xem trước số biến thể.');
+                }
+            });
+
+            $('#enableAutoVariants').on('change', function() {
+                if ($(this).is(':checked')) {
+                    // Khi bật "Biến thể tự động" thì tự bật phần biến thể ban đầu.
+                    $('#enableInitialVariants').prop('checked', true);
+                    setVariantsEnabled(true);
+                    $('#autoVariantPanel').show();
+                    updateAutoVariantPreviewInfo();
+                } else {
+                    $('#autoVariantPanel').hide();
+                    $('#autoVariantGiaChung').val('');
+                    $('#autoVariantSoLuongChung').val('');
+                    $('#autoVariantPanel .auto-variant-color').prop('checked', false);
+                    $('#autoVariantPanel .auto-variant-size').prop('checked', false);
+                    $('#autoVariantPreviewInfo').text('Chọn màu và size để xem trước số biến thể.');
+                }
+            });
+
+            $('#btnCloseAutoVariantPanel').on('click', function() {
+                $('#autoVariantPanel').hide();
+                $('#enableAutoVariants').prop('checked', false);
+            });
+
+            function updateAutoVariantPreviewInfo() {
+                const colorCount = $('#autoVariantPanel .auto-variant-color:checked').length;
+                const sizeCount = $('#autoVariantPanel .auto-variant-size:checked').length;
+                const total = colorCount * sizeCount;
+
+                if (colorCount > 0 && sizeCount > 0) {
+                    $('#autoVariantPreviewInfo').text(`Sẽ tạo ${total} biến thể (${colorCount} màu x ${sizeCount} size).`);
+                } else {
+                    $('#autoVariantPreviewInfo').text('Chọn màu và size để xem trước số biến thể.');
+                }
+            }
+
+            $('#autoVariantPanel').on('change', '.auto-variant-color, .auto-variant-size', function() {
+                updateAutoVariantPreviewInfo();
+            });
+
+            updateAutoVariantPreviewInfo();
+
+            $('#btnGenerateAutoVariants').on('click', function() {
+                const container = $('#productVariantsContainer');
+                const selectedColorIds = $('#autoVariantPanel .auto-variant-color:checked').map(function() {
+                    return $(this).val();
+                }).get();
+                const selectedSizeIds = $('#autoVariantPanel .auto-variant-size:checked').map(function() {
+                    return $(this).val();
+                }).get();
+
+                const giaChungStr = $('#autoVariantGiaChung').val();
+                const giaChung = giaChungStr !== '' ? parseFloat(giaChungStr) : NaN;
+
+                const soLuongChungStr = $('#autoVariantSoLuongChung').val();
+                const soLuongChung = soLuongChungStr !== '' ? parseInt(soLuongChungStr, 10) : 0;
+
+                if (!selectedColorIds.length) {
+                    toastr.error('Vui lòng chọn ít nhất 1 màu.');
+                    return;
+                }
+                if (!selectedSizeIds.length) {
+                    toastr.error('Vui lòng chọn ít nhất 1 size.');
+                    return;
+                }
+                if (Number.isNaN(giaChung) || giaChung < 0) {
+                    toastr.error('Vui lòng nhập giá chung hợp lệ.');
+                    return;
+                }
+                if (Number.isNaN(soLuongChung) || soLuongChung < 0) {
+                    toastr.error('Vui lòng nhập số lượng chung hợp lệ.');
+                    return;
+                }
+
+                // Xoá các dòng cũ rồi sinh mới theo tích (màu x size)
+                container.html('');
+                container.attr('data-next-index', 0);
+
+                let index = 0;
+                selectedColorIds.forEach(colorId => {
+                    selectedSizeIds.forEach(sizeId => {
+                        const $row = $(buildVariantRow(index));
+                        $row.find(`select[name="variants[${index}][mau_sac_id]"]`).val(colorId);
+                        $row.find(`select[name="variants[${index}][kich_thuoc_id]"]`).val(sizeId);
+                        $row.find(`input[name="variants[${index}][gia]"]`).val(giaChung);
+                        // Giá KM để trống, số lượng gán mặc định 0.
+                        $row.find(`input[name="variants[${index}][gia_khuyen_mai]"]`).val('');
+                        $row.find(`input[name="variants[${index}][so_luong]"]`).val(soLuongChung);
+                        container.append($row);
+                        index++;
+                    });
+                });
+
+                container.attr('data-next-index', index);
+                setVariantsEnabled(true);
+                $('#autoVariantPanel').hide();
             });
 
             $('#addVariantRow').on('click', function() {
@@ -379,7 +538,14 @@
                 container.html(buildVariantRow(0));
                 container.attr('data-next-index', 1);
                 $('#enableInitialVariants').prop('checked', false);
+                $('#enableAutoVariants').prop('checked', false);
                 setVariantsEnabled(false);
+                $('#autoVariantPanel').hide();
+                $('#autoVariantGiaChung').val('');
+                $('#autoVariantSoLuongChung').val('');
+                $('#autoVariantPanel .auto-variant-color').prop('checked', false);
+                $('#autoVariantPanel .auto-variant-size').prop('checked', false);
+                $('#autoVariantPreviewInfo').text('Chọn màu và size để xem trước số biến thể.');
             });
 
             setVariantsEnabled(false);

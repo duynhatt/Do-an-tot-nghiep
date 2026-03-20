@@ -41,6 +41,60 @@ class DonHangController extends Controller
             }
         }
 
+        $q = trim((string) $request->query('q'));
+        if ($q !== '') {
+            $like = '%' . $q . '%';
+            $query->where(function ($query) use ($like) {
+                $query->where('ma_don_hang', 'like', $like)
+                    ->orWhere('ten_nguoi_nhan', 'like', $like)
+                    ->orWhere('so_dien_thoai_nhan_hang', 'like', $like)
+                    ->orWhere('ghi_chu', 'like', $like)
+                    ->orWhereHas('nguoiDung', function ($nguoiDungQuery) use ($like) {
+                        $nguoiDungQuery->where('name', 'like', $like)
+                            ->orWhere('email', 'like', $like);
+                    });
+            });
+        }
+
+        // Lọc nâng cao: thanh toán / phương thức / thời gian / khoảng tiền
+        $trangThaiThanhToan = $request->query('trang_thai_thanh_toan');
+        if ($trangThaiThanhToan !== null && $trangThaiThanhToan !== '') {
+            if (in_array($trangThaiThanhToan, ['da_thanh_toan', 'that_bai', 'chua_thanh_toan'], true)) {
+                $query->where('trang_thai_thanh_toan', $trangThaiThanhToan);
+            }
+        }
+
+        $phuongThucThanhToan = $request->query('phuong_thuc_thanh_toan');
+        if ($phuongThucThanhToan !== null && $phuongThucThanhToan !== '') {
+            if (in_array($phuongThucThanhToan, ['cod', 'vnpay'], true)) {
+                $query->where('phuong_thuc_thanh_toan', $phuongThucThanhToan);
+            }
+        }
+
+        $ngayTu = $request->query('ngay_tu');
+        $ngayDen = $request->query('ngay_den');
+        if (!empty($ngayTu) || !empty($ngayDen)) {
+            $from = !empty($ngayTu) ? \Carbon\Carbon::parse($ngayTu)->startOfDay() : null;
+            $to = !empty($ngayDen) ? \Carbon\Carbon::parse($ngayDen)->endOfDay() : null;
+
+            if ($from && $to) {
+                $query->whereBetween('created_at', [$from, $to]);
+            } elseif ($from) {
+                $query->where('created_at', '>=', $from);
+            } elseif ($to) {
+                $query->where('created_at', '<=', $to);
+            }
+        }
+
+        $tongTienMin = $request->query('tong_tien_min');
+        $tongTienMax = $request->query('tong_tien_max');
+        if ($tongTienMin !== null && $tongTienMin !== '' && is_numeric($tongTienMin)) {
+            $query->where('tong_tien', '>=', (float) $tongTienMin);
+        }
+        if ($tongTienMax !== null && $tongTienMax !== '' && is_numeric($tongTienMax)) {
+            $query->where('tong_tien', '<=', (float) $tongTienMax);
+        }
+
         $donHangs = $query->paginate(9)->withQueryString();
 
         return view('admin.don-hang.index', compact('donHangs'));

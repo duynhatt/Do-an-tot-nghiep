@@ -1,7 +1,7 @@
 @extends('admin.layout.AdminLayout')
 
 @section('AdminContent')
-<div class="container-fluid" style="margin-top: 30px;">
+<div class="container-fluid" style="margin-bottom: 120px;">
 
     <div class="row mb-3">
         <div class="col">
@@ -25,10 +25,23 @@
     {{-- Lọc theo trạng thái --}}
     <div class="card shadow mb-3">
         <div class="card-body py-2">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <form method="get" action="{{ route('admin.don-hang.index') }}" class="form-inline">
-                    <label class="mr-2 mb-0">Trạng thái:</label>
-                    <select name="trang_thai" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+            <div
+                class="align-items-center"
+                style="display:flex; justify-content:space-between; align-items:center; flex-wrap:nowrap; gap:8px;"
+            >
+                <form
+                    method="get"
+                    action="{{ route('admin.don-hang.index') }}"
+                    class="form-inline"
+                    style="display:flex; align-items:center; flex-wrap:nowrap; gap:8px;"
+                >
+                    <label class="mr-0 mb-0">Trạng thái:</label>
+                    <select
+                        name="trang_thai"
+                        class="form-control form-control-sm"
+                        style="min-width: 115px;"
+                        onchange="this.form.submit()"
+                    >
                         <option value="">Tất cả</option>
                         @foreach([
                             'cho_xac_nhan' => 'Chờ xác nhận',
@@ -43,6 +56,146 @@
                             <option value="{{ $value }}" {{ request('trang_thai') === $value ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
                     </select>
+
+                    {{-- Tìm kiếm sát bên phải trạng thái --}}
+                    <input
+                        type="text"
+                        name="q"
+                        class="form-control form-control-sm"
+                        style="width: 145px;"
+                        value="{{ request('q') }}"
+                        placeholder="Mã/SĐT"
+                    >
+                    <button type="submit" class="btn btn-sm btn-primary px-3" title="Tìm kiếm">
+                        <i class="fas fa-search"></i>
+                    </button>
+
+                    {{-- Hộp lọc nâng cao --}}
+                    <div class="dropdown" style="display:flex; align-items:center; width:auto; flex:0 0 auto; white-space:nowrap;">
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-primary dropdown-toggle"
+                            data-toggle="dropdown"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                            title="Lọc nâng cao"
+                        >
+                            <i class="fas fa-filter"></i>
+                        </button>
+
+                        <div
+                            class="dropdown-menu p-3"
+                            style="min-width: 420px; padding: 18px 22px; left: 50%; right: auto; transform: translateX(-50%);"
+                        >
+                            <div onclick="event.stopPropagation()">
+                                <div class="form-group mb-2" style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+                                    <label class="small text-muted" style="margin-bottom:0; white-space:nowrap; width:125px;">TT thanh toán</label>
+                                    <select
+                                        name="trang_thai_thanh_toan"
+                                        class="form-control form-control-sm"
+                                        style="flex:1;"
+                                    >
+                                        <option value="">Tất cả</option>
+                                        @foreach([
+                                            'da_thanh_toan' => 'Đã thanh toán',
+                                            'that_bai' => 'Thất bại',
+                                            'chua_thanh_toan' => 'Chưa thanh toán',
+                                        ] as $value => $label)
+                                            <option value="{{ $value }}" {{ request('trang_thai_thanh_toan') === $value ? 'selected' : '' }}>
+                                                {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="form-group mb-2" style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+                                    <label class="small text-muted" style="margin-bottom:0; white-space:nowrap; width:125px;">PT thanh toán</label>
+                                    <select
+                                        name="phuong_thuc_thanh_toan"
+                                        class="form-control form-control-sm"
+                                        style="flex:1;"
+                                    >
+                                        <option value="">Tất cả</option>
+                                        @foreach([
+                                            'cod' => 'COD',
+                                            'vnpay' => 'VNPAY',
+                                        ] as $value => $label)
+                                            <option value="{{ $value }}" {{ request('phuong_thuc_thanh_toan') === $value ? 'selected' : '' }}>
+                                                {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="form-group mb-2" style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+                                    <label class="small text-muted" style="margin-bottom:0; white-space:nowrap; width:125px;">Thời gian đặt đơn</label>
+                                    <div style="display:flex; gap:10px; flex:1;">
+                                        <input
+                                            type="date"
+                                            name="ngay_tu"
+                                            class="form-control form-control-sm"
+                                            style="flex:1; min-width:140px;"
+                                            value="{{ request('ngay_tu') }}"
+                                        >
+                                        <input
+                                            type="date"
+                                            name="ngay_den"
+                                            class="form-control form-control-sm"
+                                            style="flex:1; min-width:140px;"
+                                            value="{{ request('ngay_den') }}"
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="form-group mb-2" style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+                                    <label class="small text-muted" style="margin-bottom:0; white-space:nowrap; width:125px;">Khoảng tiền (VND)</label>
+                                    <div style="display:flex; gap:10px; flex:1;">
+                                        <input
+                                            type="number"
+                                            name="tong_tien_min"
+                                            class="form-control form-control-sm"
+                                            min="0"
+                                            step="1000"
+                                            placeholder="Từ"
+                                            style="flex:1; min-width:150px;"
+                                            value="{{ request('tong_tien_min') }}"
+                                        >
+                                        <input
+                                            type="number"
+                                            name="tong_tien_max"
+                                            class="form-control form-control-sm"
+                                            min="0"
+                                            step="1000"
+                                            placeholder="Đến"
+                                            style="flex:1; min-width:150px;"
+                                            value="{{ request('tong_tien_max') }}"
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="d-flex gap-2 mt-2">
+                                    <button type="submit" class="btn btn-sm btn-primary">Lọc</button>
+                                    @php
+                                        $resetParams = array_filter([
+                                            'trang_thai' => request('trang_thai'),
+                                            'q' => request('q'),
+                                        ]);
+                                        $resetUrl = route('admin.don-hang.index');
+                                        if (!empty($resetParams)) {
+                                            $resetUrl .= '?' . http_build_query($resetParams);
+                                        }
+                                    @endphp
+                                    <a
+                                        href="{{ $resetUrl }}"
+                                        class="btn btn-sm btn-outline-secondary"
+                                        title="Xóa lọc nâng cao"
+                                    >
+                                        Xóa
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </form>
                 <div class="text-muted small">
                     Tổng: <strong>{{ $donHangs->total() }}</strong> đơn

@@ -19,6 +19,7 @@
                         <th width="5%">#</th>
                         <th>Tên danh mục</th>
                         <th>Slug</th>
+                        <th width="15%">Ảnh</th>
                         <th>Trạng thái</th>
                         <th width="15%">Hành động</th>
                     </tr>
@@ -29,6 +30,13 @@
                         <td>{{ $key + 1 }}</td>
                         <td>{{ $dm->ten_danh_muc }}</td>
                         <td>{{ $dm->slug }}</td>
+                        <td>
+                            <img
+                                src="{{ $dm->hinh_anh ? asset('storage/' . $dm->hinh_anh) : asset('img/shop_01.jpg') }}"
+                                alt="{{ $dm->ten_danh_muc }}"
+                                style="width: 90px; height: 60px; object-fit: cover; border-radius: 6px;"
+                            >
+                        </td>
                         <td>
                             @if($dm->trang_thai == 1)
                             <span class="badge badge-success">Hiển thị</span>
@@ -49,7 +57,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5">Chưa có danh mục nào</td>
+                        <td colspan="6">Chưa có danh mục nào</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -81,6 +89,12 @@
                         <label>Mô tả</label>
                         <textarea name="mo_ta" class="form-control" rows="3" maxlength="1000" placeholder="Mô tả danh mục (tùy chọn)"></textarea>
                         <small class="text-muted">Tối đa 1000 ký tự</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ảnh danh mục</label>
+                        <input type="file" name="hinh_anh" class="form-control-file" accept="image/*">
+                        <small class="text-muted">JPG/PNG/WebP, tối đa 2MB (tùy chọn)</small>
                     </div>
 
                     <div class="form-group">
@@ -127,6 +141,20 @@
                     </div>
 
                     <div class="form-group">
+                        <label>Ảnh danh mục</label>
+                        <div class="mb-2">
+                            <img
+                                id="edit_category_image_preview"
+                                src="{{ asset('img/shop_01.jpg') }}"
+                                alt="Ảnh danh mục"
+                                style="width: 130px; height: 80px; object-fit: cover; border-radius: 6px;"
+                            >
+                        </div>
+                        <input type="file" id="edit_hinh_anh" name="hinh_anh" class="form-control-file" accept="image/*">
+                        <small class="text-muted">Tùy chọn (nếu không chọn sẽ giữ ảnh cũ)</small>
+                    </div>
+
+                    <div class="form-group">
                         <label>Trạng thái</label>
                         <select id="edit_trang_thai" class="form-control">
                             <option value="1">Hiển thị</option>
@@ -168,17 +196,27 @@
         $('#formAdd').submit(function(e) {
             e.preventDefault();
 
-            $.post("{{ route('admin.danh-muc.store') }}", $(this).serialize(), function(res) {
-                if (res.status) {
-                    toastr.success(res.message || 'Thêm danh mục thành công!');
-                    $('#modalAdd').modal('hide');
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    toastr.error(res.message || 'Có lỗi xảy ra khi thêm danh mục');
-                }
-            }).fail(function(xhr) {
-                if (!showValidationErrors(xhr)) {
-                    toastr.error('Lỗi kết nối server');
+            let formData = new FormData(this);
+
+            $.ajax({
+                url: "{{ route('admin.danh-muc.store') }}",
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(res) {
+                    if (res.status) {
+                        toastr.success(res.message || 'Thêm danh mục thành công!');
+                        $('#modalAdd').modal('hide');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        toastr.error(res.message || 'Có lỗi xảy ra khi thêm danh mục');
+                    }
+                },
+                error: function(xhr) {
+                    if (!showValidationErrors(xhr)) {
+                        toastr.error('Lỗi kết nối server');
+                    }
                 }
             });
         });
@@ -192,6 +230,13 @@
                     $('#edit_ten_danh_muc').val(res.data.ten_danh_muc);
                     $('#edit_mo_ta').val(res.data.mo_ta);
                     $('#edit_trang_thai').val(res.data.trang_thai);
+
+                    const placeholderImg = '{{ asset('img/shop_01.jpg') }}';
+                    const storageBase = '{{ asset('storage') }}';
+                    $('#edit_category_image_preview').attr(
+                        'src',
+                        res.data.hinh_anh ? (storageBase + '/' + res.data.hinh_anh) : placeholderImg
+                    );
 
                     $('#modalEdit').modal('show');
                 } else {
@@ -207,15 +252,16 @@
 
             let id = $('#edit_id').val();
 
+            let formData = new FormData($('#formEdit')[0]);
+            // Laravel update route expects PUT; use method spoof to keep multipart upload ổn định.
+            formData.append('_method', 'PUT');
+
             $.ajax({
                 url: "{{ url('admin/danh-muc') }}/" + id,
-                type: "PUT", // 👈 PUT chuẩn resource
-                data: {
-                    _token: "{{ csrf_token() }}",
-                    ten_danh_muc: $('#edit_ten_danh_muc').val(),
-                    mo_ta: $('#edit_mo_ta').val(),
-                    trang_thai: $('#edit_trang_thai').val(),
-                },
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
                 success: function(res) {
                     if (res.status) {
                         toastr.success(res.message || 'Cập nhật thành công!');
