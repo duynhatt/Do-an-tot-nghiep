@@ -78,7 +78,61 @@
     @endphp
 
     <div class="form-group">
-        <label>Danh sách biến thể</label>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="mb-0">Danh sách biến thể</label>
+            <div class="form-check mb-0">
+                <input type="checkbox" id="enableAutoVariantsPage" class="form-check-input">
+                <label class="form-check-label" for="enableAutoVariantsPage">Biến thể tự động</label>
+            </div>
+        </div>
+
+        <div id="autoVariantPanelPage" class="border p-3 mb-3" style="display:none;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="font-weight-bold">Tự tạo biến thể từ màu & size</div>
+                <button type="button" id="btnCloseAutoVariantPanelPage" class="btn btn-sm btn-outline-secondary">Đóng</button>
+            </div>
+            <div id="autoVariantPreviewInfoPage" class="text-muted small mb-3">
+                Chọn màu và size để xem trước số biến thể.
+            </div>
+            <div class="row small">
+                <div class="col-md-6">
+                    <div class="font-weight-bold mb-1">Màu sắc</div>
+                    <div class="border p-2" style="max-height:140px; overflow:auto;">
+                        @foreach($colors as $c)
+                            <div class="form-check">
+                                <input class="form-check-input auto-variant-color-page" type="checkbox" value="{{ $c->id }}" id="autoColorPage_{{ $c->id }}">
+                                <label class="form-check-label" for="autoColorPage_{{ $c->id }}">{{ $c->ten_mau }}</label>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="font-weight-bold mb-1">Kích thước</div>
+                    <div class="border p-2" style="max-height:140px; overflow:auto;">
+                        @foreach($sizes as $s)
+                            <div class="form-check">
+                                <input class="form-check-input auto-variant-size-page" type="checkbox" value="{{ $s->id }}" id="autoSizePage_{{ $s->id }}">
+                                <label class="form-check-label" for="autoSizePage_{{ $s->id }}">{{ $s->ten_kich_thuoc }}</label>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="font-weight-bold mb-1">Giá chung</div>
+                    <input type="number" id="autoVariantGiaChungPage" class="form-control form-control-sm" min="0" placeholder="Ví dụ: 10000">
+                    <div class="text-muted small mt-2">Gán cho mọi biến thể</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="font-weight-bold mb-1">Số lượng chung</div>
+                    <input type="number" id="autoVariantSoLuongChungPage" class="form-control form-control-sm" min="0" placeholder="Ví dụ: 10">
+                    <div class="text-muted small mt-2">Gán kho cho mọi biến thể</div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end mt-3">
+                <button type="button" id="btnGenerateAutoVariantsPage" class="btn btn-primary btn-sm">Tạo biến thể</button>
+            </div>
+        </div>
+
         <div class="row variant-header">
             <div class="col-md-3">Màu</div>
             <div class="col-md-2">Size</div>
@@ -188,12 +242,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Lưu các cặp (màu + size) đã tồn tại của sản phẩm đang chọn
+// để UI có thể bỏ qua các cặp trùng và tránh lỗi submit.
+const existingVariantPairs = new Set();
+
 document.getElementById('productSelect').addEventListener('change', function () {
     let productId = this.value;
 
     if (!productId) {
         document.getElementById('productInfo').style.display = 'none';
         document.getElementById('existingVariants').style.display = 'none';
+        existingVariantPairs.clear();
+        updateAutoVariantPreviewInfoPage();
         return;
     }
 
@@ -214,6 +274,13 @@ document.getElementById('productSelect').addEventListener('change', function () 
             const body = document.getElementById('existingVariantsBody');
             const count = document.getElementById('existingVariantsCount');
             const variants = Array.isArray(data.variants) ? data.variants : [];
+
+            existingVariantPairs.clear();
+            variants.forEach(variant => {
+                if (variant.mau_sac_id != null && variant.kich_thuoc_id != null) {
+                    existingVariantPairs.add(`${String(variant.mau_sac_id)}-${String(variant.kich_thuoc_id)}`);
+                }
+            });
 
             body.innerHTML = '';
             if (variants.length === 0) {
@@ -240,11 +307,159 @@ document.getElementById('productSelect').addEventListener('change', function () 
             }
 
             container.style.display = 'block';
+            updateAutoVariantPreviewInfoPage();
         });
 });
 
 const variantsContainer = document.getElementById('variantsContainer');
 const addVariantRowBtn = document.getElementById('addVariantRow');
+
+function notifyError(msg) {
+    if (window.toastr && typeof toastr.error === 'function') {
+        toastr.error(msg);
+    } else {
+        alert(msg);
+    }
+}
+
+const enableAutoVariantsPage = document.getElementById('enableAutoVariantsPage');
+const autoVariantPanelPage = document.getElementById('autoVariantPanelPage');
+const btnCloseAutoVariantPanelPage = document.getElementById('btnCloseAutoVariantPanelPage');
+const btnGenerateAutoVariantsPage = document.getElementById('btnGenerateAutoVariantsPage');
+
+enableAutoVariantsPage.addEventListener('change', function () {
+    if (this.checked) {
+        autoVariantPanelPage.style.display = 'block';
+        updateAutoVariantPreviewInfoPage();
+        return;
+    }
+
+    autoVariantPanelPage.style.display = 'none';
+
+    // Reset lựa chọn và input để lần bật sau sạch sẽ hơn
+    document.getElementById('autoVariantGiaChungPage').value = '';
+    document.getElementById('autoVariantSoLuongChungPage').value = '';
+    autoVariantPanelPage.querySelectorAll('.auto-variant-color-page, .auto-variant-size-page').forEach(el => el.checked = false);
+    updateAutoVariantPreviewInfoPage();
+});
+
+btnCloseAutoVariantPanelPage.addEventListener('click', function () {
+    autoVariantPanelPage.style.display = 'none';
+    enableAutoVariantsPage.checked = false;
+});
+
+function updateAutoVariantPreviewInfoPage() {
+    const selectedColorIds = Array.from(autoVariantPanelPage.querySelectorAll('.auto-variant-color-page:checked'))
+        .map(el => el.value);
+    const selectedSizeIds = Array.from(autoVariantPanelPage.querySelectorAll('.auto-variant-size-page:checked'))
+        .map(el => el.value);
+
+    const colorCount = selectedColorIds.length;
+    const sizeCount = selectedSizeIds.length;
+    const total = colorCount * sizeCount;
+
+    const previewEl = document.getElementById('autoVariantPreviewInfoPage');
+    if (!previewEl) return;
+
+    if (colorCount > 0 && sizeCount > 0) {
+        // Nếu sản phẩm đã có biến thể thì chỉ tính các cặp (màu+size) chưa tồn tại.
+        let duplicateCount = 0;
+        if (existingVariantPairs.size > 0) {
+            selectedColorIds.forEach(colorId => {
+                selectedSizeIds.forEach(sizeId => {
+                    const key = `${String(colorId)}-${String(sizeId)}`;
+                    if (existingVariantPairs.has(key)) {
+                        duplicateCount++;
+                    }
+                });
+            });
+        }
+
+        const newCount = total - duplicateCount;
+        if (duplicateCount > 0) {
+            previewEl.textContent = `Sẽ tạo ${newCount} biến thể mới (bỏ qua ${duplicateCount} cặp đã tồn tại).`;
+        } else {
+            previewEl.textContent = `Sẽ tạo ${newCount} biến thể mới (${colorCount} màu x ${sizeCount} size).`;
+        }
+    } else {
+        previewEl.textContent = 'Chọn màu và size để xem trước số biến thể.';
+    }
+}
+
+autoVariantPanelPage.addEventListener('change', function (e) {
+    if (e.target && (e.target.classList.contains('auto-variant-color-page') || e.target.classList.contains('auto-variant-size-page'))) {
+        updateAutoVariantPreviewInfoPage();
+    }
+});
+
+updateAutoVariantPreviewInfoPage();
+
+btnGenerateAutoVariantsPage.addEventListener('click', function () {
+    const selectedColorIds = Array.from(autoVariantPanelPage.querySelectorAll('.auto-variant-color-page:checked'))
+        .map(el => el.value);
+    const selectedSizeIds = Array.from(autoVariantPanelPage.querySelectorAll('.auto-variant-size-page:checked'))
+        .map(el => el.value);
+
+    const giaChungStr = document.getElementById('autoVariantGiaChungPage').value;
+    const giaChung = giaChungStr !== '' ? parseFloat(giaChungStr) : NaN;
+
+    const soLuongChungStr = document.getElementById('autoVariantSoLuongChungPage').value;
+    const soLuongChung = soLuongChungStr !== '' ? parseInt(soLuongChungStr, 10) : 0;
+
+    if (!selectedColorIds.length) {
+        notifyError('Vui lòng chọn ít nhất 1 màu.');
+        return;
+    }
+    if (!selectedSizeIds.length) {
+        notifyError('Vui lòng chọn ít nhất 1 size.');
+        return;
+    }
+    if (Number.isNaN(giaChung) || giaChung < 0) {
+        notifyError('Vui lòng nhập giá chung hợp lệ.');
+        return;
+    }
+    if (Number.isNaN(soLuongChung) || soLuongChung < 0) {
+        notifyError('Vui lòng nhập số lượng chung hợp lệ.');
+        return;
+    }
+
+    // Xoá các dòng cũ rồi sinh mới theo tích (màu x size)
+    variantsContainer.innerHTML = '';
+    variantsContainer.setAttribute('data-next-index', '0');
+
+    let index = 0;
+    let skipped = 0;
+    selectedColorIds.forEach(colorId => {
+        selectedSizeIds.forEach(sizeId => {
+            const key = `${String(colorId)}-${String(sizeId)}`;
+            if (existingVariantPairs.has(key)) {
+                skipped++;
+                return;
+            }
+
+            const wrap = document.createElement('div');
+            wrap.innerHTML = buildVariantRow(index);
+            const rowEl = wrap.firstElementChild;
+
+            rowEl.querySelector(`select[name="variants[${index}][mau_sac_id]"]`).value = colorId;
+            rowEl.querySelector(`select[name="variants[${index}][kich_thuoc_id]"]`).value = sizeId;
+            rowEl.querySelector(`input[name="variants[${index}][gia]"]`).value = giaChung;
+            // Giá KM để trống, số lượng mặc định 0.
+            rowEl.querySelector(`input[name="variants[${index}][gia_khuyen_mai]"]`).value = '';
+            rowEl.querySelector(`input[name="variants[${index}][so_luong]"]`).value = soLuongChung;
+
+            variantsContainer.appendChild(rowEl);
+            index++;
+        });
+    });
+
+    variantsContainer.setAttribute('data-next-index', String(index));
+    autoVariantPanelPage.style.display = 'none';
+
+    if (skipped > 0 && window.toastr && typeof toastr.warning === 'function') {
+        toastr.warning(`Bỏ qua ${skipped} cặp đã tồn tại.`);
+    }
+});
 
 function buildVariantRow(index) {
     return `

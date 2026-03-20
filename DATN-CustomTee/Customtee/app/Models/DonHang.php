@@ -112,7 +112,11 @@ class DonHang extends Model
         if (
             $this->trang_thai_thanh_toan === 'chua_thanh_toan' &&
             $this->trang_thai === 'cho_xac_nhan' &&
-            $this->created_at->addMinutes(15)->isPast()
+            // Chỉ auto-hủy khi "thanh toán trực tuyến" hết hạn.
+            // Với COD, trạng thái 'chua_thanh_toan' là bình thường vì thanh toán khi nhận hàng.
+            $this->phuong_thuc_thanh_toan === 'vnpay' &&
+            // Dùng copy() để tránh Carbon mutate trong cùng request.
+            $this->created_at->copy()->addMinutes(15)->isPast()
         ) {
 
             DB::transaction(function () {
