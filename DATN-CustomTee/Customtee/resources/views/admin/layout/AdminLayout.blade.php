@@ -48,6 +48,12 @@
 
 <body>
     <style>
+        
+  .dropup .dropdown-menu,
+  .dropdown-menu {
+    z-index: 3000 !important;
+  }
+
         #sidebar{
     width: 219px;
 }
@@ -68,15 +74,14 @@
 
             <div class="nav notify-row" id="top_menu">
                 <ul class="nav top-menu">
-                    <!-- Notifications will be added here -->
                 </ul>
             </div>
 
-            <div class="top-nav clearfix">
+            <div class="- ">
                 <ul class="nav pull-right top-menu">
                     <a class="active" href="{{ url('/') }}">
                                 <i class="fa fa-dashboard"></i>
-                                <span>fashitonTee</span>
+                                <span>fashionTee</span>
                             </a>
                 </ul>
             </div>

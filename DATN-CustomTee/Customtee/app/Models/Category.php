@@ -12,6 +12,7 @@ class Category extends Model
         'ten_danh_muc',
         'slug',
         'mo_ta',
+        'hinh_anh',
         'trang_thai',
     ];
 

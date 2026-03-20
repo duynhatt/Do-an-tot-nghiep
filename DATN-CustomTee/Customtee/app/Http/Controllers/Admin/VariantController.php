@@ -16,19 +16,116 @@ class VariantController extends Controller
 public function index(Request $request)
 {
     $selectedProductId = $request->get('san_pham_id');
-    $sanPhams = SanPham::with([
+
+    // Data cho dropdown lọc
+    $colors = MauSac::orderBy('ten_mau')->get();
+    $sizes = KichThuoc::orderBy('ten_kich_thuoc')->get();
+
+    // Tham số lọc biến thể
+    $mauSacId = $request->query('mau_sac_id');
+    $kichThuocId = $request->query('kich_thuoc_id');
+    $trangThai = $request->query('trang_thai'); // 0/1
+
+    $khoFilter = $request->query('kho_filter', 'all'); // all | het_hang | gan_het
+    $khoMin = $request->query('kho_min');
+    $khoMax = $request->query('kho_max');
+    $kmFilter = $request->query('km_filter', 'all'); // all | dang_giam
+    $giaMin = $request->query('gia_min');
+    $giaMax = $request->query('gia_max');
+
+    $hasVariantFilters = !empty($mauSacId)
+        || !empty($kichThuocId)
+        || ($trangThai !== null && $trangThai !== '')
+        || $khoFilter !== 'all'
+        || ($kmFilter !== 'all')
+        || ($khoMin !== null && $khoMin !== '')
+        || ($khoMax !== null && $khoMax !== '')
+        || ($giaMin !== null && $giaMin !== '')
+        || ($giaMax !== null && $giaMax !== '');
+
+    $applyVariantFilters = function ($q) use (
+        $mauSacId,
+        $kichThuocId,
+        $trangThai,
+        $khoFilter,
+        $khoMin,
+        $khoMax,
+        $kmFilter,
+        $giaMin,
+        $giaMax
+    ) {
+        if (!empty($mauSacId)) {
+            $q->where('mau_sac_id', $mauSacId);
+        }
+
+        if (!empty($kichThuocId)) {
+            $q->where('kich_thuoc_id', $kichThuocId);
+        }
+
+        if ($trangThai !== null && $trangThai !== '') {
+            // trang_thai boolean lưu 0/1
+            if (in_array((string) $trangThai, ['0', '1'], true)) {
+                $q->where('trang_thai', (int) $trangThai);
+            }
+        }
+
+        // Lọc biến thể đang giảm giá
+        if ($kmFilter === 'dang_giam') {
+            $q->whereNotNull('gia_khuyen_mai')
+                ->whereColumn('gia_khuyen_mai', '<', 'gia');
+        }
+
+        // Lọc kho theo so_luong
+        if ($khoFilter === 'het_hang') {
+            $q->where('so_luong', '=', 0);
+        } elseif ($khoFilter === 'gan_het') {
+            $q->where('so_luong', '<', 10);
+        }
+
+        if ($khoMin !== null && $khoMin !== '' && is_numeric($khoMin)) {
+            $q->where('so_luong', '>=', (int) $khoMin);
+        }
+
+        if ($khoMax !== null && $khoMax !== '' && is_numeric($khoMax)) {
+            $q->where('so_luong', '<=', (int) $khoMax);
+        }
+
+        // Lọc giá theo đúng cột "Giá" đang hiển thị trong bảng admin: gia
+        if ($giaMin !== null && $giaMin !== '' && is_numeric($giaMin)) {
+            $q->where('gia', '>=', (float) $giaMin);
+        }
+
+        if ($giaMax !== null && $giaMax !== '' && is_numeric($giaMax)) {
+            $q->where('gia', '<=', (float) $giaMax);
+        }
+    };
+
+    $sanPhamsQuery = SanPham::with([
         'danhMuc',
-        'variants' => function ($q) {
+        'variants' => function ($q) use ($applyVariantFilters) {
+            $applyVariantFilters($q);
             $q->with(['color', 'size'])->latest();
         }
-    ])
-        ->when($selectedProductId, function ($query) use ($selectedProductId) {
-            $query->where('id', $selectedProductId);
-        })
+    ]);
+
+    if (!empty($selectedProductId)) {
+        $sanPhamsQuery->where('id', $selectedProductId);
+    }
+
+    // Nếu đang lọc theo 1 sản phẩm cụ thể (`san_pham_id` có mặt) thì KHÔNG loại sản phẩm khỏi danh sách.
+    // Khi đó, các điều kiện lọc chỉ áp vào `variants` (quan hệ), và nếu không match thì phần bảng sẽ rỗng.
+    // Nếu KHÔNG chọn sản phẩm cụ thể thì mới ràng buộc để chỉ lấy sản phẩm có ít nhất 1 biến thể match.
+    $sanPhamsQuery->when($hasVariantFilters && empty($selectedProductId), function ($q) use ($applyVariantFilters) {
+        $q->whereHas('variants', function ($inner) use ($applyVariantFilters) {
+            $applyVariantFilters($inner);
+        });
+    });
+
+    $sanPhams = $sanPhamsQuery
         ->orderBy('ten_san_pham')
         ->get();
 
-    return view('admin.variants.index', compact('sanPhams', 'selectedProductId'));
+    return view('admin.variants.index', compact('sanPhams', 'selectedProductId', 'colors', 'sizes', 'hasVariantFilters'));
 
 
 
