@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <meta name="keywords" content="Visitors Responsive web template, Bootstrap Web Templates, Flat Web Templates, Android Compatible web template, 
+    <meta name="keywords"
+        content="Visitors Responsive web template, Bootstrap Web Templates, Flat Web Templates, Android Compatible web template, 
         Smartphone Compatible web template, free webdesigns for Nokia, Samsung, LG, SonyEricsson, Motorola web design" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Admin Dashboard</title>
@@ -29,7 +30,9 @@
     <link href="{{ asset('AdminAssets/css/style-responsive.css') }}" rel="stylesheet" />
 
     <!-- Font CSS -->
-    <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,400italic,500,500italic,700,700italic,900,900italic' rel='stylesheet' type='text/css'>
+    <link
+        href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,400italic,500,500italic,700,700italic,900,900italic'
+        rel='stylesheet' type='text/css'>
 
     <!-- Font Awesome & Icons -->
     <link rel="stylesheet" href="{{ asset('AdminAssets/css/font.css') }}" type="text/css" />
@@ -48,21 +51,21 @@
 
 <body>
     <style>
-        
-  .dropup .dropdown-menu,
-  .dropdown-menu {
-    z-index: 3000 !important;
-  }
+        .dropup .dropdown-menu,
+        .dropdown-menu {
+            z-index: 3000 !important;
+        }
 
-        #sidebar{
-    width: 219px;
-}
-.brand{
-    width: 219px;
-}
+        #sidebar {
+            width: 219px;
+        }
+
+        .brand {
+            width: 219px;
+        }
     </style>
     <section id="container">
-    
+
         <!-- Header -->
         <header class="header fixed-top clearfix">
             <div class="brand">
@@ -80,9 +83,9 @@
             <div class="- ">
                 <ul class="nav pull-right top-menu">
                     <a class="active" href="{{ url('/') }}">
-                                <i class="fa fa-dashboard"></i>
-                                <span>fashionTee</span>
-                            </a>
+                        <i class="fa fa-dashboard"></i>
+                        <span>fashionTee</span>
+                    </a>
                 </ul>
             </div>
         </header>
@@ -124,24 +127,24 @@
                         </li>
 
                         <!-- Variants -->
-                     <li class="sub-menu">
-    <a href="javascript:;">
-        <i class="fa fa-random"></i>
-        <span>Biến thể</span>
-    </a>
-    <ul class="sub">
-        <li>
-            <a href="{{ route('variants.create') }}">
-                Thêm mới biến thể
-            </a>
-        </li>
-        <li>
-            <a href="{{ route('variants.index') }}">
-                Danh sách biến thể
-            </a>
-        </li>
-    </ul>
-</li>
+                        <li class="sub-menu">
+                            <a href="javascript:;">
+                                <i class="fa fa-random"></i>
+                                <span>Biến thể</span>
+                            </a>
+                            <ul class="sub">
+                                <li>
+                                    <a href="{{ route('variants.create') }}">
+                                        Thêm mới biến thể
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{{ route('variants.index') }}">
+                                        Danh sách biến thể
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
 
                         <!-- Products -->
                         <li class="sub-menu">
@@ -163,6 +166,9 @@
                             <ul class="sub">
                                 <li><a href="{{ route('admin.don-hang.index') }}">Danh sách đơn hàng</a></li>
                             </ul>
+                            <ul class="sub">
+                                <li><a href="{{ route('admin.hoan-tra.index') }}">Hoàn trả</a></li>
+                            </ul>
                         </li>
                         <li class="sub-menu">
                             <a href="javascript:;">
@@ -174,15 +180,15 @@
                             </ul>
                         </li>
                         <li class="sub-menu">
-    <a href="javascript:;">
-        <i class="fa fa-ticket"></i>
-        <span>Quản lý Voucher</span>
-    </a>
-    <ul class="sub">
-        <li><a href="{{ route('admin.vouchers.index') }}">Danh sách Voucher</a></li>
-        <li><a href="{{ route('admin.vouchers.create') }}">Thêm Voucher mới</a></li>
-    </ul>
-</li>
+                            <a href="javascript:;">
+                                <i class="fa fa-ticket"></i>
+                                <span>Quản lý Voucher</span>
+                            </a>
+                            <ul class="sub">
+                                <li><a href="{{ route('admin.vouchers.index') }}">Danh sách Voucher</a></li>
+                                <li><a href="{{ route('admin.vouchers.create') }}">Thêm Voucher mới</a></li>
+                            </ul>
+                        </li>
                         <!-- Extra Pages -->
                         <li class="sub-menu">
                             <a href="javascript:;">
@@ -196,7 +202,7 @@
                             </ul>
                         </li>
                         <!-- Login -->
-                        
+
                     </ul>
                 </div>
             </div>

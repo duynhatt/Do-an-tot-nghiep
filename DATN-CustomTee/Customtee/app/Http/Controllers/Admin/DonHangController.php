@@ -195,4 +195,6 @@ class DonHangController extends Controller
 
         return back()->with('success', 'Đã cập nhật trạng thái đơn hàng thành "' . DonHang::tenTrangThai($trangThaiMoi) . '".');
     }
+
+    
 }

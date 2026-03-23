@@ -8,18 +8,19 @@ use App\Http\Controllers\Admin\MauSacController;
 use App\Http\Controllers\Admin\SanPhamController;
 use App\Http\Controllers\Admin\VariantController;
 use App\Http\Controllers\Admin\BinhLuanController;
+use App\Http\Controllers\Admin\RefundController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\client\AboutController;
 use App\Http\Controllers\client\CheckoutController;
 use App\Http\Controllers\client\ContactController;
 use App\Http\Controllers\client\GioHangController;
 use App\Http\Controllers\client\HomeController;
-use App\Http\Controllers\client\OrderController;
 use App\Http\Controllers\client\ProfileController;
 use App\Http\Controllers\client\SanPhamController as ClientSanPhamController;
 use App\Http\Controllers\client\ShopController;
 use App\Models\BienThe;
 use App\Http\Controllers\Admin\VoucherController;
+use App\Http\Controllers\client\OrderController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -41,7 +42,7 @@ Route::get('/api/product-variant', function (Request $request) {
     $productId = $request->query('product_id');
     $colorId   = $request->query('color');
     $sizeId    = $request->query('size');
-    
+
     $product = \App\Models\SanPham::where('id', $productId)
         ->where('trang_thai', true)
         ->whereHas('danhMuc', fn($q) => $q->where('trang_thai', 1))
@@ -80,6 +81,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/order/{id}', [OrderController::class, 'show'])->name('order.show');
     Route::post('/order/{id}/cancel', [OrderController::class, 'cancel'])->name('order.cancel');
     Route::post('/order/{id}/confirm', [OrderController::class, 'confirm'])->name('order.confirm');
+    Route::post('/order/{donHang}/return-request', [OrderController::class, 'requestReturn'])
+        ->name('order.return.request');
 
     Route::get('/gio-hang', [GioHangController::class, 'index'])->name('gio-hang.index');
     Route::post('/gio-hang', [GioHangController::class, 'store'])->name('gio-hang.store');
@@ -99,7 +102,7 @@ Route::middleware('auth')->group(function () {
     // ROUTE ÁP DỤNG VOUCHER CHO CLIENT (ĐÃ THÊM)
     Route::post('/apply-voucher', [VoucherController::class, 'applyVoucher'])->name('voucher.apply');
 
-    Route::post('binh-luan', [BinhLuanController::class,'store'])->name('binh-luan.store');
+    Route::post('binh-luan', [BinhLuanController::class, 'store'])->name('binh-luan.store');
 
     Route::get('/order/success/{ma_don_hang}', function ($ma_don_hang) {
         $donHang = \App\Models\DonHang::where('ma_don_hang', $ma_don_hang)->firstOrFail();
@@ -115,7 +118,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('mau-sac', MauSacController::class);
     Route::resource('kich-thuoc', KichThuocController::class);
     Route::resource('san-pham', SanPhamController::class);
-    
+
     Route::resource('vouchers', VoucherController::class);
 
     Route::resource('binh-luan', BinhLuanController::class);
@@ -127,6 +130,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('don-hang', [DonHangController::class, 'index'])->name('don-hang.index');
     Route::get('don-hang/{donHang}', [DonHangController::class, 'show'])->name('don-hang.show');
     Route::patch('don-hang/{donHang}/status', [DonHangController::class, 'updateStatus'])->name('don-hang.update-status');
+
+    Route::get('/hoan-tra', [RefundController::class, 'index'])->name('hoan-tra.index');
+    Route::get('/hoan-tra/{refund}', [RefundController::class, 'show'])->name('hoan-tra.show');
+    Route::patch('/hoan-tra/{refund}/accept', [RefundController::class, 'accept'])
+        ->name('hoan-tra.accept');
+    Route::patch('/hoan-tra/{refund}/reject', [RefundController::class, 'reject'])
+        ->name('hoan-tra.reject');
 });
 
 Route::prefix('admin/variants')->name('variants.')->middleware(['auth', 'admin'])->group(function () {

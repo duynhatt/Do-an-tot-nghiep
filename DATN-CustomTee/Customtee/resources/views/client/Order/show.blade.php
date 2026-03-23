@@ -1,23 +1,11 @@
 @include('client.layout.header')
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-11 col-xl-10">
-
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
-            @if(session('error'))
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    {{ session('error') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
 
             <nav aria-label="breadcrumb" class="mb-4">
                 <ol class="breadcrumb bg-transparent p-0 m-0">
@@ -58,7 +46,7 @@
                                     'cho_xac_nhan' => [
                                         'Chờ xác nhận',
                                         'warning',
-'bi bi-hourglass-split',
+                                        'bi bi-hourglass-split',
                                         'Đang chờ xác nhận từ cửa hàng',
                                     ],
                                     'dang_xu_ly' => ['Đang xử lý', 'info', 'bi bi-gear', 'Đang chuẩn bị và đóng gói'],
@@ -105,7 +93,7 @@
                                     <small>Xác nhận</small>
                                 </div>
                                 <div
-class="timeline-step {{ in_array($donHang->trang_thai, ['dang_xu_ly', 'dang_giao', 'da_giao', 'da_hoan_thanh']) ? 'active' : '' }}">
+                                    class="timeline-step {{ in_array($donHang->trang_thai, ['dang_xu_ly', 'dang_giao', 'da_giao', 'da_hoan_thanh']) ? 'active' : '' }}">
                                     <div class="step-icon"><i class="bi bi-gear"></i></div>
                                     <small>Xử lý</small>
                                 </div>
@@ -114,11 +102,108 @@ class="timeline-step {{ in_array($donHang->trang_thai, ['dang_xu_ly', 'dang_giao
                                     <div class="step-icon"><i class="bi bi-truck"></i></div>
                                     <small>Giao hàng</small>
                                 </div>
-                                <div class="timeline-step {{ $donHang->trang_thai === 'da_hoan_thanh' ? 'active' : '' }}">
+                                <div
+                                    class="timeline-step {{ $donHang->trang_thai === 'da_hoan_thanh' ? 'active' : '' }}">
                                     <div class="step-icon"><i class="bi bi-check2-all"></i></div>
                                     <small>Hoàn tất</small>
                                 </div>
                             </div>
+
+                            {{-- Yêu cầu hoàn trả --}}
+                            @if ($donHang->trang_thai === 'da_hoan_thanh')
+
+                                @php
+                                    // Giả sử dùng trường 'da_hoan_thanh_at' (nếu có)
+                                    // Nếu chưa có, thay bằng $donHang->updated_at hoặc created_at tùy logic
+                                    $hoanThanhTime = $donHang->da_hoan_thanh_at ?? $donHang->updated_at;
+
+                                    // Kiểm tra còn trong 3 ngày không
+                                    $conTrongThoiHan =
+                                        $hoanThanhTime && \Carbon\Carbon::parse($hoanThanhTime)->addDays(3)->isFuture();
+                                    // hoặc dùng: $hoanThanhTime->diffInDays(now()) <= 3  (nhưng addDays + isFuture chính xác hơn)
+                                @endphp
+
+                                @if ($conTrongThoiHan)
+
+                                    @php
+                                        // Lấy yêu cầu hoàn tiền mới nhất (hoặc đang xử lý) của đơn hàng này
+                                        $yeuCauHoanTien = $donHang
+                                            ->refunds()
+                                            ->whereIn('trang_thai', ['cho_xu_ly', 'da_chap_nhan'])
+                                            ->latest()
+                                            ->first();
+                                    @endphp
+
+                                    @if ($yeuCauHoanTien)
+                                        <!-- Đã có yêu cầu hoàn tiền → hiển thị trạng thái -->
+                                        <div class="mt-4 card border-warning shadow-sm">
+                                            <div class="card-header bg-warning text-dark fw-semibold">
+                                                <i class="bi bi-arrow-counterclockwise me-2"></i>
+                                                Yêu cầu hoàn tiền đã gửi
+                                            </div>
+                                            <div class="card-body small">
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span class="text-muted">Trạng thái:</span>
+                                                    <span
+                                                        class="badge bg-{{ $yeuCauHoanTien->trang_thai === 'cho_xu_ly'
+                                                            ? 'warning'
+                                                            : ($yeuCauHoanTien->trang_thai === 'da_chap_nhan'
+                                                                ? 'success'
+                                                                : 'danger') }} px-3 py-2">
+                                                        {{ $yeuCauHoanTien->trang_thai_text }}
+                                                    </span>
+                                                </div>
+
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span class="text-muted">Số tiền yêu cầu:</span>
+                                                    <strong>{{ number_format($yeuCauHoanTien->so_tien_yeu_cau, 0, ',', '.') }}
+                                                        ₫</strong>
+                                                </div>
+
+                                                <div class="d-flex justify-content-between mb-3">
+                                                    <span class="text-muted">Gửi lúc:</span>
+                                                    <span>{{ $yeuCauHoanTien->created_at->format('d/m/Y H:i') }}</span>
+                                                </div>
+
+                                                @if ($yeuCauHoanTien->trang_thai === 'cho_xu_ly')
+                                                    <div class="alert alert-warning small mb-0">
+                                                        <i class="bi bi-hourglass-split me-1"></i>
+                                                        Yêu cầu đang chờ xử lý. Bạn sẽ nhận thông báo khi có kết quả.
+                                                    </div>
+                                                @elseif ($yeuCauHoanTien->trang_thai === 'da_chap_nhan')
+                                                    <div class="alert alert-success small mb-0">
+                                                        <i class="bi bi-check-circle-fill me-1"></i>
+                                                        Yêu cầu đã được chấp nhận. Chúng tôi đang xử lý hoàn tiền.
+                                                    </div>
+                                                @endif
+
+                                                <!-- Nếu muốn hiển thị thêm chi tiết (sản phẩm, lý do) có thể mở rộng -->
+                                            </div>
+                                        </div>
+                                    @else
+                                        <!-- Chưa có yêu cầu → hiển thị nút gửi -->
+                                        <div class="mt-4">
+                                            <button type="button"
+                                                class="btn btn-warning btn-lg w-100 d-flex align-items-center justify-content-center"
+                                                data-bs-toggle="modal" data-bs-target="#modalYeuCauHoanTra">
+                                                <i class="bi bi-arrow-counterclockwise me-2 fs-4"></i>
+                                                Yêu cầu hoàn tiền
+                                            </button>
+                                            <small class="d-block text-muted mt-2 text-center">
+                                                Bạn còn
+                                                {{ \Carbon\Carbon::parse($hoanThanhTime)->addDays(3)->diffForHumans(now(), true) }}
+                                                để yêu cầu hoàn tiền
+                                            </small>
+                                        </div>
+                                    @endif
+                                @else
+                                    <div class="alert alert-info mt-4 small text-center mb-0">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Thời hạn yêu cầu hoàn tiền (3 ngày sau khi hoàn thành) đã hết.
+                                    </div>
+                                @endif
+
+                            @endif
 
                             @if ($donHang->trang_thai === 'da_huy')
                                 <div class="alert alert-danger mt-4 d-flex align-items-center small" role="alert">
@@ -129,7 +214,9 @@ class="timeline-step {{ in_array($donHang->trang_thai, ['dang_xu_ly', 'dang_giao
 
                             @if ($donHang->trang_thai === 'cho_xac_nhan')
                                 <div class="mt-4 d-flex flex-wrap gap-2">
-                                    <form action="{{ route('order.cancel', $donHang->id) }}" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng này?');">
+                                    <form action="{{ route('order.cancel', $donHang->id) }}" method="post"
+                                        class="d-inline"
+                                        onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng này?');">
                                         @csrf
                                         <button type="submit" class="btn btn-outline-danger btn-sm">
                                             <i class="bi bi-x-circle me-1"></i> Hủy đơn hàng
@@ -150,7 +237,7 @@ class="timeline-step {{ in_array($donHang->trang_thai, ['dang_xu_ly', 'dang_giao
                                     <thead class="table-light">
                                         <tr>
                                             <th>Sản phẩm</th>
-<th>Biến thể</th>
+                                            <th>Biến thể</th>
                                             <th class="text-center">SL</th>
                                             <th class="text-end">Đơn giá</th>
                                             <th class="text-end">Thành tiền</th>
@@ -188,7 +275,7 @@ class="timeline-step {{ in_array($donHang->trang_thai, ['dang_xu_ly', 'dang_giao
                                                     {{ number_format($chiTiet->thanh_tien, 0, ',', '.') }} ₫</td>
                                             </tr>
                                         @endforeach
-</tbody>
+                                    </tbody>
                                 </table>
                             </div>
                         </div>
@@ -311,13 +398,14 @@ class="timeline-step {{ in_array($donHang->trang_thai, ['dang_xu_ly', 'dang_giao
 
                                 @if ($donHang->ghi_chu)
                                     <div class="mt-3">
-                                        <small class="fw-medium text-muted text-uppercase d-block mb-1">Ghi chú của bạn</small>
+                                        <small class="fw-medium text-muted text-uppercase d-block mb-1">Ghi chú của
+                                            bạn</small>
                                         <p class="small text-muted mb-0">{{ $donHang->ghi_chu }}</p>
                                     </div>
                                 @endif
                             </div>
 
-                            @if($donHang->trang_thai === 'da_hoan_thanh')
+                            @if ($donHang->trang_thai === 'da_hoan_thanh')
                                 <div class="card border-0 shadow-sm rounded-3 mt-4">
                                     <div class="card-header bg-light py-3 px-4">
                                         <h5 class="mb-0 fw-semibold">Đánh giá sản phẩm</h5>
@@ -325,68 +413,182 @@ class="timeline-step {{ in_array($donHang->trang_thai, ['dang_xu_ly', 'dang_giao
 
                                     <div class="card-body">
                                         @foreach ($donHang->chiTietDonHangs as $chiTiet)
-
-                                        @php
-                                            $daDanhGia = \App\Models\BinhLuan::where('user_id', auth()->id())
-                                                            ->where('san_pham_id', $chiTiet->sanPham->id)
-                                                            ->where('don_hang_id', $donHang->id)
-                                                            ->exists();
+                                            @php
+                                                $daDanhGia = \App\Models\BinhLuan::where('user_id', auth()->id())
+                                                    ->where('san_pham_id', $chiTiet->sanPham->id)
+                                                    ->where('don_hang_id', $donHang->id)
+                                                    ->exists();
                                             @endphp
-                                        <div class="border rounded p-3 mb-3">
-                                            <div class="d-flex align-items-center mb-2">
-                                                <img src="{{ $chiTiet->sanPham->hinh_anh_chinh ? asset('storage/'.$chiTiet->sanPham->hinh_anh_chinh) : 'https://via.placeholder.com/60' }}"
-                                                    width="60"
-                                                    height="60"
-                                                    class="rounded me-3"
-                                                    style="object-fit:cover">
-                                                <div>
-                                                    <strong>{{ $chiTiet->sanPham->ten_san_pham }}</strong>
+                                            <div class="border rounded p-3 mb-3">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <img src="{{ $chiTiet->sanPham->hinh_anh_chinh ? asset('storage/' . $chiTiet->sanPham->hinh_anh_chinh) : 'https://via.placeholder.com/60' }}"
+                                                        width="60" height="60" class="rounded me-3"
+                                                        style="object-fit:cover">
+                                                    <div>
+                                                        <strong>{{ $chiTiet->sanPham->ten_san_pham }}</strong>
+                                                    </div>
                                                 </div>
+                                                @if ($daDanhGia)
+                                                    <div class="alert alert-success mb-0">
+                                                        <i class="bi bi-check-circle"></i>
+                                                        Bạn đã đánh giá sản phẩm này
+                                                    </div>
+                                                @else
+                                                    <form action="{{ route('binh-luan.store') }}" method="POST">
+                                                        @csrf
+                                                        <input type="hidden" name="san_pham_id"
+                                                            value="{{ $chiTiet->sanPham->id }}">
+                                                        <input type="hidden" name="don_hang_id"
+                                                            value="{{ $donHang->id }}">
+                                                        {{-- Chọn sao --}}
+                                                        <div class="mb-2">
+                                                            <label class="form-label fw-semibold">Số sao</label>
+                                                            <select name="so_sao" class="form-select w-auto">
+                                                                <option value="5">⭐⭐⭐⭐⭐ (5 sao)</option>
+                                                                <option value="4">⭐⭐⭐⭐ (4 sao)</option>
+                                                                <option value="3">⭐⭐⭐ (3 sao)</option>
+                                                                <option value="2">⭐⭐ (2 sao)</option>
+                                                                <option value="1">⭐ (1 sao)</option>
+                                                            </select>
+                                                        </div>
+                                                        {{-- Nội dung --}}
+                                                        <div class="mb-2">
+                                                            <textarea name="noi_dung" class="form-control" rows="3" placeholder="Viết đánh giá của bạn..."></textarea>
+                                                        </div>
+                                                        <button class="btn btn-primary btn-sm">
+                                                            <i class="bi bi-send"></i> Gửi đánh giá
+                                                        </button>
+                                                    </form>
+                                                @endif
                                             </div>
-                                            @if($daDanhGia)
-                                                <div class="alert alert-success mb-0">
-                                                    <i class="bi bi-check-circle"></i>
-                                                    Bạn đã đánh giá sản phẩm này
-                                                </div>
-                                            @else
-                                                <form action="{{ route('binh-luan.store') }}" method="POST">
-                                                    @csrf
-                                                    <input type="hidden" name="san_pham_id" value="{{ $chiTiet->sanPham->id }}">
-                                                    <input type="hidden" name="don_hang_id" value="{{ $donHang->id }}">
-                                                    {{-- Chọn sao --}}
-                                                    <div class="mb-2">
-                                                        <label class="form-label fw-semibold">Số sao</label>
-                                                        <select name="so_sao" class="form-select w-auto">
-                                                            <option value="5">⭐⭐⭐⭐⭐ (5 sao)</option>
-                                                            <option value="4">⭐⭐⭐⭐ (4 sao)</option>
-                                                            <option value="3">⭐⭐⭐ (3 sao)</option>
-                                                            <option value="2">⭐⭐ (2 sao)</option>
-                                                            <option value="1">⭐ (1 sao)</option>
-                                                        </select>
-                                                    </div>
-                                                    {{-- Nội dung --}}
-                                                    <div class="mb-2">
-                                                        <textarea name="noi_dung"
-                                                            class="form-control"
-                                                            rows="3"
-                                                            placeholder="Viết đánh giá của bạn..."></textarea>
-                                                    </div>
-                                                    <button class="btn btn-primary btn-sm">
-                                                        <i class="bi bi-send"></i> Gửi đánh giá
-                                                    </button>
-                                                </form>
-                                            @endif
-                                        </div>
-
                                         @endforeach
                                     </div>
                                 </div>
                             @endif
 
+
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modalYeuCauHoanTra" tabindex="-1" aria-labelledby="modalYeuCauHoanTraLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold" id="modalYeuCauHoanTraLabel">
+                    <i class="bi bi-arrow-counterclockwise me-2"></i> Yêu cầu hoàn tiền / trả hàng
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form action="{{ route('order.return.request', $donHang->id) }}" method="POST"
+                enctype="multipart/form-data" id="formYeuCauHoanTra">
+                @csrf
+
+                <div class="modal-body">
+
+                    <div class="mb-5">
+                        <h6 class="fw-semibold mb-3">Chọn sản phẩm và số lượng muốn hoàn trả</h6>
+                        <div class="list-group">
+                            @foreach ($donHang->chiTietDonHangs as $chiTiet)
+                                <div
+                                    class="list-group-item list-group-item-action d-flex align-items-center justify-content-between flex-wrap gap-3 py-3">
+                                    <div class="d-flex align-items-center flex-grow-1">
+                                        <img src="{{ $chiTiet->sanPham->hinh_anh_chinh ? asset('storage/' . $chiTiet->sanPham->hinh_anh_chinh) : 'https://via.placeholder.com/50' }}"
+                                            alt="" class="rounded me-3" width="50" height="50"
+                                            style="object-fit: cover;">
+                                        <div class="flex-grow-1">
+                                            <div class="fw-medium">{{ $chiTiet->sanPham->ten_san_pham }}</div>
+                                            @if ($chiTiet->bienThe)
+                                                <small class="text-muted">
+                                                    {{ $chiTiet->bienThe->color->ten_mau ?? '—' }} /
+                                                    {{ $chiTiet->bienThe->size->ten_kich_thuoc ?? '—' }}
+                                                </small>
+                                            @endif
+                                            <div class="small text-muted mt-1">
+                                                SL đã mua: <strong>{{ $chiTiet->so_luong }}</strong> ×
+                                                {{ number_format($chiTiet->don_gia, 0, ',', '.') }} ₫
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="chi_tiet_ids[]"
+                                                value="{{ $chiTiet->id }}" id="chiTiet{{ $chiTiet->id }}"
+                                                data-max="{{ $chiTiet->so_luong }}">
+                                            <label class="form-check-label" for="chiTiet{{ $chiTiet->id }}">
+                                                Hoàn trả
+                                            </label>
+                                        </div>
+                                        <div class="input-group input-group-sm" style="width: 120px;">
+                                            <span class="input-group-text">SL</span>
+                                            <input type="number" name="so_luong[{{ $chiTiet->id }}]"
+                                                class="form-control so-luong-input" min="1"
+                                                max="{{ $chiTiet->so_luong }}" value="1" disabled>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                        <small class="form-text text-muted mt-2 d-block">
+                            Chọn sản phẩm và điều chỉnh số lượng muốn hoàn trả (tối thiểu 1, tối đa bằng số đã mua).
+                        </small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="ly_do" class="form-label fw-semibold">Lý do hoàn trả / khiếu nại</label>
+                        <textarea name="ly_do" id="ly_do" class="form-control" rows="4"
+                            placeholder="Vui lòng mô tả chi tiết vấn đề (hàng lỗi, không đúng mô tả, hư hỏng khi vận chuyển, v.v...)" required></textarea>
+                        @error('ly_do')
+                            <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Hình ảnh minh chứng (tối đa 5 ảnh)</label>
+                        <input type="file" name="hinh_anh[]" id="hinhAnhInput" class="form-control"
+                            accept="image/*" multiple>
+                        <small class="form-text text-muted d-block mt-1">
+                            Hỗ trợ: jpg, jpeg, png. Tối đa 5 ảnh.
+                        </small>
+                        <div id="previewContainer" class="mt-3 row g-2"></div>
+                        @error('hinh_anh.*')
+                            <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    @if ($donHang->phuong_thuc_thanh_toan === 'cod')
+                        <div class="mb-4 alert alert-info small">
+                            <strong>Lưu ý:</strong> Vì đơn hàng thanh toán COD, bạn cần cung cấp thông tin tài khoản
+                            nhận hoàn tiền.
+                        </div>
+                        <div class="mb-5">
+                            <label class="form-label fw-semibold">Ảnh thông tin tài khoản nhận tiền</label>
+                            <input type="file" name="hinh_tai_khoan[]" id="hinhTaiKhoanInput"
+                                class="form-control" accept="image/*" multiple>
+                            <small class="form-text text-muted d-block mt-1">
+                                Tải lên ảnh chụp màn hình số tài khoản, tên chủ TK, ngân hàng hoặc mã QR.
+                            </small>
+                            <div id="previewTaiKhoanContainer" class="mt-3 row g-2"></div>
+                            @error('hinh_tai_khoan.*')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    @endif
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-warning" id="btnSubmitHoanTra">
+                        <i class="bi bi-arrow-counterclockwise me-2"></i> Gửi yêu cầu hoàn tiền
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -445,7 +647,7 @@ class="timeline-step {{ in_array($donHang->trang_thai, ['dang_xu_ly', 'dang_giao
 
     .card {
         border-radius: 12px;
-}
+    }
 
     table th,
     table td {
@@ -457,6 +659,123 @@ class="timeline-step {{ in_array($donHang->trang_thai, ['dang_xu_ly', 'dang_giao
         z-index: 100;
     }
 </style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('input[name="chi_tiet_ids[]"]');
+
+        checkboxes.forEach(checkbox => {
+            const inputSoLuong = checkbox.closest('.list-group-item')?.querySelector('.so-luong-input');
+
+            if (!inputSoLuong) return;
+
+            checkbox.addEventListener('change', function() {
+                inputSoLuong.disabled = !this.checked;
+                inputSoLuong.value = this.checked ? 1 : '';
+            });
+
+            inputSoLuong.addEventListener('input', function() {
+                let val = parseInt(this.value) || 1;
+                const max = parseInt(this.max) || 999;
+                if (val < 1) val = 1;
+                if (val > max) val = max;
+                this.value = val;
+            });
+        });
+
+        setupImagePreview(
+            'hinhAnhInput',
+            'previewContainer',
+            5,
+            'Bạn chỉ được tải lên tối đa 5 ảnh minh chứng.'
+        );
+
+        setupImagePreview(
+            'hinhTaiKhoanInput',
+            'previewTaiKhoanContainer',
+            5,
+            'Bạn chỉ được tải lên tối đa 5 ảnh thông tin tài khoản.'
+        );
+
+        const form = document.getElementById('formYeuCauHoanTra');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const checkedCount = document.querySelectorAll('input[name="chi_tiet_ids[]"]:checked')
+                    .length;
+
+                if (checkedCount === 0) {
+                    e.preventDefault();
+                    alert('Vui lòng chọn ít nhất một sản phẩm để hoàn trả.');
+                    return;
+                }
+
+            });
+        }
+
+        /**
+         * @param {string} inputId 
+         * @param {string} containerId 
+         * @param {number} maxFiles 
+         * @param {string} alertMessage 
+         */
+        function setupImagePreview(inputId, containerId, maxFiles, alertMessage) {
+            const input = document.getElementById(inputId);
+            const container = document.getElementById(containerId);
+
+            if (!input || !container) return;
+
+            input.addEventListener('change', function() {
+                container.innerHTML = '';
+
+                const files = this.files;
+                if (files.length > maxFiles) {
+                    alert(alertMessage);
+                    this.value = '';
+                    return;
+                }
+
+                Array.from(files).forEach((file, index) => {
+                    if (!file.type.startsWith('image/')) {
+                        alert('File không phải ảnh: ' + file.name);
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const col = document.createElement('div');
+                        col.className = 'col-6 col-md-4 col-lg-3';
+                        col.innerHTML = `
+                        <div class="position-relative">
+                            <img src="${e.target.result}" 
+                                 class="img-fluid rounded shadow-sm" 
+                                 alt="Preview" 
+                                 style="height: 120px; object-fit: cover; width: 100%;">
+                            <button type="button" 
+                                    class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 remove-preview" 
+                                    data-index="${index}">
+                                <i class="bi bi-x"></i>
+                            </button>
+                            <small class="d-block text-center mt-1 text-muted text-truncate" 
+                                   style="max-width: 100%;">
+                                ${file.name}
+                            </small>
+                        </div>
+                    `;
+                        container.appendChild(col);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            container.addEventListener('click', function(e) {
+                const btn = e.target.closest('.remove-preview');
+                if (btn) {
+                    btn.closest('.col-6')?.remove();
+                }
+            });
+        }
+    });
+</script>
 
 @include('client.layout.footer')
 @include('client.layout.scripts')
