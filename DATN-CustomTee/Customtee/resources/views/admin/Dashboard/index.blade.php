@@ -212,13 +212,47 @@
                         {{ $endDate->format('d/m/Y') }}</p>
                 </div>
 
-                <div class="btn-group" role="group">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle px-4" type="button"
+                            id="revenueFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            Tùy chọn
+                        </button>
+
+                        <div class="dropdown-menu dropdown-menu-end p-4" aria-labelledby="revenueFilterDropdown"
+                            style="min-width: 560px; z-index: 2050;">
+                            <form class="row g-3 align-items-end" method="GET"
+                                action="{{ route('admin.dashboard') }}">
+                                <input type="hidden" name="group" value="{{ $groupBy }}">
+                                <div class="col-md-6 col-12">
+                                    <label class="form-label mb-1">Từ ngày</label>
+                                    <input type="date" name="from" class="form-control form-control-sm"
+                                        value="{{ $startDate->format('Y-m-d') }}">
+                                </div>
+                                <div class="col-md-6 col-12">
+                                    <label class="form-label mb-1">Đến ngày</label>
+                                    <input type="date" name="to" class="form-control form-control-sm"
+                                        value="{{ $endDate->format('Y-m-d') }}">
+                                </div>
+                                <div class="col-12 d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary btn-sm px-4">Áp dụng</button>
+                                    <a href="{{ route('admin.dashboard', ['period' => 'today']) }}"
+                                        class="btn btn-outline-secondary btn-sm px-4">Đặt lại bộ lọc</a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <a href="{{ route('admin.dashboard', ['period' => 'today']) }}"
+                        class="btn btn-outline-secondary {{ $period === 'today' ? 'active' : '' }} px-4">Hôm nay</a>
                     <a href="{{ route('admin.dashboard', ['period' => '7days']) }}"
                         class="btn btn-outline-secondary {{ $period === '7days' ? 'active' : '' }} px-4">7 ngày</a>
                     <a href="{{ route('admin.dashboard', ['period' => '30days']) }}"
                         class="btn btn-outline-secondary {{ $period === '30days' ? 'active' : '' }} px-4">30 ngày</a>
                     <a href="{{ route('admin.dashboard', ['period' => '90days']) }}"
                         class="btn btn-outline-secondary {{ $period === '90days' ? 'active' : '' }} px-4">90 ngày</a>
+                    <a href="{{ route('admin.dashboard', ['period' => 'thisyear']) }}"
+                        class="btn btn-outline-secondary {{ $period === 'thisyear' ? 'active' : '' }} px-4">Năm nay</a>
                 </div>
             </div>
 
@@ -343,19 +377,111 @@
                 <div class="col-xl-8">
                     <div class="chart-container">
                         <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h5 class="fw-semibold mb-0">Doanh thu
-                                {{ $period === '7days' ? '7 ngày' : ($period === '30days' ? '30 ngày' : '90 ngày') }} gần
-                                nhất</h5>
-                            <select class="form-select form-select-sm w-auto" onchange="window.location.href=this.value">
-                                <option value="{{ route('admin.dashboard', ['period' => '7days']) }}"
-                                    {{ $period === '7days' ? 'selected' : '' }}>7 ngày</option>
-                                <option value="{{ route('admin.dashboard', ['period' => '30days']) }}"
-                                    {{ $period === '30days' ? 'selected' : '' }}>30 ngày</option>
-                                <option value="{{ route('admin.dashboard', ['period' => '90days']) }}"
-                                    {{ $period === '90days' ? 'selected' : '' }}>90 ngày</option>
-                            </select>
+                            @php
+                                $currentGroupBy = (string) ($groupBy ?? 'day');
+                                $groupLabels = [
+                                    'day' => 'Ngày',
+                                    'week' => 'Tuần',
+                                    'month' => 'Tháng',
+                                    'year' => 'Năm',
+                                ];
+                                $groupLabel = $groupLabels[$currentGroupBy] ?? 'Ngày';
+                            @endphp
+                            <h5 class="fw-semibold mb-0">Doanh thu theo {{ $groupLabel }}
+                                ({{ $startDate->format('d/m/Y') }} → {{ $endDate->format('d/m/Y') }})</h5>
+                            <div class="d-flex align-items-center gap-2">
+                                <select class="form-select form-select-sm w-auto" onchange="window.location.href=this.value">
+                                    <option
+                                        value="{{ route('admin.dashboard', ['from' => $startDate->format('Y-m-d'), 'to' => $endDate->format('Y-m-d'), 'group' => $currentGroupBy]) }}"
+                                        {{ $period === 'custom' ? 'selected' : '' }}>Tùy chọn</option>
+                                    <option value="{{ route('admin.dashboard', ['period' => 'today', 'group' => $currentGroupBy]) }}"
+                                        {{ $period === 'today' ? 'selected' : '' }}>Hôm nay</option>
+                                    <option value="{{ route('admin.dashboard', ['period' => '7days', 'group' => $currentGroupBy]) }}"
+                                        {{ $period === '7days' ? 'selected' : '' }}>7 ngày</option>
+                                    <option value="{{ route('admin.dashboard', ['period' => '30days', 'group' => $currentGroupBy]) }}"
+                                        {{ $period === '30days' ? 'selected' : '' }}>30 ngày</option>
+                                    <option value="{{ route('admin.dashboard', ['period' => '90days', 'group' => $currentGroupBy]) }}"
+                                        {{ $period === '90days' ? 'selected' : '' }}>90 ngày</option>
+                                    <option value="{{ route('admin.dashboard', ['period' => 'thisyear', 'group' => $currentGroupBy]) }}"
+                                        {{ $period === 'thisyear' ? 'selected' : '' }}>Năm nay</option>
+                                </select>
+
+                                <select class="form-select form-select-sm w-auto" onchange="window.location.href=this.value">
+                                    @php
+                                        $presetPeriods = ['today', '7days', '30days', '90days', 'thisyear'];
+                                        $isPresetPeriod = in_array($period, $presetPeriods, true);
+                                    @endphp
+                                    <option
+                                        value="{{ $isPresetPeriod
+                                            ? route('admin.dashboard', ['period' => $period, 'group' => 'day'])
+                                            : route('admin.dashboard', ['from' => $startDate->format('Y-m-d'), 'to' => $endDate->format('Y-m-d'), 'group' => 'day'])
+                                        }}"
+                                        {{ $currentGroupBy === 'day' ? 'selected' : '' }}>Ngày</option>
+                                    <option
+                                        value="{{ $isPresetPeriod
+                                            ? route('admin.dashboard', ['period' => $period, 'group' => 'week'])
+                                            : route('admin.dashboard', ['from' => $startDate->format('Y-m-d'), 'to' => $endDate->format('Y-m-d'), 'group' => 'week'])
+                                        }}"
+                                        {{ $currentGroupBy === 'week' ? 'selected' : '' }}>Tuần</option>
+                                    <option
+                                        value="{{ $isPresetPeriod
+                                            ? route('admin.dashboard', ['period' => $period, 'group' => 'month'])
+                                            : route('admin.dashboard', ['from' => $startDate->format('Y-m-d'), 'to' => $endDate->format('Y-m-d'), 'group' => 'month'])
+                                        }}"
+                                        {{ $currentGroupBy === 'month' ? 'selected' : '' }}>Tháng</option>
+                                    <option
+                                        value="{{ $isPresetPeriod
+                                            ? route('admin.dashboard', ['period' => $period, 'group' => 'year'])
+                                            : route('admin.dashboard', ['from' => $startDate->format('Y-m-d'), 'to' => $endDate->format('Y-m-d'), 'group' => 'year'])
+                                        }}"
+                                        {{ $currentGroupBy === 'year' ? 'selected' : '' }}>Năm</option>
+                                </select>
+                            </div>
                         </div>
                         <canvas id="revenueChart" height="140"></canvas>
+
+                        @php
+                            $timeLabels = $revenueByDateTable['labels'] ?? [];
+                            $timeData = $revenueByDateTable['data'] ?? [];
+                            // Tổng doanh thu theo toàn bộ kỳ (chart vẫn hiển thị full data).
+                            $timeTotal = array_sum($revenueByDate['data'] ?? []);
+                        @endphp
+                        <div class="table-responsive mt-4">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Kỳ</th>
+                                        <th class="text-end">Doanh thu</th>
+                                        <th class="text-end">% tổng</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="revenueTimeTableBody">
+                                    @forelse ($timeLabels as $idx => $label)
+                                        @php
+                                            $value = isset($timeData[$idx]) ? (float) $timeData[$idx] : 0;
+                                            $percent = $timeTotal > 0 ? round(($value / $timeTotal) * 100, 2) : 0;
+                                        @endphp
+                                        <tr>
+                                            <td>{{ (($timePage ?? 1) - 1) * ($timePerPage ?? 10) + $idx + 1 }}</td>
+                                            <td>{{ $label }}</td>
+                                            <td class="text-end fw-bold">{{ number_format($value, 0, ',', '.') }} ₫</td>
+                                            <td class="text-end">{{ number_format($percent, 2, ',', '.') }}%</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted py-4">Chưa có dữ liệu</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-3">
+                            <nav aria-label="Phân trang doanh thu theo thời gian">
+                                <ul class="pagination mb-0" id="revenueTimePagination"></ul>
+                            </nav>
+                        </div>
                     </div>
                 </div>
 
@@ -363,6 +489,40 @@
                     <div class="chart-container h-100">
                         <h5 class="fw-semibold mb-4">Cơ cấu doanh thu theo danh mục</h5>
                         <canvas id="categoryChart" height="180"></canvas>
+
+                        @php
+                            $categoryLabels = $revenueByCategory['labels'] ?? [];
+                            $categoryData = $revenueByCategory['data'] ?? [];
+                            $categoryTotal = array_sum($categoryData);
+                        @endphp
+                        <div class="table-responsive mt-4">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Danh mục</th>
+                                        <th class="text-end">Doanh thu</th>
+                                        <th class="text-end">% tổng</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($categoryLabels as $idx => $label)
+                                        @php
+                                            $value = isset($categoryData[$idx]) ? (float) $categoryData[$idx] : 0;
+                                            $percent = $categoryTotal > 0 ? round(($value / $categoryTotal) * 100, 2) : 0;
+                                        @endphp
+                                        <tr>
+                                            <td>{{ $label }}</td>
+                                            <td class="text-end fw-bold">{{ number_format($value, 0, ',', '.') }} ₫</td>
+                                            <td class="text-end">{{ number_format($percent, 2, ',', '.') }}%</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted py-4">Chưa có dữ liệu</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -374,23 +534,37 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>#</th>
+                                        <th class="text-center">Ảnh</th>
                                         <th>Sản phẩm</th>
                                         <th class="text-end">Số lượng bán</th>
                                         <th class="text-end">Doanh thu</th>
+                                        <th class="text-end">% tổng doanh thu</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @forelse ($topProducts as $index => $product)
                                         <tr>
                                             <td>{{ $index + 1 }}</td>
+                                            @php
+                                                $productImage = $product->hinh_anh_chinh
+                                                    ? '/storage/' . $product->hinh_anh_chinh
+                                                    : '/images/no-image.png';
+                                            @endphp
+                                            <td class="text-center">
+                                                <img src="{{ $productImage }}" alt="{{ $product->ten_san_pham }}"
+                                                    style="width:70px;height:70px;object-fit:cover;border-radius:12px">
+                                            </td>
                                             <td><strong>{{ $product->ten_san_pham }}</strong></td>
                                             <td class="text-end">{{ number_format($product->total_quantity) }}</td>
                                             <td class="text-end fw-bold">
                                                 {{ number_format($product->total_revenue, 0, ',', '.') }} ₫</td>
+                                            <td class="text-end">
+                                                {{ number_format($product->percent_total_revenue ?? 0, 2, ',', '.') }}%
+                                            </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="4" class="text-center text-muted py-4">Chưa có dữ liệu trong
+                                            <td colspan="6" class="text-center text-muted py-4">Chưa có dữ liệu trong
                                                 khoảng thời gian này</td>
                                         </tr>
                                     @endforelse
@@ -886,6 +1060,133 @@
                 $('#lowStockPagination').html(html);
 
             }
+
+            // -------------------------------
+            // Doanh thu theo thời gian (AJAX)
+            // -------------------------------
+            const revenueTimeTableAjaxUrl = "{{ route('admin.dashboard.revenue-time-table') }}";
+            const revenueTimeFilters = {
+                group: @json($groupBy),
+                from: @json($startDate->format('Y-m-d')),
+                to: @json($endDate->format('Y-m-d')),
+            };
+
+            let revenueTimePerPage = {{ (int) ($timePerPage ?? 10) }};
+            let revenueTimeCurrentPage = {{ (int) ($timePage ?? 1) }};
+            let revenueTimeLastPage = {{ (int) ($timeLastPage ?? 1) }};
+
+            function renderRevenueTimeRows(rows) {
+                if (!rows || rows.length === 0) {
+                    return `<tr><td colspan="4" class="text-center text-muted py-4">Chưa có dữ liệu</td></tr>`;
+                }
+
+                return rows.map(r => {
+                    const value = Math.round(Number(r.value ?? 0)).toLocaleString('vi-VN');
+                    const percent = typeof r.percent === 'number'
+                        ? r.percent.toFixed(2).replace('.', ',')
+                        : '0,00';
+
+                    return `
+                        <tr>
+                            <td>${r.row_no ?? '-'}</td>
+                            <td>${r.label ?? '-'}</td>
+                            <td class="text-end fw-bold">${value} ₫</td>
+                            <td class="text-end">${percent}%</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            function renderRevenueTimePagination(current, last) {
+                const $container = $('#revenueTimePagination');
+                if (last <= 1) {
+                    $container.html('');
+                    return;
+                }
+
+                const windowSize = 2;
+                const startPage = Math.max(1, current - windowSize);
+                const endPage = Math.min(last, current + windowSize);
+
+                let html = '';
+
+                // Prev
+                html += `<li class="page-item ${current <= 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#"
+                        ${current <= 1 ? '' : 'onclick="loadRevenueTimeTable(' + (current - 1) + '); return false;"'}>
+                        Prev
+                    </a>
+                </li>`;
+
+                if (startPage > 1) {
+                    html += `<li class="page-item ${1 === current ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="loadRevenueTimeTable(1); return false;">1</a>
+                    </li>`;
+
+                    if (startPage > 2) {
+                        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                    }
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    html += `<li class="page-item ${i === current ? 'active' : ''}">
+                        <a class="page-link" href="#"
+                            onclick="${i === current ? '' : 'loadRevenueTimeTable(' + i + '); return false;'}">
+                            ${i}
+                        </a>
+                    </li>`;
+                }
+
+                if (endPage < last) {
+                    if (endPage < last - 1) {
+                        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                    }
+
+                    html += `<li class="page-item ${last === current ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="loadRevenueTimeTable(${last}); return false;">${last}</a>
+                    </li>`;
+                }
+
+                // Next
+                html += `<li class="page-item ${current >= last ? 'disabled' : ''}">
+                    <a class="page-link" href="#"
+                        ${current >= last ? '' : 'onclick="loadRevenueTimeTable(' + (current + 1) + '); return false;"'}>
+                        Next
+                    </a>
+                </li>`;
+
+                $container.html(html);
+            }
+
+            function loadRevenueTimeTable(page = 1) {
+                if (page < 1 || page > revenueTimeLastPage) return;
+
+                $('#revenueTimeTableBody').html(
+                    '<tr><td colspan="4" class="text-center py-3">Đang tải...</td></tr>'
+                );
+
+                $.get(revenueTimeTableAjaxUrl, {
+                    ...revenueTimeFilters,
+                    time_page: page,
+                    time_per_page: revenueTimePerPage,
+                }, function(res) {
+                    const rows = res.rows || [];
+                    const meta = res.meta || {};
+
+                    revenueTimeCurrentPage = meta.current_page || page;
+                    revenueTimeLastPage = meta.last_page || revenueTimeLastPage;
+
+                    $('#revenueTimeTableBody').html(renderRevenueTimeRows(rows));
+                    renderRevenueTimePagination(revenueTimeCurrentPage, revenueTimeLastPage);
+                }).fail(function() {
+                    $('#revenueTimeTableBody').html(
+                        '<tr><td colspan="4" class="text-center text-danger py-3">Lỗi tải dữ liệu</td></tr>'
+                    );
+                });
+            }
+
+            // Render pagination ban đầu (không reload)
+            renderRevenueTimePagination(revenueTimeCurrentPage, revenueTimeLastPage);
         </script>
 
     </body>
