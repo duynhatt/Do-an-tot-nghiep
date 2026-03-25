@@ -19,18 +19,69 @@ class DashboardController extends Controller
     public function home(Request $request)
     {
         $period = $request->input('period', '7days');
+        $groupBy = $request->input('group', 'day');
+        $groupBy = in_array($groupBy, ['day', 'week', 'month', 'year'], true) ? $groupBy : 'day';
 
-        $endDate   = Carbon::now();
-        $startDate = match ($period) {
-            '30days'  => Carbon::now()->subDays(30),
-            '90days'  => Carbon::now()->subDays(90),
-            'thisyear' => Carbon::now()->startOfYear(),
-            default   => Carbon::now()->subDays(7),
-        };
+        $from = $request->input('from');
+        $to   = $request->input('to');
+
+        // Pagination cho bảng "Doanh thu theo thời gian"
+        $timePage = max(1, (int) $request->input('time_page', 1));
+        $timePerPage = (int) $request->input('time_per_page', 10);
+        $timePerPage = max(5, min(20, $timePerPage));
+
+        // Nếu có truyền from/to thì ưu tiên sử dụng phạm vi tùy chọn.
+        // `from/to` định dạng ISO: YYYY-MM-DD (type="date" trên UI).
+        $resolved = false;
+        if (!empty($from) || !empty($to)) {
+            try {
+                $startDate = $from ? Carbon::parse($from)->startOfDay() : Carbon::today()->startOfDay();
+                $endDate = $to ? Carbon::parse($to)->endOfDay() : Carbon::parse($from)->endOfDay();
+
+                // Đảm bảo start <= end
+                if ($startDate->gt($endDate)) {
+                    [$startDate, $endDate] = [$endDate->startOfDay(), $startDate->endOfDay()];
+                }
+
+                $period = 'custom';
+                $resolved = true;
+            } catch (\Throwable $e) {
+                Log::warning('Invalid revenue filter from/to', [
+                    'from' => $from,
+                    'to' => $to,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        if (!$resolved) {
+            $endDate = Carbon::now();
+            $startDate = match ($period) {
+                'today'    => Carbon::today()->startOfDay(),
+                '30days'   => Carbon::now()->subDays(30)->startOfDay(),
+                '90days'   => Carbon::now()->subDays(90)->startOfDay(),
+                'thisyear' => Carbon::now()->startOfYear(),
+                default    => Carbon::now()->subDays(7)->startOfDay(),
+            };
+
+            if ($period === 'today') {
+                $endDate = Carbon::today()->endOfDay();
+            }
+        }
 
         $stats = $this->getQuickStats($startDate, $endDate);
 
-        $revenueByDate = $this->getRevenueByDate($startDate, $endDate);
+        $revenueByDate = $this->getRevenueByDate($startDate, $endDate, $groupBy);
+
+        // Cắt dữ liệu bảng theo trang (chart vẫn dùng dữ liệu đầy đủ)
+        $timeTotalBuckets = count($revenueByDate['labels'] ?? []);
+        $timeLastPage = $timeTotalBuckets > 0 ? (int) ceil($timeTotalBuckets / $timePerPage) : 1;
+        $timePage = min($timePage, $timeLastPage);
+        $timeOffset = ($timePage - 1) * $timePerPage;
+        $revenueByDateTable = [
+            'labels' => array_slice($revenueByDate['labels'] ?? [], $timeOffset, $timePerPage),
+            'data'   => array_slice($revenueByDate['data'] ?? [], $timeOffset, $timePerPage),
+        ];
 
         $revenueByCategory = $this->getRevenueByCategory($startDate, $endDate);
 
@@ -51,29 +102,42 @@ class DashboardController extends Controller
         return view('admin.dashboard.index', compact(
             'stats',
             'revenueByDate',
+            'revenueByDateTable',
             'revenueByCategory',
             'topCustomers',
             'ordersByStatus',
             'topProducts',
             'period',
+            'groupBy',
             'startDate',
             'endDate',
             'lowStockVariants',
-            'lowStockCount'
+            'lowStockCount',
+            'timePage',
+            'timeLastPage',
+            'timePerPage'
         ));
+    }
+
+    // Route /admin/dashboard đang trỏ tới Dashboard() trong web.php,
+    // nên tạo alias để tránh lỗi khi bấm lọc theo period.
+    public function Dashboard(Request $request)
+    {
+        return $this->home($request);
     }
 
     private function getQuickStats($start, $end)
     {
-        $revenue = DonHang::whereBetween('created_at', [$start, $end])
-            ->whereIn('trang_thai', [
-                DonHang::TRANG_THAI_DA_GIAO,
-                DonHang::TRANG_THAI_DA_HOAN_THANH
-            ])
+        // Doanh thu chỉ tính khi khách xác nhận nhận hàng
+        $revenue = DonHang::whereBetween('updated_at', [$start, $end])
+            ->where('trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
+            ->where('trang_thai_thanh_toan', 'da_thanh_toan')
             ->sum('tong_tien');
 
-        $ordersCount = DonHang::whereBetween('created_at', [$start, $end])
-            ->where('trang_thai', '!=', DonHang::TRANG_THAI_DA_HUY)
+        // Đếm số đơn "hoàn thành" theo thời điểm xác nhận
+        $ordersCount = DonHang::whereBetween('updated_at', [$start, $end])
+            ->where('trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
+            ->where('trang_thai_thanh_toan', 'da_thanh_toan')
             ->count();
 
         $newCustomers = User::whereBetween('created_at', [$start, $end])
@@ -90,51 +154,133 @@ class DashboardController extends Controller
         ];
     }
 
-    private function getRevenueByDate($start, $end)
+    private function getRevenueByDate($start, $end, string $groupBy = 'day')
     {
-        $completedCount = DonHang::whereBetween('created_at', [$start, $end])
-            ->whereIn('trang_thai', [
-                DonHang::TRANG_THAI_DA_GIAO,
-                DonHang::TRANG_THAI_DA_HOAN_THANH
-            ])
-            ->count();
-
-        $totalRevenue = DonHang::whereBetween('created_at', [$start, $end])
-            ->whereIn('trang_thai', [
-                DonHang::TRANG_THAI_DA_GIAO,
-                DonHang::TRANG_THAI_DA_HOAN_THANH
-            ])
-            ->sum('tong_tien');
-
-        $data = DonHang::query()
-            ->whereBetween('created_at', [$start, $end])
-            ->whereIn('trang_thai', [
-                DonHang::TRANG_THAI_DA_GIAO,
-                DonHang::TRANG_THAI_DA_HOAN_THANH
-            ])
-            ->select(
-                DB::raw('DATE(created_at) as date'),
-                DB::raw('SUM(tong_tien) as total')
-            )
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
-
         $labels = [];
         $values = [];
 
-        $current = Carbon::parse($start)->startOfDay();
-        $endDay  = Carbon::parse($end)->endOfDay();
+        if ($groupBy === 'day') {
+            $data = DonHang::query()
+                ->whereBetween('updated_at', [$start, $end])
+                ->where('trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
+                ->where('trang_thai_thanh_toan', 'da_thanh_toan')
+                ->select(
+                    DB::raw('DATE(updated_at) as date'),
+                    DB::raw('SUM(tong_tien) as total')
+                )
+                ->groupBy('date')
+                ->get();
 
-        while ($current->lte($endDay)) {
-            $dateStr = $current->format('d/m');
-            $labels[] = $dateStr;
+            $totals = $data->pluck('total', 'date');
 
-            $found = $data->firstWhere('date', $current->format('Y-m-d'));
-            $values[] = $found ? (float) $found->total : 0;
+            $current = Carbon::parse($start)->startOfDay();
+            $endDay  = Carbon::parse($end)->endOfDay();
 
-            $current->addDay();
+            while ($current->lte($endDay)) {
+                $labels[] = $current->format('d/m');
+
+                $key = $current->format('Y-m-d');
+                $values[] = isset($totals[$key]) ? (float) $totals[$key] : 0;
+
+                $current->addDay();
+            }
+
+            return [
+                'labels' => $labels,
+                'data'   => $values,
+            ];
         }
+
+        if ($groupBy === 'week') {
+            $data = DonHang::query()
+                ->whereBetween('updated_at', [$start, $end])
+                ->where('trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
+                ->where('trang_thai_thanh_toan', 'da_thanh_toan')
+                ->select(
+                    DB::raw('YEARWEEK(updated_at, 1) as bucket'),
+                    DB::raw('SUM(tong_tien) as total')
+                )
+                ->groupBy('bucket')
+                ->get();
+
+            $totals = $data->pluck('total', 'bucket');
+
+            $cursor = Carbon::parse($start)->startOfWeek(Carbon::MONDAY);
+            $endCursor = Carbon::parse($end)->endOfWeek(Carbon::SUNDAY);
+
+            while ($cursor->lte($endCursor)) {
+                $weekStart = $cursor->copy()->startOfWeek(Carbon::MONDAY);
+                $weekEnd = $cursor->copy()->endOfWeek(Carbon::SUNDAY);
+
+                $labels[] = $weekStart->format('d/m') . ' - ' . $weekEnd->format('d/m');
+
+                // YEARWEEK(..., 1) khớp ISO week => dùng format oW
+                $bucketKey = (string) (int) $weekStart->format('oW');
+                $values[] = isset($totals[$bucketKey]) ? (float) $totals[$bucketKey] : 0;
+
+                $cursor->addWeek();
+            }
+
+            return [
+                'labels' => $labels,
+                'data'   => $values,
+            ];
+        }
+
+        if ($groupBy === 'month') {
+            $data = DonHang::query()
+                ->whereBetween('updated_at', [$start, $end])
+                ->where('trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
+                ->where('trang_thai_thanh_toan', 'da_thanh_toan')
+                ->select(
+                    DB::raw('DATE_FORMAT(updated_at, "%Y-%m") as bucket'),
+                    DB::raw('SUM(tong_tien) as total')
+                )
+                ->groupBy('bucket')
+                ->get();
+
+            $totals = $data->pluck('total', 'bucket');
+
+            $cursor = Carbon::parse($start)->startOfMonth();
+            $endCursor = Carbon::parse($end)->endOfMonth();
+
+            while ($cursor->lte($endCursor)) {
+                $labels[] = $cursor->format('m/Y');
+                $bucketKey = $cursor->format('Y-m');
+                $values[] = isset($totals[$bucketKey]) ? (float) $totals[$bucketKey] : 0;
+                $cursor->addMonth();
+            }
+
+            return [
+                'labels' => $labels,
+                'data'   => $values,
+            ];
+        }
+
+        // year
+        $data = DonHang::query()
+            ->whereBetween('updated_at', [$start, $end])
+            ->where('trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
+            ->where('trang_thai_thanh_toan', 'da_thanh_toan')
+            ->select(
+                DB::raw('YEAR(updated_at) as bucket'),
+                DB::raw('SUM(tong_tien) as total')
+            )
+            ->groupBy('bucket')
+            ->get();
+
+        $totals = $data->pluck('total', 'bucket');
+
+        $cursor = Carbon::parse($start)->startOfYear();
+        $endCursor = Carbon::parse($end)->endOfYear();
+
+        while ($cursor->lte($endCursor)) {
+            $labels[] = (string) $cursor->year;
+            $bucketKey = (string) $cursor->year;
+            $values[] = isset($totals[$bucketKey]) ? (float) $totals[$bucketKey] : 0;
+            $cursor->addYear();
+        }
+
         return [
             'labels' => $labels,
             'data'   => $values,
@@ -147,11 +293,9 @@ class DashboardController extends Controller
             ->join('don_hangs', 'don_hang_chi_tiets.don_hang_id', '=', 'don_hangs.id')
             ->join('san_phams', 'don_hang_chi_tiets.san_pham_id', '=', 'san_phams.id')
             ->join('danh_mucs', 'san_phams.danh_muc_id', '=', 'danh_mucs.id')
-            ->whereBetween('don_hangs.created_at', [$start, $end])
-            ->whereIn('don_hangs.trang_thai', [
-                DonHang::TRANG_THAI_DA_GIAO,
-                DonHang::TRANG_THAI_DA_HOAN_THANH
-            ])
+            ->whereBetween('don_hangs.updated_at', [$start, $end])
+            ->where('don_hangs.trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
+            ->where('don_hangs.trang_thai_thanh_toan', 'da_thanh_toan')
             ->select(
                 'danh_mucs.ten_danh_muc',
                 DB::raw('SUM(don_hang_chi_tiets.thanh_tien) as total')
@@ -172,11 +316,9 @@ class DashboardController extends Controller
     private function getTopCustomers($limit = 8, $start, $end)
     {
         return DonHang::query()
-            ->whereBetween('don_hangs.created_at', [$start, $end])
-            ->whereIn('don_hangs.trang_thai', [
-                DonHang::TRANG_THAI_DA_GIAO,
-                DonHang::TRANG_THAI_DA_HOAN_THANH
-            ])
+            ->whereBetween('don_hangs.updated_at', [$start, $end])
+            ->where('don_hangs.trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
+            ->where('don_hangs.trang_thai_thanh_toan', 'da_thanh_toan')
             ->join('users', 'don_hangs.nguoi_dung_id', '=', 'users.id')
             ->select(
                 'users.name',
@@ -217,24 +359,41 @@ class DashboardController extends Controller
 
     private function getTopProducts($limit = 10, $start, $end)
     {
-        return ChiTietDonHang::query()
+        $totalRevenue = ChiTietDonHang::query()
             ->join('don_hangs', 'don_hang_chi_tiets.don_hang_id', '=', 'don_hangs.id')
             ->join('san_phams', 'don_hang_chi_tiets.san_pham_id', '=', 'san_phams.id')
-            ->whereBetween('don_hangs.created_at', [$start, $end])
-            ->whereIn('don_hangs.trang_thai', [
-                DonHang::TRANG_THAI_DA_GIAO,
-                DonHang::TRANG_THAI_DA_HOAN_THANH
-            ])
+            ->whereBetween('don_hangs.updated_at', [$start, $end])
+            ->where('don_hangs.trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
+            ->where('don_hangs.trang_thai_thanh_toan', 'da_thanh_toan')
+            ->sum('don_hang_chi_tiets.thanh_tien');
+
+        $products = ChiTietDonHang::query()
+            ->join('don_hangs', 'don_hang_chi_tiets.don_hang_id', '=', 'don_hangs.id')
+            ->join('san_phams', 'don_hang_chi_tiets.san_pham_id', '=', 'san_phams.id')
+            ->whereBetween('don_hangs.updated_at', [$start, $end])
+            ->where('don_hangs.trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
+            ->where('don_hangs.trang_thai_thanh_toan', 'da_thanh_toan')
             ->select(
                 'san_phams.id',
                 'san_phams.ten_san_pham',
+                'san_phams.hinh_anh_chinh',
                 DB::raw('SUM(don_hang_chi_tiets.so_luong) as total_quantity'),
                 DB::raw('SUM(don_hang_chi_tiets.thanh_tien) as total_revenue')
             )
-            ->groupBy('san_phams.id', 'san_phams.ten_san_pham')
+            ->groupBy('san_phams.id', 'san_phams.ten_san_pham', 'san_phams.hinh_anh_chinh')
             ->orderByDesc('total_quantity')
             ->limit($limit)
             ->get();
+
+        $totalRevenueValue = (float) $totalRevenue;
+        foreach ($products as $product) {
+            $revenueValue = (float) $product->total_revenue;
+            $product->percent_total_revenue = $totalRevenueValue > 0
+                ? round(($revenueValue / $totalRevenueValue) * 100, 2)
+                : 0;
+        }
+
+        return $products;
     }
 
     public function ordersByStatus(Request $request)
@@ -270,5 +429,95 @@ class DashboardController extends Controller
             ->paginate(5);
 
         return response()->json($variants);
+    }
+
+    /**
+     * AJAX endpoint: trả JSON cho bảng "Doanh thu theo thời gian"
+     * để phân trang không reload trang.
+     */
+    public function revenueTimeTable(Request $request)
+    {
+        $period = $request->input('period', '7days');
+        $groupBy = $request->input('group', 'day');
+        $groupBy = in_array($groupBy, ['day', 'week', 'month', 'year'], true) ? $groupBy : 'day';
+
+        $from = $request->input('from');
+        $to   = $request->input('to');
+
+        $resolved = false;
+        if (!empty($from) || !empty($to)) {
+            try {
+                $startDate = $from ? Carbon::parse($from)->startOfDay() : Carbon::today()->startOfDay();
+                $endDate = $to ? Carbon::parse($to)->endOfDay() : Carbon::parse($from)->endOfDay();
+
+                if ($startDate->gt($endDate)) {
+                    [$startDate, $endDate] = [$endDate->startOfDay(), $startDate->endOfDay()];
+                }
+
+                $period = 'custom';
+                $resolved = true;
+            } catch (\Throwable $e) {
+                Log::warning('Invalid revenue-time-table filter from/to', [
+                    'from' => $from,
+                    'to' => $to,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        if (!$resolved) {
+            $endDate = Carbon::now();
+            $startDate = match ($period) {
+                'today'    => Carbon::today()->startOfDay(),
+                '30days'   => Carbon::now()->subDays(30)->startOfDay(),
+                '90days'   => Carbon::now()->subDays(90)->startOfDay(),
+                'thisyear' => Carbon::now()->startOfYear(),
+                default    => Carbon::now()->subDays(7)->startOfDay(),
+            };
+
+            if ($period === 'today') {
+                $endDate = Carbon::today()->endOfDay();
+            }
+        }
+
+        $timePage = max(1, (int) $request->input('time_page', 1));
+        $timePerPage = (int) $request->input('time_per_page', 10);
+        $timePerPage = max(5, min(20, $timePerPage));
+
+        $revenueByDate = $this->getRevenueByDate($startDate, $endDate, $groupBy);
+
+        $labels = $revenueByDate['labels'] ?? [];
+        $data = $revenueByDate['data'] ?? [];
+
+        $totalRevenue = array_sum($data);
+        $totalBuckets = count($labels);
+        $lastPage = $totalBuckets > 0 ? (int) ceil($totalBuckets / $timePerPage) : 1;
+        $timePage = min($timePage, $lastPage);
+        $offset = ($timePage - 1) * $timePerPage;
+
+        $sliceLabels = array_slice($labels, $offset, $timePerPage);
+        $sliceData = array_slice($data, $offset, $timePerPage);
+
+        $rows = [];
+        foreach ($sliceLabels as $idx => $label) {
+            $value = isset($sliceData[$idx]) ? (float) $sliceData[$idx] : 0.0;
+            $percent = $totalRevenue > 0 ? round(($value / $totalRevenue) * 100, 2) : 0.0;
+            $rows[] = [
+                'row_no' => $offset + $idx + 1,
+                'label' => $label,
+                'value' => $value,
+                'percent' => $percent,
+            ];
+        }
+
+        return response()->json([
+            'rows' => $rows,
+            'meta' => [
+                'current_page' => $timePage,
+                'last_page' => $lastPage,
+                'per_page' => $timePerPage,
+                'total_buckets' => $totalBuckets,
+            ],
+        ]);
     }
 }
