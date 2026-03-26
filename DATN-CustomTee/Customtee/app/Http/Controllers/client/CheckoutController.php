@@ -458,7 +458,7 @@ class CheckoutController extends Controller
 
             if ($voucher && $voucher->da_su_dung < $voucher->so_luong) {
                 if ($voucher->don_hang_toi_thieu && $subtotal < $voucher->don_hang_toi_thieu) {
-                        return redirect()->route('checkout.buy-now')->with('error', 'Đơn hàng chưa đủ điều kiện tối thiểu ' . number_format($voucher->don_hang_toi_thieu) . 'đ để áp dụng voucher.');
+                    return redirect()->route('checkout.buy-now')->with('error', 'Đơn hàng chưa đủ điều kiện tối thiểu ' . number_format($voucher->don_hang_toi_thieu) . 'đ để áp dụng voucher.');
                 }
                 if ($voucher->loai == 'phan_tram') {
                     $voucherDiscount = ($subtotal * $voucher->gia_tri) / 100;
@@ -537,7 +537,7 @@ class CheckoutController extends Controller
         $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
         $vnp_TmnCode = "KE8AMY5Q";
         $vnp_HashSecret = "QIN1IHTRN9CSYSUGV2EK6MV3ZC2OKNLT";
-
+        $vnp_TxnRef = $donHang->ma_don_hang . '_' . time();
         $inputData = [
             "vnp_Version" => "2.1.0",
             "vnp_TmnCode" => $vnp_TmnCode,
@@ -550,13 +550,13 @@ class CheckoutController extends Controller
             "vnp_OrderInfo" => "Thanh toan don hang " . $donHang->ma_don_hang,
             "vnp_OrderType" => "order",
             "vnp_ReturnUrl" => route('vnpay.return'),
-            "vnp_TxnRef" => $donHang->ma_don_hang,
-            // "vnp_BankCode" => "NCB"
+            "vnp_TxnRef" => $vnp_TxnRef,
         ];
         ksort($inputData);
         $query = "";
         $i = 0;
         $hashdata = "";
+
         foreach ($inputData as $key => $value) {
             if ($i == 1) $hashdata .= '&' . urlencode($key) . "=" . urlencode($value);
             else {
@@ -565,7 +565,14 @@ class CheckoutController extends Controller
             }
             $query .= urlencode($key) . "=" . urlencode($value) . '&';
         }
+
         $vnp_Url = $vnp_Url . "?" . $query . 'vnp_SecureHash=' . hash_hmac('sha512', $hashdata, $vnp_HashSecret);
+
+        $donHang->update([
+            'vnp_TxnRef' => $vnp_TxnRef,
+            'updated_at' => now(),
+        ]);
+
         return redirect($vnp_Url);
     }
 
@@ -723,6 +730,8 @@ class CheckoutController extends Controller
             $donHang->update([
                 'trang_thai_thanh_toan' => 'da_thanh_toan',
                 'trang_thai'            => 'dang_xu_ly',
+                'vnp_PayDate' => $request->vnp_PayDate,
+                'vnp_TransactionNo' => $request->vnp_TransactionNo
             ]);
 
             DB::commit();
@@ -798,6 +807,10 @@ class CheckoutController extends Controller
 
         $vnp_CreateDate = now();
         $vnp_ExpireDate = $vnp_CreateDate->copy()->addMinutes(5);
+
+        $donHang->update([
+            'vnp_TxnRef' => $vnp_TxnRef,
+        ]);
 
         $inputData = [
             "vnp_Version"    => "2.1.0",
