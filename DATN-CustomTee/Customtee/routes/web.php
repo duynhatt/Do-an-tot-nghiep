@@ -194,10 +194,13 @@ Route::get('/admin/variants/by-product/{id}', function ($id) {
 })->middleware(['auth', 'admin']);
 
 Route::get('/admin/dashboard/orders-by-status', [DashboardController::class, 'ordersByStatus'])
+    ->middleware(['auth', 'admin'])
     ->name('admin.dashboard.orders-by-status');
 
 Route::get('/admin/dashboard/revenue-time-table', [DashboardController::class, 'revenueTimeTable'])
+    ->middleware(['auth', 'admin'])
     ->name('admin.dashboard.revenue-time-table');
 
 Route::get('/admin/dashboard/low-stock-variants', [DashboardController::class, 'lowStockVariants'])
+    ->middleware(['auth', 'admin'])
     ->name('admin.dashboard.low-stock-variants');

@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Refund;
 use App\Models\DonHang;
+use App\Models\Refund;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -52,6 +52,7 @@ class RefundController extends Controller
 
         try {
             $refund->update(['trang_thai' => 'da_tu_choi']);
+            DonHang::where('id', $refund->don_hang_id)->update(['yeu_cau_tra' => 0]);
             DB::commit();
 
             return redirect()->back()->with('success', 'Đã từ chối yêu cầu hoàn trả.');
@@ -98,11 +99,6 @@ class RefundController extends Controller
     public function RefundComplete(Refund $refund)
     {
         $refund->update(['trang_thai' => 'da_hoan_tien']);
-        DonHang::where('id', $refund->don_hang_id)
-            ->update([
-                'ly_do_tra' => $refund->ly_do,
-                'ngay_yeu_cau_tra' => $refund->created_at
-            ]);
         return redirect()->back()->with('success', 'Hoàn tiền thành công cho đơn hàng này');
     }
 }

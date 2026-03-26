@@ -56,13 +56,7 @@
             z-index: 3000 !important;
         }
 
-        #sidebar {
-            width: 219px;
-        }
-
-        .brand {
-            width: 219px;
-        }
+ */
     </style>
     <section id="container">
 
@@ -189,20 +183,15 @@
                                 <li><a href="{{ route('admin.vouchers.create') }}">Thêm Voucher mới</a></li>
                             </ul>
                         </li>
-                        <!-- Extra Pages -->
                         <li class="sub-menu">
                             <a href="javascript:;">
-                                <i class="fa fa-glass"></i>
-                                <span>Extra</span>
+                                <i class="fa fa-ticket"></i>
+                                <span>Quản lý liên hệ</span>
                             </a>
                             <ul class="sub">
-                                <li><a href="gallery.html">Gallery</a></li>
-                                <li><a href="404.html">404 Error</a></li>
-                                <li><a href="registration.html">Registration</a></li>
+                                <li><a href="{{ route('admin.lien-he.index') }}">Danh sách liên hệ</a></li>
                             </ul>
                         </li>
-                        <!-- Login -->
-
                     </ul>
                 </div>
             </div>

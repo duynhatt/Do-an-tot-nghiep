@@ -16,9 +16,12 @@ Artisan::command('orders:auto-complete-delivered', function () {
     $count = 0;
 
     DonHang::where('trang_thai', DonHang::TRANG_THAI_DA_GIAO)
-        ->where('yeu_cau_tra', false)
-        // Đã ở trạng thái "Đã giao" ít nhất 3 ngày (dựa trên updated_at khi chuyển sang "Đã giao")
-        ->where('updated_at', '<=', now()->subDays(3))
+        ->where(function ($query) {
+            $query->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
+        })
+        // Đã ở trạng thái "Đã giao" ít nhất 3 ngày (dựa trên cột chuyên biệt da_giao_at)
+        ->whereNotNull('da_giao_at')
+        ->where('da_giao_at', '<=', now()->subDays(3))
         ->chunkById(100, function ($orders) use (&$count) {
             foreach ($orders as $order) {
                 // Đảm bảo tuân thủ state machine

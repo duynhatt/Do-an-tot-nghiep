@@ -88,6 +88,7 @@ class DonHang extends Model
         'yeu_cau_tra',
         'ly_do_tra',
         'ngay_yeu_cau_tra',
+        'da_giao_at',
     ];
 
     protected $casts = [
@@ -97,6 +98,7 @@ class DonHang extends Model
         'tong_tien' => 'float',
         'yeu_cau_tra' => 'boolean',
         'ngay_yeu_cau_tra' => 'datetime',
+        'da_giao_at' => 'datetime',
     ];
 
 

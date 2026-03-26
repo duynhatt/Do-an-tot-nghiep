@@ -85,11 +85,11 @@ class DashboardController extends Controller
 
         $revenueByCategory = $this->getRevenueByCategory($startDate, $endDate);
 
-        $topCustomers = $this->getTopCustomers(8, $startDate, $endDate);
+        $topCustomers = $this->getTopCustomers($startDate, $endDate, 8);
 
         $ordersByStatus = $this->getOrdersByStatus($startDate, $endDate);
 
-        $topProducts = $this->getTopProducts(10, $startDate, $endDate);
+        $topProducts = $this->getTopProducts($startDate, $endDate, 10);
 
         $lowStockVariants = BienThe::with('sanPham')
             ->where('so_luong', '<', 10)
@@ -313,7 +313,7 @@ class DashboardController extends Controller
         ];
     }
 
-    private function getTopCustomers($limit = 8, $start, $end)
+    private function getTopCustomers($start, $end, $limit = 8)
     {
         return DonHang::query()
             ->whereBetween('don_hangs.updated_at', [$start, $end])
@@ -341,10 +341,14 @@ class DashboardController extends Controller
             DonHang::TRANG_THAI_DA_GIAO,
             DonHang::TRANG_THAI_DA_HOAN_THANH,
             DonHang::TRANG_THAI_DA_HUY,
+            'tra_hang',
         ];
 
         $counts = DonHang::query()
             ->whereBetween('created_at', [$start, $end])
+            ->where(function ($query) {
+                $query->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
+            })
             ->select('trang_thai', DB::raw('COUNT(*) as count'))
             ->groupBy('trang_thai')
             ->pluck('count', 'trang_thai')
@@ -354,10 +358,14 @@ class DashboardController extends Controller
         foreach ($statuses as $status) {
             $result[$status] = (int) ($counts[$status] ?? 0);
         }
+        $result['tra_hang'] = DonHang::query()
+            ->whereBetween('created_at', [$start, $end])
+            ->where('yeu_cau_tra', true)
+            ->count();
         return $result;
     }
 
-    private function getTopProducts($limit = 10, $start, $end)
+    private function getTopProducts($start, $end, $limit = 10)
     {
         $totalRevenue = ChiTietDonHang::query()
             ->join('don_hangs', 'don_hang_chi_tiets.don_hang_id', '=', 'don_hangs.id')
@@ -400,9 +408,17 @@ class DashboardController extends Controller
     {
         $status = $request->status;
 
-        $donHangs = DonHang::with('nguoiDung')
-            ->where('trang_thai', $status)
-            ->latest()
+        $query = DonHang::with('nguoiDung');
+        if ($status === 'tra_hang') {
+            $query->where('yeu_cau_tra', true);
+        } else {
+            $query->where('trang_thai', $status)
+                ->where(function ($q) {
+                    $q->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
+                });
+        }
+
+        $donHangs = $query->latest()
             ->paginate(5, [
                 'id',
                 'ma_don_hang',
@@ -411,7 +427,8 @@ class DashboardController extends Controller
                 'tong_tien',
                 'trang_thai',
                 'trang_thai_thanh_toan',
-                'created_at'
+                'created_at',
+                'yeu_cau_tra',
             ]);
 
         return response()->json($donHangs);

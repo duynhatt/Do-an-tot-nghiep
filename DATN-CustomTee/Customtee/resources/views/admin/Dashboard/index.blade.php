@@ -159,6 +159,23 @@
                 color: #b91c1c;
             }
 
+            .status-tra_hang {
+                background: #f3f4f6;
+                color: #374151;
+            }
+
+            @media (min-width: 1200px) {
+                .status-summary-row {
+                    display: flex;
+                    flex-wrap: nowrap;
+                }
+
+                .status-summary-col {
+                    flex: 0 0 14.2857%;
+                    max-width: 14.2857%;
+                }
+            }
+
             .badge-payment-paid {
                 background: #dcfce7;
                 color: #15803d;
@@ -344,7 +361,7 @@
 
             <div class="mb-5">
                 <h5 class="fw-semibold mb-3">Đơn hàng theo trạng thái</h5>
-                <div class="row g-3">
+                <div class="row g-3 status-summary-row">
                     @php
                         $statusLabels = [
                             'cho_xac_nhan' => ['Chờ xác nhận', 'warning'],
@@ -353,10 +370,11 @@
                             'da_giao' => ['Đã giao', 'info'],
                             'da_hoan_thanh' => ['Đã hoàn thành', 'success'],
                             'da_huy' => ['Đã hủy', 'danger'],
+                            'tra_hang' => ['Trả hàng', 'secondary'],
                         ];
                     @endphp
                     @foreach ($statusLabels as $statusKey => $label)
-                        <div class="col-md-2">
+                        <div class="col-md-4 col-sm-6 status-summary-col">
                             <div class="card order-status-card" style="cursor:pointer" data-status="{{ $statusKey }}"
                                 data-status-name="{{ $label[0] }}" data-toggle="modal" data-target="#orderStatusModal">
 
@@ -843,7 +861,8 @@
                         'dang_giao': 'Đang giao',
                         'da_giao': 'Đã giao',
                         'da_hoan_thanh': 'Đã hoàn thành',
-                        'da_huy': 'Đã hủy'
+                        'da_huy': 'Đã hủy',
+                        'tra_hang': 'Trả hàng'
                     };
 
                     if (res.data.length === 0) {
@@ -858,9 +877,10 @@
 
                         res.data.forEach(order => {
 
+                            const badgeKey = order.yeu_cau_tra ? 'tra_hang' : order.trang_thai;
                             let statusBadge = `
-                <span class="badge-status status-${order.trang_thai}">
-                    ${statusMap[order.trang_thai]}
+                <span class="badge-status status-${badgeKey}">
+                    ${statusMap[badgeKey] ?? statusMap[order.trang_thai]}
                 </span>
                 `;
 
