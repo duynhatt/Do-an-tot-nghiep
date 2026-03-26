@@ -170,6 +170,11 @@
                                                     class="badge bg-{{ $st[1] }}-subtle text-{{ $st[1] }} border border-{{ $st[1] }} fs-6 px-4 py-2 d-flex align-items-center rounded-pill">
                                                     <i class="{{ $st[2] }} me-2 fs-5"></i>
                                                     {{ $st[0] }}
+                                                    @if ($donHang->trang_thai === 'da_huy' && $donHang->updated_at)
+                                                        <small class="ms-2 opacity-75 text-nowrap">
+                                                            (lúc {{ $donHang->updated_at->format('d/m/Y H:i') }})
+                                                        </small>
+                                                    @endif
                                                 </span>
                                             </div>
                                         </div>

@@ -43,6 +43,12 @@
             <span class="badge badge-{{ $badge }} px-3 py-2 mb-1" style="font-size: 0.95rem;">
                 {{ $tenTrangThaiHienTai }}
             </span>
+            @if($donHang->trang_thai === 'da_huy' && $donHang->updated_at)
+                <div class="small text-muted mt-1 text-nowrap">
+                    <i class="far fa-clock mr-1"></i>
+                    {{ $donHang->updated_at->format('d/m/Y H:i') }}
+                </div>
+            @endif
             @if($donHang->yeu_cau_tra)
                 <div>
                     <span class="badge badge-danger px-3 py-1" style="font-size: 0.85rem;">
@@ -87,6 +93,14 @@
                                 <tr><td class="text-muted">Tạm tính</td><td class="text-right">{{ number_format($donHang->tam_tinh, 0, ',', '.') }} ₫</td></tr>
                                 <tr><td class="text-muted">Giảm giá</td><td class="text-right text-danger">-{{ number_format($donHang->tien_giam ?? 0, 0, ',', '.') }} ₫</td></tr>
                                 <tr><td class="text-muted">Phí ship</td><td class="text-right">{{ number_format($donHang->phi_van_chuyen ?? 0, 0, ',', '.') }} ₫</td></tr>
+                                <tr>
+                                    <td class="text-muted">Phương thức thanh toán</td>
+                                    <td class="text-right">
+                                        {{ $donHang->phuong_thuc_thanh_toan === 'cod'
+                                            ? 'COD'
+                                            : ($donHang->phuong_thuc_thanh_toan === 'vnpay' ? 'VNPAY' : ucfirst($donHang->phuong_thuc_thanh_toan)) }}
+                                    </td>
+                                </tr>
                             </table>
 
                         </div>
