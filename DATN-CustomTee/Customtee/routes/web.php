@@ -183,5 +183,8 @@ Route::get('/admin/variants/by-product/{id}', function ($id) {
 Route::get('/admin/dashboard/orders-by-status', [DashboardController::class, 'ordersByStatus'])
     ->name('admin.dashboard.orders-by-status');
 
+Route::get('/admin/dashboard/revenue-time-table', [DashboardController::class, 'revenueTimeTable'])
+    ->name('admin.dashboard.revenue-time-table');
+
 Route::get('/admin/dashboard/low-stock-variants', [DashboardController::class, 'lowStockVariants'])
     ->name('admin.dashboard.low-stock-variants');
