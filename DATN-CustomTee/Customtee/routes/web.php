@@ -30,9 +30,14 @@ Route::post('/register', [AuthController::class, 'register'])->name('register.su
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('About', [AboutController::class, 'About']);
-Route::get('Contact', [ContactController::class, 'Contact']);
+
+// Route Liên hệ cho khách (Client)
+Route::get('Contact', [ContactController::class, 'Contact'])->name('contact');
+Route::post('Contact', [ContactController::class, 'store'])->name('contact.store');
+
 Route::get('Shop', [ShopController::class, 'Shop']);
 
 Route::get('/san-pham/{slug}', [ClientSanPhamController::class, 'showProduct'])
@@ -92,6 +97,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('dat-hang');
     Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
+    
     // Mua ngay (không dùng giỏ hàng)
     Route::post('/buy-now', [CheckoutController::class, 'buyNow'])->name('buy-now');
     Route::get('/checkout/buy-now', [CheckoutController::class, 'checkoutBuyNow'])->name('checkout.buy-now');
@@ -99,7 +105,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/checkout/vnpay/return', [CheckoutController::class, 'vnpayReturn'])->name('vnpay.return');
     Route::get('/order/{id}/repay', [CheckoutController::class, 'repay'])->name('order.repay');
 
-    // ROUTE ÁP DỤNG VOUCHER CHO CLIENT (ĐÃ THÊM)
+    // ROUTE ÁP DỤNG VOUCHER CHO CLIENT
     Route::post('/apply-voucher', [VoucherController::class, 'applyVoucher'])->name('voucher.apply');
 
     Route::post('binh-luan', [BinhLuanController::class, 'store'])->name('binh-luan.store');
@@ -130,6 +136,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('don-hang', [DonHangController::class, 'index'])->name('don-hang.index');
     Route::get('don-hang/{donHang}', [DonHangController::class, 'show'])->name('don-hang.show');
     Route::patch('don-hang/{donHang}/status', [DonHangController::class, 'updateStatus'])->name('don-hang.update-status');
+// QUẢN LÝ LIÊN HỆ TRONG ADMIN
+Route::prefix('lien-he')->name('lien-he.')->group(function () {
+    // Chỉ định rõ là \App\Http\Controllers\Admin\ContactController
+    Route::get('/', [\App\Http\Controllers\Admin\ContactController::class, 'index'])->name('index');
+    Route::post('/{id}/status', [\App\Http\Controllers\Admin\ContactController::class, 'updateStatus'])->name('updateStatus'); 
+    Route::delete('/{id}', [\App\Http\Controllers\Admin\ContactController::class, 'destroy'])->name('destroy');
+});
 
     Route::get('/hoan-tra', [RefundController::class, 'index'])->name('hoan-tra.index');
     Route::get('/hoan-tra/{refund}', [RefundController::class, 'show'])->name('hoan-tra.show');

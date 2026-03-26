@@ -1,48 +1,48 @@
-
 @include('client.layout.header')
-     <!-- Start Content Page -->
-    <div class="container-fluid bg-light py-5">
-        <div class="col-md-6 m-auto text-center">
-            <h1 class="h1">Contact Us</h1>
-            <p>
-                Proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-                Lorem ipsum dolor sit amet.
-            </p>
-        </div>
+
+<div class="container-fluid bg-light py-5">
+    <div class="col-md-6 m-auto text-center">
+        <h1 class="h1">Contact Us</h1>
+        <p>
+            Hãy để lại lời nhắn cho chúng tôi, chúng tôi sẽ phản hồi bạn sớm nhất có thể.
+        </p>
     </div>
+</div>
 
-    <!-- Start Contact -->
-    <div class="container py-5">
-        <div class="row py-5">
-            <form class="col-md-9 m-auto" method="post" role="form">
-                <div class="row">
-                    <div class="form-group col-md-6 mb-3">
-                        <label for="inputname">Name</label>
-                        <input type="text" class="form-control mt-1" id="name" name="name" placeholder="Name">
-                    </div>
-                    <div class="form-group col-md-6 mb-3">
-                        <label for="inputemail">Email</label>
-                        <input type="email" class="form-control mt-1" id="email" name="email" placeholder="Email">
-                    </div>
+<div class="container py-5">
+    <div class="row py-5">
+        <form class="col-md-9 m-auto" action="{{ route('contact.store') }}" method="post" role="form">
+            @csrf @if(session('success'))
+                <div class="alert alert-success">
+                    {{ session('success') }}
                 </div>
-                <div class="mb-3">
-                    <label for="inputsubject">Subject</label>
-                    <input type="text" class="form-control mt-1" id="subject" name="subject" placeholder="Subject">
+            @endif
+
+            <div class="row">
+                <div class="form-group col-md-6 mb-3">
+                    <label for="inputname">Name</label>
+                    <input type="text" class="form-control mt-1" id="name" placeholder="Name" value="{{ Auth::user()->name ?? '' }}" readonly>
                 </div>
-                <div class="mb-3">
-                    <label for="inputmessage">Message</label>
-                    <textarea class="form-control mt-1" id="message" name="message" placeholder="Message" rows="8"></textarea>
+                <div class="form-group col-md-6 mb-3">
+                    <label for="inputemail">Email</label>
+                    <input type="email" class="form-control mt-1" id="email" placeholder="Email" value="{{ Auth::user()->email ?? '' }}" readonly>
                 </div>
-                <div class="row">
-                    <div class="col text-end mt-2">
-                        <button type="submit" class="btn btn-success btn-lg px-3">Let’s Talk</button>
-                    </div>
+            </div>
+            <div class="mb-3">
+                <label for="inputsubject">Subject (Tiêu đề)</label>
+                <input type="text" class="form-control mt-1" id="subject" name="tieu_de" placeholder="Nhập tiêu đề liên hệ" required>
+            </div>
+            <div class="mb-3">
+                <label for="inputmessage">Message (Nội dung)</label>
+                <textarea class="form-control mt-1" id="message" name="noi_dung" placeholder="Nhập nội dung tin nhắn" rows="8" required></textarea>
+            </div>
+            <div class="row">
+                <div class="col text-end mt-2">
+                    <button type="submit" class="btn btn-success btn-lg px-3">Let’s Talk</button>
                 </div>
-            </form>
-        </div>
+            </div>
+        </form>
     </div>
-    <!-- End Contact -->
-
-
+</div>
 @include('client.layout.scripts')
 @include('client.layout.footer')
