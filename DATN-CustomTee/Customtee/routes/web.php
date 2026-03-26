@@ -137,6 +137,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         ->name('hoan-tra.accept');
     Route::patch('/hoan-tra/{refund}/reject', [RefundController::class, 'reject'])
         ->name('hoan-tra.reject');
+    Route::patch('hoan_tra/{refund}/refund-complete',[RefundController::class,'RefundComplete'])->name('hoan-tra.complete');
+
 });
 
 Route::prefix('admin/variants')->name('variants.')->middleware(['auth', 'admin'])->group(function () {

@@ -22,7 +22,6 @@
                     'dang_giao' => ['Đang giao', 'primary'],
                     'da_giao' => ['Đã giao', 'success'],
                     'da_huy' => ['Đã hủy', 'danger'],
-                    // Bộ lọc nâng cao
                     'da_hoan_thanh' => ['Đã nhận hàng', 'success'],
                     'tra_hang' => ['Trả hàng', 'secondary'],
                 ];
@@ -98,13 +97,9 @@
                                                     </form>
                                                 @endif
                                                 @if (
-                                                    $donHang->phuong_thuc_thanh_toan === 'vnpay'
-                                                    && in_array($donHang->trang_thai_thanh_toan, [
-                                                        'chua_thanh_toan',
-                                                        'that_bai',
-                                                    ], true)
-                                                    && $donHang->trang_thai !== 'da_huy'
-                                                )
+                                                    $donHang->phuong_thuc_thanh_toan === 'vnpay' &&
+                                                        in_array($donHang->trang_thai_thanh_toan, ['chua_thanh_toan', 'that_bai'], true) &&
+                                                        $donHang->trang_thai !== 'da_huy')
                                                     <a href="{{ route('order.repay', $donHang->id) }}"
                                                         class="btn btn-danger btn-sm px-3 rounded-pill">
                                                         <i class="bi bi-credit-card me-1"></i>
@@ -166,11 +161,15 @@
                                                         'bi bi-question-circle',
                                                     ];
                                                 @endphp
-                                                <span
-                                                    class="badge bg-{{ $st[1] }}-subtle text-{{ $st[1] }} border border-{{ $st[1] }} fs-6 px-4 py-2 d-flex align-items-center rounded-pill">
-                                                    <i class="{{ $st[2] }} me-2 fs-5"></i>
-                                                    {{ $st[0] }}
-                                                </span>
+
+                                                @if ($donHang->yeu_cau_tra = 0)
+                                                    <span
+                                                        class="badge bg-{{ $st[1] }}-subtle text-{{ $st[1] }} border border-{{ $st[1] }} fs-6 px-4 py-2 d-flex align-items-center rounded-pill">
+                                                        <i class="{{ $st[2] }} me-2 fs-5"></i>
+                                                        {{ $st[0] }}
+                                                    </span>
+                                                @endif
+
                                             </div>
                                         </div>
 

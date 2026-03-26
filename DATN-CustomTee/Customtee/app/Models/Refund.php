@@ -19,6 +19,11 @@ class Refund extends Model
         'ly_do',
         'so_tien_yeu_cau',
         'phuong_thuc_thanh_toan',
+        'ngan_hang',
+        'so_tai_khoan',
+        'chi_nhanh',
+        'ten_chu_tk',
+        'qr_code_bank'
     ];
 
     protected $casts = [
