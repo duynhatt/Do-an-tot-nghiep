@@ -76,6 +76,9 @@ class DonHang extends Model
         'phi_van_chuyen',
         'tong_tien',
         'phuong_thuc_thanh_toan',
+        'vnp_TxnRef',
+        'vnp_PayDate',
+        'vnp_TransactionNo',
         'trang_thai_thanh_toan',
         'trang_thai',
         'ghi_chu',
@@ -153,5 +156,10 @@ class DonHang extends Model
                 ]);
             });
         }
+    }
+
+    public function refunds()
+    {
+        return $this->hasMany(Refund::class, 'don_hang_id');
     }
 }
