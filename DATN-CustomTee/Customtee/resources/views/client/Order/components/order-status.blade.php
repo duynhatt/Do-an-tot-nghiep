@@ -39,6 +39,11 @@
             </div>
 
             <p class="text-muted mb-4">{{ $current[3] }}</p>
+            @if (in_array($donHang->trang_thai, ['da_giao', 'da_hoan_thanh']) && $donHang->da_giao_at)
+                <div class="alert alert-light border small mb-4">
+                    <strong>Thời gian đã giao:</strong> {{ $donHang->da_giao_at->format('d/m/Y H:i') }}
+                </div>
+            @endif
             <div class="d-flex justify-content-between position-relative mt-4 timeline-compact">
                 <div
                     class="timeline-step {{ in_array($donHang->trang_thai, ['cho_xac_nhan', 'dang_xu_ly', 'dang_giao', 'da_giao', 'da_hoan_thanh']) ? 'active' : '' }}">
@@ -66,7 +71,7 @@
         @php
             $showRefundButton =
                 ($donHang->phuong_thuc_thanh_toan === 'vnpay' &&
-                    !in_array($donHang->trang_thai, ['da_hoan_thanh', 'cho_xac_nhan'])) ||
+                    !in_array($donHang->trang_thai, ['da_hoan_thanh', 'cho_xac_nhan', 'dang_giao', 'da_huy'])) ||
                 ($donHang->phuong_thuc_thanh_toan === 'cod' && $donHang->trang_thai === 'da_giao');
 
             $yeuCauHoanTien = $donHang->refunds()->latest()->first();
@@ -106,6 +111,7 @@
                         '',
                     ]
                 : null;
+            $canCreateNewRefundRequest = !$yeuCauHoanTien || $yeuCauHoanTien->trang_thai === 'da_tu_choi';
         @endphp
 
         @if ($showRefundButton)
@@ -117,7 +123,7 @@
 
             @if ($conTrongThoiHan)
 
-                @if ($yeuCauHoanTien && $currentRefund)
+                @if (!$canCreateNewRefundRequest && $yeuCauHoanTien && $currentRefund)
                     <div class="mt-4 card border-{{ $currentRefund[1] }} shadow-sm">
                         <div class="card-header bg-{{ $currentRefund[1] }} text-white fw-semibold">
                             <i class="{{ $currentRefund[2] }} me-2"></i>

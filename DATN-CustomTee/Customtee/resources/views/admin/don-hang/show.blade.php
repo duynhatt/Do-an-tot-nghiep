@@ -37,6 +37,12 @@
         }
 
         $tenTrangThaiHienTai = \App\Models\DonHang::tenTrangThai($donHang->trang_thai);
+        $latestRefund = $donHang->refunds->first();
+        $returnRequestedAt = $latestRefund?->created_at ?? $donHang->ngay_yeu_cau_tra;
+        $returnReason = $latestRefund?->ly_do ?? $donHang->ly_do_tra;
+        $isRefundFlowLocked =
+            (bool) $donHang->yeu_cau_tra ||
+            in_array($latestRefund?->trang_thai, ['cho_xu_ly', 'da_chap_nhan', 'da_hoan_tien'], true);
     @endphp
     <div class="container-fluid" style="margin-top: 30px;">
         <div class="row mb-4 align-items-center">
@@ -258,8 +264,8 @@
                                     </h6>
                                     <div class="alert alert-danger border-0">
                                         <strong>Thời gian:</strong>
-                                        {{ $donHang->ngay_yeu_cau_tra?->format('d/m/Y H:i') }}<br>
-                                        <strong>Lý do:</strong> {{ $donHang->ly_do_tra }}
+                                        {{ $returnRequestedAt?->format('d/m/Y H:i') ?? 'Chưa có dữ liệu' }}<br>
+                                        <strong>Lý do:</strong> {{ $returnReason ?: 'Không có lý do cụ thể' }}
                                     </div>
                                 </div>
                             @endif
@@ -276,7 +282,12 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        @if (count($trangThaiTiepTheo) > 0)
+                        @if ($isRefundFlowLocked)
+                            <div class="alert alert-warning text-center py-4 mb-0">
+                                <i class="fas fa-lock me-2"></i>
+                                Không thể chuyển trạng thái đơn hàng.
+                            </div>
+                        @elseif (count($trangThaiTiepTheo) > 0)
                             <form action="{{ route('admin.don-hang.update-status', $donHang) }}" method="post"
                                 class="row g-3 align-items-end">
                                 @csrf

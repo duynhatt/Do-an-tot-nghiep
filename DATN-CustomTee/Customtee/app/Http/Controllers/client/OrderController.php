@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 
@@ -20,7 +21,14 @@ class OrderController extends Controller
     public function list(Request $request)
     {
         $query = DonHang::where('nguoi_dung_id', Auth::id())
-            ->with(['chiTietDonHangs.sanPham', 'chiTietDonHangs.bienThe.color', 'chiTietDonHangs.bienThe.size'])
+            ->with([
+                'chiTietDonHangs.sanPham',
+                'chiTietDonHangs.bienThe.color',
+                'chiTietDonHangs.bienThe.size',
+                'refunds' => function ($query) {
+                    $query->latest();
+                },
+            ])
             ->orderBy('created_at', 'desc');
 
         $trangThai = $request->query('trang_thai');
@@ -35,7 +43,11 @@ class OrderController extends Controller
                 DonHang::TRANG_THAI_DA_HOAN_THANH,
                 DonHang::TRANG_THAI_DA_HUY,
             ], true)) {
-                $query->where('trang_thai', $trangThai);
+                $query->where('trang_thai', $trangThai)
+                    ->where(function ($q) {
+                        // Các đơn đã gửi yêu cầu hoàn tiền chỉ hiển thị ở tab "Trả hàng"
+                        $q->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
+                    });
             }
             // Lọc "Trả hàng": các đơn có yêu cầu trả
             elseif ($trangThai === 'tra_hang') {
@@ -150,7 +162,12 @@ class OrderController extends Controller
 
     public function requestReturn(Request $request, DonHang $donHang)
     {
-        if ($donHang->trang_thai == 'da_hoan_thanh' || $donHang->phuong_thuc_thanh_toan == 'cod' && $donHang->trang_thai !== 'da_giao') {
+        if (
+            $donHang->trang_thai === 'da_hoan_thanh'
+            || $donHang->trang_thai === 'dang_giao'
+            || $donHang->trang_thai === 'da_huy'
+            || ($donHang->phuong_thuc_thanh_toan === 'cod' && $donHang->trang_thai !== 'da_giao')
+        ) {
             return back()->with('error', 'Đơn hàng không ở trạng thái cho phép yêu cầu hoàn tiền.');
         }
 
@@ -159,20 +176,24 @@ class OrderController extends Controller
             return back()->with('error', 'Đã hết thời hạn yêu cầu hoàn tiền (3 ngày sau khi hoàn thành).');
         }
 
+        $isOnlineCancelRefund = $donHang->phuong_thuc_thanh_toan === 'vnpay' && $donHang->trang_thai === 'dang_xu_ly';
         $rules = [
-            'chi_tiet_ids'     => 'required|array|min:1',
-            'chi_tiet_ids.*'   => 'exists:don_hang_chi_tiets,id',
-            'so_luong'         => 'required|array',
-            'so_luong.*'       => 'integer|min:1',
-            'ly_do'            => 'required|string|max:2000',
-            'hinh_anh.*'       => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+            'ly_do' => 'required|string|max:2000',
         ];
+        if (!$isOnlineCancelRefund) {
+            $rules['chi_tiet_ids'] = 'required|array|min:1';
+            $rules['chi_tiet_ids.*'] = 'exists:don_hang_chi_tiets,id';
+            $rules['so_luong'] = 'required|array';
+            $rules['so_luong.*'] = 'integer|min:1';
+            $rules['hinh_anh.*'] = 'nullable|image|mimes:jpg,jpeg,png|max:5120';
+        }
 
         if (in_array($donHang->phuong_thuc_thanh_toan, ['cod', 'vnpay'])) {
             $rules['refund_method'] = 'required|in:upload,manual';
 
             if ($request->refund_method === 'upload') {
-                $rules['hinh_tai_khoan.*'] = 'required|image|mimes:jpg,jpeg,png|max:5120';   
+                $rules['hinh_tai_khoan'] = 'required|array|min:1|max:5';
+                $rules['hinh_tai_khoan.*'] = 'required|image|mimes:jpg,jpeg,png|max:5120';
             }
 
             if ($request->refund_method === 'manual') {
@@ -183,98 +204,154 @@ class OrderController extends Controller
             }
         }
 
-        $validated = $request->validate($rules);
+        $request->validate($rules);
 
-        foreach ($request->chi_tiet_ids as $chiTietId) {
-            $chiTiet = $donHang->chiTietDonHangs->firstWhere('id', $chiTietId);
+        $chiTietIds = [];
+        if (!$isOnlineCancelRefund) {
+            foreach ($request->chi_tiet_ids as $chiTietId) {
+                $chiTiet = $donHang->chiTietDonHangs->firstWhere('id', $chiTietId);
 
-            if (!$chiTiet) {
-                throw ValidationException::withMessages(['chi_tiet_ids' => 'Sản phẩm không hợp lệ.']);
+                if (!$chiTiet) {
+                    throw ValidationException::withMessages(['chi_tiet_ids' => 'Sản phẩm không hợp lệ.']);
+                }
+
+                $soLuongYeuCau = $request->so_luong[$chiTietId] ?? 0;
+
+                if ($soLuongYeuCau < 1 || $soLuongYeuCau > $chiTiet->so_luong) {
+                    throw ValidationException::withMessages([
+                        "so_luong.$chiTietId" => "Số lượng hoàn trả phải từ 1 đến {$chiTiet->so_luong}."
+                    ]);
+                }
             }
+            $chiTietIds = $request->chi_tiet_ids;
+        } else {
+            $chiTietIds = $donHang->chiTietDonHangs->pluck('id')->all();
+        }
 
-            $soLuongYeuCau = $request->so_luong[$chiTietId] ?? 0;
+        $storedNewImagePaths = [];
+        $oldImagePaths = [];
 
-            if ($soLuongYeuCau < 1 || $soLuongYeuCau > $chiTiet->so_luong) {
-                throw ValidationException::withMessages([
-                    "so_luong.$chiTietId" => "Số lượng hoàn trả phải từ 1 đến {$chiTiet->so_luong}."
+        DB::beginTransaction();
+        try {
+            $refund = Refund::where('don_hang_id', $donHang->id)
+                ->where('user_id', Auth::id())
+                ->where('trang_thai', 'da_tu_choi')
+                ->latest()
+                ->first();
+
+            if ($refund) {
+                // Gửi lại yêu cầu: dùng lại bản ghi đã bị từ chối để không tạo thêm dòng mới bên admin.
+                $oldImagePaths = $refund->images()->pluck('path')->filter()->all();
+                $refund->items()->delete();
+                $refund->images()->delete();
+                $refund->update([
+                    'trang_thai'             => 'cho_xu_ly',
+                    'ly_do'                  => $request->ly_do,
+                    'phuong_thuc_thanh_toan' => $donHang->phuong_thuc_thanh_toan,
+                    'so_tien_yeu_cau'        => 0,
+                    'ngan_hang'              => $request->ngan_hang ?? null,
+                    'so_tai_khoan'           => $request->so_tai_khoan ?? null,
+                    'chi_nhanh'              => $request->chi_nhanh ?? null,
+                    'ten_chu_tk'             => $request->ten_chu_tk ?? null,
+                ]);
+            } else {
+                $refund = Refund::create([
+                    'don_hang_id'            => $donHang->id,
+                    'user_id'                => Auth::id(),
+                    'trang_thai'             => 'cho_xu_ly',
+                    'ly_do'                  => $request->ly_do,
+                    'phuong_thuc_thanh_toan' => $donHang->phuong_thuc_thanh_toan,
+                    'so_tien_yeu_cau'        => 0,
+                    'ngan_hang'              => $request->ngan_hang ?? null,
+                    'so_tai_khoan'           => $request->so_tai_khoan ?? null,
+                    'chi_nhanh'              => $request->chi_nhanh ?? null,
+                    'ten_chu_tk'             => $request->ten_chu_tk ?? null,
                 ]);
             }
-        }
 
-        $refund = Refund::create([
-            'don_hang_id'            => $donHang->id,
-            'user_id'                => Auth::id(),
-            'trang_thai'             => 'cho_xu_ly',
-            'ly_do'                  => $request->ly_do,
-            'phuong_thuc_thanh_toan' => $donHang->phuong_thuc_thanh_toan,
-            'so_tien_yeu_cau'        => 0,
+            $tongTienYeuCau = 0;
 
-            'ngan_hang'              => $request->ngan_hang ?? null,
-            'so_tai_khoan'           => $request->so_tai_khoan ?? null,
-            'chi_nhanh'              => $request->chi_nhanh ?? null,
-            'ten_chu_tk'             => $request->ten_chu_tk ?? null,
-        ]);
+            foreach ($chiTietIds as $chiTietId) {
+                $chiTiet = $donHang->chiTietDonHangs->firstWhere('id', $chiTietId);
+                $soLuong = $isOnlineCancelRefund
+                    ? (int) $chiTiet->so_luong
+                    : (int) ($request->so_luong[$chiTietId] ?? 0);
+                $thanhTien = $soLuong * $chiTiet->don_gia;
 
-        $tongTienYeuCau = 0;
+                RefundItem::create([
+                    'refund_request_id'    => $refund->id,
+                    'chi_tiet_don_hang_id' => $chiTiet->id,
+                    'so_luong_yeu_cau'     => $soLuong,
+                    'thanh_tien_yeu_cau'   => $thanhTien,
+                ]);
 
-        foreach ($request->chi_tiet_ids as $chiTietId) {
-            $chiTiet = $donHang->chiTietDonHangs->firstWhere('id', $chiTietId);
-            $soLuong = $request->so_luong[$chiTietId];
-            $thanhTien = $soLuong * $chiTiet->don_gia;
+                $tongTienYeuCau += $thanhTien;
+            }
 
-            RefundItem::create([
-                'refund_request_id'    => $refund->id,
-                'chi_tiet_don_hang_id' => $chiTiet->id,
-                'so_luong_yeu_cau'     => $soLuong,
-                'thanh_tien_yeu_cau'   => $thanhTien,
+            $refund->update(['so_tien_yeu_cau' => $tongTienYeuCau]);
+
+            if (!$isOnlineCancelRefund && $request->hasFile('hinh_anh')) {
+                foreach ($request->file('hinh_anh') as $file) {
+                    if ($file->isValid()) {
+                        $path = $file->store("refund_images/{$refund->id}", 'public');
+                        $storedNewImagePaths[] = $path;
+
+                        RefundImage::create([
+                            'refund_id'      => $refund->id,
+                            'path'           => $path,
+                            'original_name'  => $file->getClientOriginalName(),
+                            'mime_type'      => $file->getMimeType(),
+                            'size'           => $file->getSize(),
+                        ]);
+                    }
+                }
+            }
+
+            if (
+                in_array($donHang->phuong_thuc_thanh_toan, ['cod', 'vnpay'])
+                && $request->refund_method === 'upload'
+                && $request->hasFile('hinh_tai_khoan')
+            ) {
+                $bankFiles = $request->file('hinh_tai_khoan');
+                if (!is_array($bankFiles)) {
+                    $bankFiles = [$bankFiles];
+                }
+                foreach ($bankFiles as $file) {
+                    if ($file->isValid()) {
+                        $path = $file->store("refund_bank_info/{$refund->id}", 'public');
+                        $storedNewImagePaths[] = $path;
+
+                        RefundImage::create([
+                            'refund_id'      => $refund->id,
+                            'path'           => $path,
+                            'original_name'  => $file->getClientOriginalName(),
+                            'mime_type'      => $file->getMimeType(),
+                            'size'           => $file->getSize(),
+                        ]);
+                    }
+                }
+            }
+
+            $donHang->update([
+                'yeu_cau_tra' => 1,
+                'ly_do_tra' => $refund->ly_do,
+                'ngay_yeu_cau_tra' => $refund->created_at,
             ]);
 
-            $tongTienYeuCau += $thanhTien;
-        }
+            DB::commit();
 
-        $refund->update(['so_tien_yeu_cau' => $tongTienYeuCau]);
-
-
-        if ($request->hasFile('hinh_anh')) {
-            foreach ($request->file('hinh_anh') as $file) {
-                if ($file->isValid()) {
-                    $path = $file->store("refund_images/{$refund->id}", 'public');
-
-                    RefundImage::create([
-                        'refund_id'      => $refund->id,
-                        'path'           => $path,
-                        'original_name'  => $file->getClientOriginalName(),
-                        'mime_type'      => $file->getMimeType(),
-                        'size'           => $file->getSize(),
-                    ]);
-                }
+            if (!empty($oldImagePaths)) {
+                Storage::disk('public')->delete($oldImagePaths);
             }
-        }
 
-        if (
-            in_array($donHang->phuong_thuc_thanh_toan, ['cod', 'vnpay'])
-            && $request->refund_method === 'upload'
-            && $request->hasFile('hinh_tai_khoan')
-        ) {
-
-            foreach ($request->file('hinh_tai_khoan') as $file) {
-                if ($file->isValid()) {
-                    $path = $file->store("refund_bank_info/{$refund->id}", 'public');
-
-                    RefundImage::create([
-                        'refund_id'      => $refund->id,
-                        'path'           => $path,
-                        'original_name'  => $file->getClientOriginalName(),
-                        'mime_type'      => $file->getMimeType(),
-                        'size'           => $file->getSize(),
-                    ]);
-                }
+            return redirect()->route('order.show', $donHang->id)
+                ->with('success', 'Yêu cầu hoàn tiền đã được gửi thành công! Chúng tôi sẽ xem xét trong thời gian sớm nhất.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            if (!empty($storedNewImagePaths)) {
+                Storage::disk('public')->delete($storedNewImagePaths);
             }
+            throw $e;
         }
-
-        $donHang->update(['yeu_cau_tra' => 1]);
-
-        return redirect()->route('order.show', $donHang->id)
-            ->with('success', 'Yêu cầu hoàn tiền đã được gửi thành công! Chúng tôi sẽ xem xét trong thời gian sớm nhất.');
     }
 }

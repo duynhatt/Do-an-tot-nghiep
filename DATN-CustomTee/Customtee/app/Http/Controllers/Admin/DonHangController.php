@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\DonHang;
 use App\Models\GioHang;
+use App\Models\Refund;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -20,6 +21,9 @@ class DonHangController extends Controller
             'chiTietDonHangs.sanPham',
             'chiTietDonHangs.bienThe.color',
             'chiTietDonHangs.bienThe.size',
+            'refunds' => function ($query) {
+                $query->latest();
+            },
         ])->orderBy('created_at', 'desc');
 
         $trangThai = $request->query('trang_thai');
@@ -33,7 +37,11 @@ class DonHangController extends Controller
                 DonHang::TRANG_THAI_DA_HOAN_THANH,
                 DonHang::TRANG_THAI_DA_HUY,
             ], true)) {
-                $query->where('trang_thai', $trangThai);
+                $query->where('trang_thai', $trangThai)
+                    ->where(function ($q) {
+                        // Đơn đã có yêu cầu trả/hoàn chỉ hiển thị ở tab "Trả hàng".
+                        $q->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
+                    });
             }
             // Lọc "Trả hàng": các đơn có yêu cầu trả
             elseif ($trangThai === 'tra_hang') {
@@ -110,6 +118,9 @@ class DonHangController extends Controller
             'chiTietDonHangs.sanPham',
             'chiTietDonHangs.bienThe.color',
             'chiTietDonHangs.bienThe.size',
+            'refunds' => function ($query) {
+                $query->latest();
+            },
         ]);
 
         return view('admin.don-hang.show', compact('donHang'));
@@ -128,6 +139,9 @@ class DonHangController extends Controller
         ]);
 
         $trangThaiMoi = $request->trang_thai;
+        $latestRefundStatus = Refund::where('don_hang_id', $donHang->id)
+            ->latest()
+            ->value('trang_thai');
 
         // Chặn admin chuyển đơn sang "đã hoàn thành" – chỉ khách hàng được xác nhận nhận hàng
         if ($trangThaiMoi === DonHang::TRANG_THAI_DA_HOAN_THANH) {
@@ -151,11 +165,32 @@ class DonHangController extends Controller
             );
         }
 
+        // Khi đơn đang trong luồng hoàn tiền/trả hàng, chặn chuyển sang các trạng thái giao vận.
+        if (
+            (
+                (bool) $donHang->yeu_cau_tra
+                || in_array($latestRefundStatus, ['cho_xu_ly', 'da_chap_nhan', 'da_hoan_tien'], true)
+            )
+            && in_array($trangThaiMoi, [
+                DonHang::TRANG_THAI_DANG_XU_LY,
+                DonHang::TRANG_THAI_DANG_GIAO,
+                DonHang::TRANG_THAI_DA_GIAO,
+            ], true)
+        ) {
+            return back()->with(
+                'error',
+                'Đơn hàng đang trong quy trình hoàn tiền/trả hàng, không thể chuyển sang trạng thái xử lý hoặc giao hàng.'
+            );
+        }
+
         if (!DonHang::coTheChuyenSang($donHang->trang_thai, $trangThaiMoi)) {
             return back()->with('error', 'Không thể chuyển từ "' . DonHang::tenTrangThai($donHang->trang_thai) . '" sang "' . DonHang::tenTrangThai($trangThaiMoi) . '".');
         }
 
         $payload = ['trang_thai' => $trangThaiMoi];
+        if ($trangThaiMoi === DonHang::TRANG_THAI_DA_GIAO) {
+            $payload['da_giao_at'] = now();
+        }
         if ($trangThaiMoi === DonHang::TRANG_THAI_DA_HOAN_THANH) {
             $payload['trang_thai_thanh_toan'] = 'da_thanh_toan';
         }

@@ -214,7 +214,13 @@
                     </div>
                 </div>
 
-                @if ($refund->refund_method || $refund->ngan_hang || $refund->so_tai_khoan)
+                @php
+                    $bankImages = $refund->images->filter(fn($image) => str_contains((string) $image->path, 'refund_bank_info/'));
+                    $proofImages = $refund->images->filter(fn($image) => str_contains((string) $image->path, 'refund_images/'));
+                    $hasManualBankInfo = $refund->ngan_hang || $refund->so_tai_khoan || $refund->chi_nhanh || $refund->ten_chu_tk;
+                    $hasUploadedBankImages = $bankImages->isNotEmpty();
+                @endphp
+                @if ($hasManualBankInfo || $hasUploadedBankImages)
                     <div class="card border-0 shadow-sm rounded-3 mb-4">
                         <div class="card-header bg-white border-bottom py-3">
                             <h6 class="mb-0 fw-semibold text-primary">
@@ -222,12 +228,22 @@
                             </h6>
                         </div>
                         <div class="card-body">
-                            @if ($refund->refund_method === 'upload')
+                            @if ($hasUploadedBankImages)
                                 <div class="alert alert-info small">
                                     <i class="bi bi-upload me-1"></i> Khách hàng đã tải lên ảnh thông tin tài khoản / QR
                                     Code
                                 </div>
-                            @elseif ($refund->refund_method === 'manual')
+                                <div class="row g-2 mb-3">
+                                    @foreach ($bankImages as $image)
+                                        <div class="col-6">
+                                            <a href="{{ $image->url }}" target="_blank" class="d-block">
+                                                <img src="{{ $image->url }}" alt="{{ $image->original_name }}"
+                                                    class="img-fluid rounded shadow-sm" loading="lazy" style="height: 80px;">
+                                            </a>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @elseif ($hasManualBankInfo)
                                 <div class="alert alert-primary small">
                                     <i class="bi bi-pencil-square me-1"></i> Khách hàng đã nhập thông tin thủ công
                                 </div>
@@ -258,7 +274,7 @@
                     </div>
                 @endif
 
-                @if ($refund->images->isNotEmpty())
+                @if ($proofImages->isNotEmpty())
                     <div class="card border-0 shadow-sm rounded-3">
                         <div class="card-header bg-white border-bottom py-3">
                             <h6 class="mb-0 fw-semibold text-primary">
@@ -267,7 +283,7 @@
                         </div>
                         <div class="card-body">
                             <div class="row g-2">
-                                @foreach ($refund->images as $image)
+                                @foreach ($proofImages as $image)
                                     <div class="col-6 col-md-4">
                                         <a href="{{ $image->url }}" target="_blank" class="d-block">
                                             <img src="{{ $image->url }}" alt="{{ $image->original_name }}"

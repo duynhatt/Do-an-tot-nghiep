@@ -124,9 +124,9 @@
         const form = document.getElementById('formYeuCauHoanTra');
         if (form) {
             form.addEventListener('submit', function(e) {
-                const checkedCount = document.querySelectorAll('input[name="chi_tiet_ids[]"]:checked')
-                    .length;
-                if (checkedCount === 0) {
+                const hasReturnItemSelection = document.querySelectorAll('input[name="chi_tiet_ids[]"]').length > 0;
+                const checkedCount = document.querySelectorAll('input[name="chi_tiet_ids[]"]:checked').length;
+                if (hasReturnItemSelection && checkedCount === 0) {
                     e.preventDefault();
                     alert('Vui lòng chọn ít nhất một sản phẩm để hoàn trả.');
                     return;
@@ -185,20 +185,42 @@
         const methodManual = document.getElementById('method_manual');
         const uploadSection = document.getElementById('upload_section');
         const manualSection = document.getElementById('manual_section');
+        const uploadInput = document.getElementById('hinhTaiKhoanInput');
+        const manualInputs = manualSection ? manualSection.querySelectorAll('input[name="ngan_hang"], input[name="so_tai_khoan"], input[name="chi_nhanh"], input[name="ten_chu_tk"]') : [];
 
         if (methodUpload && methodManual) {
             function toggleRefundMethod() {
                 if (methodUpload.checked) {
                     uploadSection.classList.remove('d-none');
                     manualSection.classList.add('d-none');
+                    if (uploadInput) {
+                        uploadInput.disabled = false;
+                        uploadInput.required = true;
+                    }
+                    manualInputs.forEach((input) => {
+                        input.disabled = true;
+                        input.required = false;
+                    });
                 } else {
                     uploadSection.classList.add('d-none');
                     manualSection.classList.remove('d-none');
+                    if (uploadInput) {
+                        uploadInput.disabled = true;
+                        uploadInput.required = false;
+                        uploadInput.value = '';
+                    }
+                    manualInputs.forEach((input) => {
+                        input.disabled = false;
+                        if (input.name !== 'chi_nhanh') {
+                            input.required = true;
+                        }
+                    });
                 }
             }
 
             methodUpload.addEventListener('change', toggleRefundMethod);
             methodManual.addEventListener('change', toggleRefundMethod);
+            toggleRefundMethod();
         }
     });
 </script>

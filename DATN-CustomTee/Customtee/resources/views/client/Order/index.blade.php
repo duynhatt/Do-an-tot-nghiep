@@ -160,9 +160,22 @@
                                                         'secondary',
                                                         'bi bi-question-circle',
                                                     ];
+                                                    $latestRefund = $donHang->refunds->first();
                                                 @endphp
 
-                                                @if ($donHang->yeu_cau_tra = 0)
+                                                @if ($donHang->trang_thai !== 'da_hoan_thanh' && $latestRefund && $latestRefund->trang_thai === 'da_tu_choi')
+                                                    <span
+                                                        class="badge bg-danger-subtle text-danger border border-danger fs-6 px-4 py-2 d-flex align-items-center rounded-pill">
+                                                        <i class="bi bi-x-octagon me-2 fs-5"></i>
+                                                        Đã từ chối hoàn tiền
+                                                    </span>
+                                                @elseif ($donHang->yeu_cau_tra)
+                                                    <span
+                                                        class="badge bg-secondary-subtle text-secondary border border-secondary fs-6 px-4 py-2 d-flex align-items-center rounded-pill">
+                                                        <i class="bi bi-arrow-counterclockwise me-2 fs-5"></i>
+                                                        Trả hàng/hoàn tiền
+                                                    </span>
+                                                @else
                                                     <span
                                                         class="badge bg-{{ $st[1] }}-subtle text-{{ $st[1] }} border border-{{ $st[1] }} fs-6 px-4 py-2 d-flex align-items-center rounded-pill">
                                                         <i class="{{ $st[2] }} me-2 fs-5"></i>

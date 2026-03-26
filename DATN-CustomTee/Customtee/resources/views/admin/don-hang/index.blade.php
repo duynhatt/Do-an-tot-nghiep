@@ -254,25 +254,32 @@
                         </td>
                         <td class="text-center align-middle">
                             @php
-                                $badge = [
-                                    'cho_xac_nhan' => 'warning',
-                                    'dang_xu_ly' => 'info',
-                                    'dang_giao' => 'primary',
-                                    'da_giao' => 'success',
-                                    'da_hoan_thanh' => 'success',
-                                    'da_huy' => 'danger',
-                                ][$donHang->trang_thai] ?? 'secondary';
+                                $latestRefund = $donHang->refunds->first();
+                                $refundBadgeMap = [
+                                    'cho_xu_ly' => ['warning', 'Yêu cầu trả hàng'],
+                                    'da_chap_nhan' => ['primary', 'Đã chấp nhận hoàn tiền'],
+                                    'da_tu_choi' => ['danger', 'Đã từ chối hoàn tiền'],
+                                    'da_hoan_tien' => ['info', 'Đã hoàn tiền'],
+                                ];
+                                $orderBadgeMap = [
+                                    'cho_xac_nhan' => ['warning', \App\Models\DonHang::tenTrangThai('cho_xac_nhan')],
+                                    'dang_xu_ly' => ['info', \App\Models\DonHang::tenTrangThai('dang_xu_ly')],
+                                    'dang_giao' => ['primary', \App\Models\DonHang::tenTrangThai('dang_giao')],
+                                    'da_giao' => ['success', \App\Models\DonHang::tenTrangThai('da_giao')],
+                                    'da_hoan_thanh' => ['success', \App\Models\DonHang::tenTrangThai('da_hoan_thanh')],
+                                    'da_huy' => ['danger', \App\Models\DonHang::tenTrangThai('da_huy')],
+                                ];
+
+                                $displayStatus = $orderBadgeMap[$donHang->trang_thai] ?? ['secondary', 'Không xác định'];
+                                if ($latestRefund && isset($refundBadgeMap[$latestRefund->trang_thai])) {
+                                    $displayStatus = $refundBadgeMap[$latestRefund->trang_thai];
+                                }
                             @endphp
                             <div>
-                                <span class="badge badge-{{ $badge }}">
-                                    {{ \App\Models\DonHang::tenTrangThai($donHang->trang_thai) }}
+                                <span class="badge badge-{{ $displayStatus[0] }}">
+                                    {{ $displayStatus[1] }}
                                 </span>
                             </div>
-                            @if($donHang->yeu_cau_tra)
-                                <div class="mt-1">
-                                    <span class="badge badge-danger">Yêu cầu trả hàng</span>
-                                </div>
-                            @endif
                         </td>
                         <td class="text-center align-middle">
                             <div class="d-flex justify-content-center flex-wrap gap-1">
