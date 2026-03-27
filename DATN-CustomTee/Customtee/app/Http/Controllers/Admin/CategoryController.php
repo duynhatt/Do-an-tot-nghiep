@@ -10,10 +10,18 @@ use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $query = Category::query();
+        if ($request->keyword) {
+            $query->where('ten_danh_muc', 'like', '%' . $request->keyword . '%');
+        }
+        
+        if ($request->trang_thai !== null && $request->trang_thai !== '') {
+            $query->where('trang_thai', $request->trang_thai);
+        }
 
-        $danhMucs = Category::orderBy('id', 'desc')->get();
+        $danhMucs = $query->orderBy('id', 'desc')->get();
 
         return view('admin.category.list', compact('danhMucs'));
     }
