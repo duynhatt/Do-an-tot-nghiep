@@ -2,84 +2,152 @@
 <div class="container py-5">
     <div class="row">
         <div class="col-lg-3">
-            {{-- DANH MỤC --}}
-            <h2 class="h5 pb-2 mb-3 border-bottom">Danh sách danh mục</h2>
-            <ul class="list-unstyled mb-3">
-                @foreach($danhMucs as $danhMuc)
-                <li class="mb-2">
-                    <a class="category-link text-decoration-none"
-                    href="{{ request()->fullUrlWithQuery(['danh_muc' => $danhMuc->id]) }}">
-                        {{ $danhMuc->ten_danh_muc }}
-                    </a>
-                </li>
-                @endforeach
-            </ul>
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
 
-            {{-- KHOẢNG GIÁ --}}
-            <h2 class="h5 pb-2 mb-3 border-bottom">Khoảng giá</h2>
+                    {{-- DANH MỤC --}}
+                    <button class="filter-toggle" data-bs-toggle="collapse" data-bs-target="#categoryCollapse">
+                        Danh mục
+                    </button>
 
-            <ul class="list-unstyled mb-3">
-                <div class="mb-3">
-                    <input type="range" id="priceRange"
-                        min="{{ $minPrice }}"
-                        max="{{ $maxPrice }}"
-                        value="{{ request('max_price', $maxPrice) }}"
-                        class="form-range">
-
-                    <div class="d-flex justify-content-between">
-                        <small id="minValue">{{ number_format($minPrice) }}đ</small>
-                        <small id="maxValue">{{ number_format(request('max_price', $maxPrice)) }}đ</small>
+                    <div id="categoryCollapse" class="collapse show">
+                        <ul class="list-unstyled mt-2">
+                            @foreach($danhMucs as $danhMuc)
+                            <li class="mb-2">
+                                <a class="filter-link"
+                                href="{{ request()->fullUrlWithQuery(['danh_muc' => $danhMuc->id]) }}">
+                                    {{ $danhMuc->ten_danh_muc }}
+                                </a>
+                            </li>
+                            @endforeach
+                        </ul>
                     </div>
 
-                    <button onclick="filterPrice()" class="btn btn-sm btn-success mt-2 w-100">
-                        Áp dụng
+                    {{-- KHOẢNG GIÁ --}}
+                    <button class="filter-toggle mt-3" data-bs-toggle="collapse" data-bs-target="#priceCollapse">
+                        Khoảng giá
                     </button>
+
+                    <div id="priceCollapse" class="collapse show">
+                        <div class="mt-2">
+                            <input type="range" id="priceRange"
+                                min="{{ $minPrice }}"
+                                max="{{ $maxPrice }}"
+                                value="{{ request('max_price', $maxPrice) }}"
+                                class="form-range">
+
+                            <div class="d-flex justify-content-between small">
+                                <span id="minValue">{{ number_format($minPrice) }}đ</span>
+                                <span id="maxValue">{{ number_format(request('max_price', $maxPrice)) }}đ</span>
+                            </div>
+
+                            <button onclick="filterPrice()" class="btn btn-success btn-sm w-100 mt-2">
+                                Áp dụng
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- SIZE --}}
+                    <button class="filter-toggle mt-3" data-bs-toggle="collapse" data-bs-target="#sizeCollapse">
+                        Kích thước
+                    </button>
+
+                    <div id="sizeCollapse" class="collapse">
+                        <ul class="list-unstyled mt-2">
+                            @foreach($sizes as $size)
+                            <li class="mb-2">
+                                <a class="filter-link"
+                                href="{{ request()->fullUrlWithQuery(['size' => $size->ten_kich_thuoc]) }}">
+                                    {{ $size->ten_kich_thuoc }}
+                                </a>
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+
+                    {{-- MÀU --}}
+                    <button class="filter-toggle mt-3" data-bs-toggle="collapse" data-bs-target="#colorCollapse">
+                        Màu sắc
+                    </button>
+
+                    <div id="colorCollapse" class="collapse">
+                        <ul class="list-unstyled mt-2">
+                            @foreach($colors as $color)
+                            <li class="mb-2">
+                                <a class="filter-link"
+                                href="{{ request()->fullUrlWithQuery(['color' => $color->id]) }}">
+                                    {{ $color->ten_mau }}
+                                </a>
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+
+                    {{-- SẮP XẾP --}}
+                    <button class="filter-toggle mt-3" data-bs-toggle="collapse" data-bs-target="#sortCollapse">
+                        Sắp xếp
+                    </button>
+
+                    <div id="sortCollapse" class="collapse">
+                        <ul class="list-unstyled mt-2">
+                            <li class="mb-2">
+                                <a class="filter-link" href="{{ request()->fullUrlWithQuery(['sort' => 'price_asc']) }}">
+                                    Giá tăng dần
+                                </a>
+                            </li>
+                            <li class="mb-2">
+                                <a class="filter-link" href="{{ request()->fullUrlWithQuery(['sort' => 'price_desc']) }}">
+                                    Giá giảm dần
+                                </a>
+                            </li>
+                            <li class="mb-2">
+                                <a class="filter-link" href="{{ request()->fullUrlWithQuery(['sort' => 'new']) }}">
+                                    Mới nhất
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
                 </div>
-            </ul>
-
-            {{-- SIZE --}}
-            <h2 class="h5 pb-2 mb-3 border-bottom">Kích thước</h2>
-            <ul class="list-unstyled mb-3">
-                @foreach($sizes as $size)
-                <li class="mb-2">
-                    <a class="category-link text-decoration-none"
-                    href="{{ request()->fullUrlWithQuery(['size' => $size->ten_kich_thuoc]) }}">
-                        {{ $size->ten_kich_thuoc }}
-                    </a>
-                </li>
-                @endforeach
-            </ul>
-
-            {{-- MÀU --}}
-            <h2 class="h5 pb-2 mb-3 border-bottom">Màu sắc</h2>
-            <ul class="list-unstyled mb-3">
-                @foreach($colors as $color)
-                <li class="mb-2">
-                    <a class="category-link text-decoration-none"
-                    href="{{ request()->fullUrlWithQuery(['color' => $color->id]) }}">
-                        {{ $color->ten_mau }}
-                    </a>
-                </li>
-                @endforeach
-            </ul>
-
-            {{-- SẮP XẾP --}}
-            <h2 class="h5 pb-2 mb-3 border-bottom">Sắp xếp</h2>
-            <ul class="list-unstyled mb-3">
-                <li class="mb-2">
-                    <a class="category-link text-decoration-none" href="{{ request()->fullUrlWithQuery(['sort' => 'price_asc']) }}">Giá tăng dần</a>
-                </li>
-                <li class="mb-2">
-                    <a class="category-link text-decoration-none" href="{{ request()->fullUrlWithQuery(['sort' => 'price_desc']) }}">Giá giảm dần</a>
-                </li>
-                <li class="mb-2">
-                    <a class="category-link text-decoration-none" href="{{ request()->fullUrlWithQuery(['sort' => 'new']) }}">Mới nhất</a>
-                </li>
-            </ul>
-
+            </div>
         </div>
 
         <style>
+            .filter-toggle {
+                width: 100%;
+                text-align: left;
+                background: none;
+                border: none;
+                font-weight: 600;
+                padding: 8px 0;
+                border-bottom: 1px solid #eee;
+                position: relative;
+            }
+
+            .filter-toggle::after {
+                content: "▾";
+                position: absolute;
+                right: 0;
+                transition: transform 0.3s;
+            }
+
+            .filter-toggle[aria-expanded="true"]::after {
+                transform: rotate(180deg);
+            }
+
+            .filter-link {
+                display: block;
+                padding: 5px 8px;
+                border-radius: 6px;
+                color: #333;
+                text-decoration: none;
+            }
+
+            .filter-link:hover {
+                background: #f1f1f1;
+            }
+
+
             .category-link {
                 color: #000000 !important;
                 display: block !important;
