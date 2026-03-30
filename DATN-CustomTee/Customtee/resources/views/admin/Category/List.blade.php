@@ -10,6 +10,44 @@
         </button>
     </div>
 
+    <form method="GET" action="{{ route('admin.danh-muc.index') }}" class="mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="font-weight-bold">Tên danh mục</label>
+                        <input type="text" name="keyword" class="form-control"
+                            placeholder="Nhập tên danh mục..."
+                            value="{{ request('keyword') }}">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="font-weight-bold">Trạng thái</label>
+                        <select name="trang_thai" class="form-control">
+                            <option value="">Tất cả</option>
+                            <option value="1" {{ request('trang_thai') === '1' ? 'selected' : '' }}>Hiển thị</option>
+                            <option value="0" {{ request('trang_thai') === '0' ? 'selected' : '' }}>Ẩn</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 d-flex flex-column">
+                        <label class="font-weight-bold invisible">Action</label>
+                        <div class="d-flex">
+                            <button class="btn btn-primary w-50 mr-2">
+                                <i class="fas fa-search"></i> Tìm
+                            </button>
+                            <a href="{{ route('admin.danh-muc.index') }}" class="btn btn-outline-secondary w-50">
+                                <i class="fas fa-undo"></i> Reset
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </form>
+    <br>
+
     {{-- Table --}}
     <div class="card shadow">
         <div class="card-body">

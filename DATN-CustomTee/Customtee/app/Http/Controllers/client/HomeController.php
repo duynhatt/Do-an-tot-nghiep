@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Models\BinhLuan;
 use App\Models\Category;
 use App\Models\ChiTietDonHang;
 use App\Models\DonHang;
@@ -106,6 +107,14 @@ class HomeController extends Controller
             ->take(6)
             ->get();
 
-        return view('client.Home', compact('sanPhamsMoiNhat', 'danhMucs', 'sanPhamsHot', 'sanPhamsGiamGia'));
+        // Đánh giá nổi bật (ví dụ lấy 3 đánh giá mới nhất)
+        $danhGias = BinhLuan::with('user')
+            ->where('trang_thai', 1)
+            ->where('so_sao', '>=', 4)
+            ->latest()
+            ->take(6)
+            ->get();
+
+        return view('client.Home', compact('sanPhamsMoiNhat', 'danhMucs', 'sanPhamsHot', 'sanPhamsGiamGia', 'danhGias'));
     }
 }

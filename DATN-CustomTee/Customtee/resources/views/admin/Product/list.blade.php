@@ -21,10 +21,77 @@
         #variantsSection .variant-row select[name$="[trang_thai]"] {
             min-width: 60px;
         }
+
+        .card {
+            border-radius: 10px;
+        }
+
+        .form-control {
+            border-radius: 6px;
+        }
+
+        .btn {
+            border-radius: 6px;
+        }
+
+        .input-group-text {
+            border-radius: 6px 0 0 6px;
+        }
     </style>
         {{-- Table --}}
         <div class="card shadow">
             <div class="card-body">
+                
+                <form method="GET" action="{{ route('admin.san-pham.index') }}" class="mb-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label class="font-weight-bold">Tên sản phẩm</label>
+                                    <input type="text" name="keyword" class="form-control"
+                                        placeholder="Nhập tên sản phẩm..."
+                                        value="{{ request('keyword') }}">
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="font-weight-bold">Danh mục</label>
+                                    <select name="danh_muc_id" class="form-control">
+                                        <option value="">Tất cả danh mục</option>
+                                        @foreach ($danhMucs as $dm)
+                                            <option value="{{ $dm->id }}"
+                                                {{ request('danh_muc_id') == $dm->id ? 'selected' : '' }}>
+                                                {{ $dm->ten_danh_muc }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="font-weight-bold">Trạng thái</label>
+                                    <select name="trang_thai" class="form-control">
+                                        <option value="">Tất cả</option>
+                                        <option value="1" {{ request('trang_thai') === '1' ? 'selected' : '' }}>Hiển thị</option>
+                                        <option value="0" {{ request('trang_thai') === '0' ? 'selected' : '' }}>Ẩn</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3 d-flex flex-column">
+                                    <label class="font-weight-bold invisible">Action</label>
+                                    <div class="d-flex flex-grow-1">
+                                        <button class="btn btn-primary w-50 mr-2">
+                                            <i class="fas fa-search"></i> Tìm
+                                        </button>
+                                        <a href="{{ route('admin.san-pham.index') }}" class="btn btn-outline-secondary w-50">
+                                            <i class="fas fa-undo"></i> Reset
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <br>
+
                 <table class="table table-bordered table-hover text-center">
                     <thead class="thead-light">
                         <tr>

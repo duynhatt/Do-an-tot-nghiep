@@ -14,9 +14,22 @@ use Illuminate\Support\Facades\Validator;
 
 class SanPhamController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $sanPhams = SanPham::with('danhMuc')->orderBy('id', 'desc')->get();
+        $query = SanPham::with('danhMuc');
+        if ($request->keyword) {
+            $query->where('ten_san_pham', 'like', '%' . $request->keyword . '%');
+        }
+
+        if ($request->danh_muc_id) {
+            $query->where('danh_muc_id', $request->danh_muc_id);
+        }
+
+        if ($request->trang_thai !== null && $request->trang_thai !== '') {
+            $query->where('trang_thai', $request->trang_thai);
+        }
+
+        $sanPhams = $query->orderBy('id', 'desc')->get();
 
         $danhMucs = Category::where('trang_thai', 1)->get();
         $colors = MauSac::all();
