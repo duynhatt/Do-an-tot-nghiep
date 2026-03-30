@@ -190,6 +190,10 @@ class DonHangController extends Controller
         $payload = ['trang_thai' => $trangThaiMoi];
         if ($trangThaiMoi === DonHang::TRANG_THAI_DA_GIAO) {
             $payload['da_giao_at'] = now();
+            // COD được thu tiền khi giao thành công.
+            if ($donHang->phuong_thuc_thanh_toan === 'cod') {
+                $payload['trang_thai_thanh_toan'] = 'da_thanh_toan';
+            }
         }
         if ($trangThaiMoi === DonHang::TRANG_THAI_DA_HOAN_THANH) {
             $payload['trang_thai_thanh_toan'] = 'da_thanh_toan';

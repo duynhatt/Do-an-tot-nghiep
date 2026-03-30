@@ -10,7 +10,7 @@
                         class="fw-medium text-dark">{{ $donHang->ma_don_hang }}</span></li>
                 <li class="d-flex justify-content-between mb-1"><span class="text-muted">Ngày
                         đặt</span><span>{{ $donHang->created_at->format('d/m/Y H:i') }}</span></li>
-                @if ($donHang->yeu_cau_tra = 0)
+                @if ($donHang->yeu_cau_tra == 0)
                     <li class="d-flex justify-content-between mb-1"><span class="text-muted">Trạng thái</span><span
                             class="badge bg-primary-subtle text-primary border">{{ \App\Models\DonHang::tenTrangThai($donHang->trang_thai) }}</span>
                     </li>
@@ -63,10 +63,13 @@
                     @endswitch
                 </span>
             </div>
-            @if ($donHang->yeu_cau_tra = 0)
+            @if ($donHang->yeu_cau_tra == 0)
 
                 <small class="d-block mt-1">
-                    @if ($donHang->trang_thai_thanh_toan === 'da_thanh_toan' || $donHang->trang_thai === 'da_hoan_thanh')
+                    @if (
+                        $donHang->trang_thai_thanh_toan === 'da_thanh_toan' ||
+                            $donHang->trang_thai === 'da_hoan_thanh' ||
+                            ($donHang->phuong_thuc_thanh_toan === 'cod' && $donHang->trang_thai === 'da_giao'))
                         <span class="badge bg-success-subtle text-success border border-success">Đã thanh toán</span>
                     @elseif($donHang->trang_thai_thanh_toan === 'that_bai')
                         <span class="badge bg-danger-subtle text-danger border border-danger">Thanh toán thất bại</span>

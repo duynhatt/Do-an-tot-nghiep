@@ -202,10 +202,14 @@
     @if($sanPhamCungDanhMuc->isNotEmpty())
     <div class="row mt-5 pt-4 border-top">
         <div class="col-12">
-            <h4 class="fw-bold mb-4">Sản phẩm có liên quan</h4>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+                <div>
+                    <h4 class="fw-bold mb-1">Sản phẩm có liên quan</h4>
+                </div>
+            </div>
             <div class="related-carousel d-flex align-items-center gap-2 gap-md-3">
                 <button type="button"
-                    class="btn btn-outline-secondary related-carousel-prev flex-shrink-0 rounded-circle p-2 p-md-3"
+                    class="btn related-carousel-nav related-carousel-prev flex-shrink-0 rounded-circle p-2 p-md-3 shadow-sm"
                     aria-controls="relatedCarouselViewport"
                     aria-label="Xem nhóm trước"
                     disabled>
@@ -222,8 +226,8 @@
                             <div class="row g-3 row-cols-2 row-cols-md-4">
                                 @foreach($slideGroup as $spLienQuan)
                                 <div class="col">
-                                    <div class="card product-wap related-product-card rounded-0 h-100 border shadow-sm">
-                                        <div class="card rounded-0 border-0">
+                                    <div class="card product-wap related-product-card h-100 border-0 shadow-sm">
+                                        <div class="card border-0">
                                             <a href="{{ route('sanpham.chitiet', $spLienQuan->slug) }}" class="d-block related-product-img-link">
                                                 <img class="card-img rounded-0 related-product-thumb"
                                                     src="{{ $spLienQuan->hinh_anh_chinh ? asset('storage/' . $spLienQuan->hinh_anh_chinh) : asset('img/shop_01.jpg') }}"
@@ -233,7 +237,7 @@
                                                     decoding="async"
                                                     alt="{{ $spLienQuan->ten_san_pham }}">
                                             </a>
-                                            <div class="card-img-overlay rounded-0 product-overlay d-flex align-items-center justify-content-center">
+                                            <div class="card-img-overlay product-overlay d-flex align-items-center justify-content-center">
                                                 <ul class="list-unstyled">
                                                     <li>
                                                         <a class="btn btn-success text-white"
@@ -245,14 +249,14 @@
                                                 </ul>
                                             </div>
                                         </div>
-                                        <div class="card-body py-3">
+                                        <div class="card-body py-3 px-3">
                                             <a href="{{ route('sanpham.chitiet', $spLienQuan->slug) }}"
-                                                class="h6 text-decoration-none product-title d-block text-secondary small">
+                                                class="h6 text-decoration-none product-title d-block text-dark small mb-2">
                                                 {{ $spLienQuan->ten_san_pham }}
                                             </a>
-                                            <p class="text-end mb-0 mt-2 text-success fw-semibold small">
+                                            <p class="mb-0 text-success fw-semibold small related-price">
                                                 @if($spLienQuan->variants_min_gia)
-                                                {{ number_format($spLienQuan->variants_min_gia, 0, ',', '.') }}đ
+                                                {{ number_format($spLienQuan->variants_min_gia, 0, ',', '.') }} đ
                                                 @else
                                                 Liên hệ
                                                 @endif
@@ -267,7 +271,7 @@
                     </div>
                 </div>
                 <button type="button"
-                    class="btn btn-outline-secondary related-carousel-next flex-shrink-0 rounded-circle p-2 p-md-3"
+                    class="btn related-carousel-nav related-carousel-next flex-shrink-0 rounded-circle p-2 p-md-3 shadow-sm"
                     aria-controls="relatedCarouselViewport"
                     aria-label="Xem nhóm sau"
                     @if($relatedSlides->count() <= 1) disabled @endif>
@@ -306,7 +310,14 @@
     }
 
     .related-product-card {
-        border-color: #dee2e6 !important;
+        border-radius: 14px;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .related-product-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.12) !important;
     }
 
     /* Grid: mỗi slide = 100% khung ngay từ đầu, tránh ảnh bung kích thước gốc trước khi JS chạy */
@@ -345,6 +356,7 @@
         overflow: hidden;
         aspect-ratio: 3 / 4;
         background-color: #f8f9fa;
+        border-bottom: 1px solid #edf0f2;
     }
 
     .related-product-thumb {
@@ -353,6 +365,49 @@
         max-width: 100%;
         object-fit: cover;
         display: block;
+        transition: transform 0.35s ease;
+    }
+
+    .related-product-card:hover .related-product-thumb {
+        transform: scale(1.04);
+    }
+
+    .related-price {
+        font-size: 15px;
+        letter-spacing: 0.1px;
+    }
+
+    .related-carousel-nav {
+        width: 46px;
+        height: 46px;
+        border: none;
+        background: linear-gradient(135deg, #28a745 0%, #198754 100%);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 20px rgba(25, 135, 84, 0.3);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .related-carousel-nav:hover {
+        background: linear-gradient(135deg, #23a242 0%, #157347 100%);
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 26px rgba(25, 135, 84, 0.35);
+    }
+
+    .related-carousel-nav i {
+        font-size: 14px;
+    }
+
+    .related-carousel-nav:disabled {
+        background: #cfe9d8;
+        color: #ffffff;
+        box-shadow: none;
+        transform: none;
+        opacity: 1;
+        cursor: not-allowed;
     }
 
     .product-breadcrumb {
