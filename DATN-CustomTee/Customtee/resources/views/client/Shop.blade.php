@@ -2,18 +2,81 @@
 <div class="container py-5">
     <div class="row">
         <div class="col-lg-3">
+            {{-- DANH MỤC --}}
             <h2 class="h5 pb-2 mb-3 border-bottom">Danh sách danh mục</h2>
-            <ul class="list-unstyled mb-0">
-                @forelse($danhMucs as $danhMuc)
+            <ul class="list-unstyled mb-3">
+                @foreach($danhMucs as $danhMuc)
                 <li class="mb-2">
-                    <a class="category-link text-decoration-none" href="{{ url('/Shop?danh_muc=' . $danhMuc->id) }}">
+                    <a class="category-link text-decoration-none"
+                    href="{{ request()->fullUrlWithQuery(['danh_muc' => $danhMuc->id]) }}">
                         {{ $danhMuc->ten_danh_muc }}
                     </a>
                 </li>
-                @empty
-                <li class="text-muted small">Chưa có danh mục nào</li>
-                @endforelse
+                @endforeach
             </ul>
+
+            {{-- KHOẢNG GIÁ --}}
+            <h2 class="h5 pb-2 mb-3 border-bottom">Khoảng giá</h2>
+
+            <ul class="list-unstyled mb-3">
+                <div class="mb-3">
+                    <input type="range" id="priceRange"
+                        min="{{ $minPrice }}"
+                        max="{{ $maxPrice }}"
+                        value="{{ request('max_price', $maxPrice) }}"
+                        class="form-range">
+
+                    <div class="d-flex justify-content-between">
+                        <small id="minValue">{{ number_format($minPrice) }}đ</small>
+                        <small id="maxValue">{{ number_format(request('max_price', $maxPrice)) }}đ</small>
+                    </div>
+
+                    <button onclick="filterPrice()" class="btn btn-sm btn-success mt-2 w-100">
+                        Áp dụng
+                    </button>
+                </div>
+            </ul>
+
+            {{-- SIZE --}}
+            <h2 class="h5 pb-2 mb-3 border-bottom">Kích thước</h2>
+            <ul class="list-unstyled mb-3">
+                @foreach($sizes as $size)
+                <li class="mb-2">
+                    <a class="category-link text-decoration-none"
+                    href="{{ request()->fullUrlWithQuery(['size' => $size->ten_kich_thuoc]) }}">
+                        {{ $size->ten_kich_thuoc }}
+                    </a>
+                </li>
+                @endforeach
+            </ul>
+
+            {{-- MÀU --}}
+            <h2 class="h5 pb-2 mb-3 border-bottom">Màu sắc</h2>
+            <ul class="list-unstyled mb-3">
+                @foreach($colors as $color)
+                <li class="mb-2">
+                    <a class="category-link text-decoration-none"
+                    href="{{ request()->fullUrlWithQuery(['color' => $color->id]) }}">
+                        {{ $color->ten_mau }}
+                    </a>
+                </li>
+                @endforeach
+            </ul>
+
+            {{-- SẮP XẾP --}}
+            <h2 class="h5 pb-2 mb-3 border-bottom">Sắp xếp</h2>
+            <ul class="list-unstyled mb-3">
+                <li class="mb-2">
+                    <a class="category-link text-decoration-none" href="{{ request()->fullUrlWithQuery(['sort' => 'price_asc']) }}">Giá tăng dần</a>
+                </li>
+                <li class="mb-2">
+                    <a class="category-link text-decoration-none" href="{{ request()->fullUrlWithQuery(['sort' => 'price_desc']) }}">Giá giảm dần</a>
+                </li>
+                <li class="mb-2">
+                    <a class="category-link text-decoration-none" href="{{ request()->fullUrlWithQuery(['sort' => 'new']) }}">Mới nhất</a>
+                </li>
+            </ul>
+
         </div>
 
         <style>
@@ -232,6 +295,23 @@ value="{{ old('q', $tuKhoa ?? request('q')) }}">
     </div>
 </section>
 
+<script>
+    const slider = document.getElementById("priceRange");
+    const maxValue = document.getElementById("maxValue");
 
+    slider.oninput = function () {
+        maxValue.innerText = new Intl.NumberFormat('vi-VN').format(this.value) + 'đ';
+    };
+
+    function filterPrice() {
+        let max = slider.value;
+
+        let url = new URL(window.location.href);
+        url.searchParams.set('min_price', 0);
+        url.searchParams.set('max_price', max);
+
+        window.location.href = url.toString();
+    }
+</script>
 @include('client.layout.scripts')
 @include('client.layout.footer')
