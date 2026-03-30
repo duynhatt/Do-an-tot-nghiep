@@ -350,6 +350,74 @@
     </div>
 </section>
 
+<section class="py-5 bg-light">
+    <div class="container">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1 class="h1 mb-0">Đánh giá nổi bật</h1>
+
+            {{-- Nút điều hướng --}}
+            <div>
+                <button class="btn btn-light border swiper-prev me-2">←</button>
+                <button class="btn btn-light border swiper-next">→</button>
+            </div>
+        </div>
+
+        <div class="swiper mySwiper">
+            <div class="swiper-wrapper">
+
+                @forelse($danhGias as $dg)
+                <div class="swiper-slide">
+
+                    <div class="card border-0 shadow-sm h-100 p-4 rounded-4">
+
+                        <div class="mb-2 text-warning">
+                            @for($i = 1; $i <= 5; $i++)
+                                <i class="bi bi-star{{ $i <= $dg->so_sao ? '-fill' : '' }}"></i>
+                            @endfor
+                        </div>
+
+                        <h6 class="fw-bold mb-1">
+                            {{ $dg->user->name ?? 'Khách hàng' }}
+                            <span class="text-success">✔</span>
+                        </h6>
+
+                        <p class="text-muted small mb-0">
+                            "{{ $dg->noi_dung }}"
+                        </p>
+
+                    </div>
+
+                </div>
+                @empty
+                    <p class="text-muted">Chưa có đánh giá nào</p>
+                @endforelse
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+    var swiper = new Swiper(".mySwiper", {
+        slidesPerView: 3,
+        spaceBetween: 20,
+        loop: true,
+
+        navigation: {
+            nextEl: ".swiper-next",
+            prevEl: ".swiper-prev",
+        },
+
+        breakpoints: {
+            0: { slidesPerView: 1 },
+            768: { slidesPerView: 2 },
+            992: { slidesPerView: 3 }
+        }
+    });
+</script>
+</section>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         function initStrip(containerId) {
