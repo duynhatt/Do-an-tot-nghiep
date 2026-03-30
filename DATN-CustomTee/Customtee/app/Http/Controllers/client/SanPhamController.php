@@ -61,6 +61,19 @@ class SanPhamController extends Controller
         $totalRating = BinhLuan::where('san_pham_id', $sanPham->id)->count();
         $avgRating = round($avgRating, 1);
 
+        // Tối đa 48 sản phẩm
+        $sanPhamCungDanhMuc = SanPham::with('category')
+            ->where('trang_thai', true)
+            ->where('danh_muc_id', $sanPham->danh_muc_id)
+            ->where('id', '!=', $sanPham->id)
+            ->whereHas('danhMuc', fn ($q) => $q->where('trang_thai', 1))
+            ->withMin(['variants' => function ($q) {
+                $q->where('trang_thai', 1);
+            }], 'gia')
+            ->orderBy('id', 'desc')
+            ->take(48)
+            ->get();
+
         return view('client.productdetail', compact(
             'sanPham',
             'giaMacDinh',
@@ -68,7 +81,8 @@ class SanPhamController extends Controller
             'totalStock',
             'danhGias',
             'avgRating',
-            'totalRating'
+            'totalRating',
+            'sanPhamCungDanhMuc'
         ));
     }
 }

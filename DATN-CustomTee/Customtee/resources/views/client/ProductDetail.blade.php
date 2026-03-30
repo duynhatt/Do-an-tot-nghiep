@@ -21,9 +21,16 @@
 
         <div class="col-lg-5">
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-                <img src="{{ asset('storage/' . $sanPham->hinh_anh_chinh) }}"
-                    class="img-fluid w-100 product-main-img"
-                    alt="{{ $sanPham->ten_san_pham }}">
+                <div class="ratio ratio-1x1 bg-light product-main-media">
+                    <img src="{{ asset('storage/' . $sanPham->hinh_anh_chinh) }}"
+                        class="product-main-img w-100 h-100"
+                        width="800"
+                        height="800"
+                        style="object-fit: contain;"
+                        alt="{{ $sanPham->ten_san_pham }}"
+                        fetchpriority="high"
+                        decoding="async">
+                </div>
             </div>
             <!-- Album -->
         </div>
@@ -188,9 +195,166 @@
 
         </div>
     </div>
+
+    @php
+        $relatedSlides = $sanPhamCungDanhMuc->chunk(4);
+    @endphp
+    @if($sanPhamCungDanhMuc->isNotEmpty())
+    <div class="row mt-5 pt-4 border-top">
+        <div class="col-12">
+            <h4 class="fw-bold mb-4">Sản phẩm có liên quan</h4>
+            <div class="related-carousel d-flex align-items-center gap-2 gap-md-3">
+                <button type="button"
+                    class="btn btn-outline-secondary related-carousel-prev flex-shrink-0 rounded-circle p-2 p-md-3"
+                    aria-controls="relatedCarouselViewport"
+                    aria-label="Xem nhóm trước"
+                    disabled>
+                    <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                </button>
+                <div class="related-carousel-viewport flex-grow-1" id="relatedCarouselViewport"
+                    role="region"
+                    aria-roledescription="carousel"
+                    aria-label="Sản phẩm cùng danh mục"
+                    tabindex="0">
+                    <div class="related-carousel-track">
+                        @foreach($relatedSlides as $slideGroup)
+                        <div class="related-carousel-slide flex-shrink-0">
+                            <div class="row g-3 row-cols-2 row-cols-md-4">
+                                @foreach($slideGroup as $spLienQuan)
+                                <div class="col">
+                                    <div class="card product-wap related-product-card rounded-0 h-100 border shadow-sm">
+                                        <div class="card rounded-0 border-0">
+                                            <a href="{{ route('sanpham.chitiet', $spLienQuan->slug) }}" class="d-block related-product-img-link">
+                                                <img class="card-img rounded-0 related-product-thumb"
+                                                    src="{{ $spLienQuan->hinh_anh_chinh ? asset('storage/' . $spLienQuan->hinh_anh_chinh) : asset('img/shop_01.jpg') }}"
+                                                    width="400"
+                                                    height="533"
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                    alt="{{ $spLienQuan->ten_san_pham }}">
+                                            </a>
+                                            <div class="card-img-overlay rounded-0 product-overlay d-flex align-items-center justify-content-center">
+                                                <ul class="list-unstyled">
+                                                    <li>
+                                                        <a class="btn btn-success text-white"
+                                                            href="{{ route('sanpham.chitiet', $spLienQuan->slug) }}"
+                                                            title="Xem chi tiết">
+                                                            <i class="far fa-eye"></i>
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <div class="card-body py-3">
+                                            <a href="{{ route('sanpham.chitiet', $spLienQuan->slug) }}"
+                                                class="h6 text-decoration-none product-title d-block text-secondary small">
+                                                {{ $spLienQuan->ten_san_pham }}
+                                            </a>
+                                            <p class="text-end mb-0 mt-2 text-success fw-semibold small">
+                                                @if($spLienQuan->variants_min_gia)
+                                                {{ number_format($spLienQuan->variants_min_gia, 0, ',', '.') }}đ
+                                                @else
+                                                Liên hệ
+                                                @endif
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                <button type="button"
+                    class="btn btn-outline-secondary related-carousel-next flex-shrink-0 rounded-circle p-2 p-md-3"
+                    aria-controls="relatedCarouselViewport"
+                    aria-label="Xem nhóm sau"
+                    @if($relatedSlides->count() <= 1) disabled @endif>
+                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                </button>
+            </div>
+            @if($relatedSlides->count() > 1)
+            <p class="text-center text-muted small mt-3 mb-0 related-carousel-counter" aria-live="polite">
+                <span class="related-carousel-current">1</span> / <span class="related-carousel-total">{{ $relatedSlides->count() }}</span>
+            </p>
+            @endif
+        </div>
+    </div>
+    @endif
 </div>
 
 <style>
+    .product-wap {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .product-wap .card-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .product-wap .product-title {
+        min-height: 48px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .related-product-card {
+        border-color: #dee2e6 !important;
+    }
+
+    /* Grid: mỗi slide = 100% khung ngay từ đầu, tránh ảnh bung kích thước gốc trước khi JS chạy */
+    .related-carousel-viewport {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 100%;
+        grid-auto-rows: minmax(0, auto);
+        align-items: start;
+        scroll-snap-type: x mandatory;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        outline: none;
+    }
+
+    .related-carousel-viewport::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .related-carousel-track {
+        display: contents;
+    }
+
+    .related-carousel-slide {
+        min-width: 0;
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        box-sizing: border-box;
+    }
+
+    .related-product-img-link {
+        position: relative;
+        overflow: hidden;
+        aspect-ratio: 3 / 4;
+        background-color: #f8f9fa;
+    }
+
+    .related-product-thumb {
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
     .product-breadcrumb {
         padding: 1rem 0;
         border-bottom: 0px solid #eee;
@@ -220,11 +384,14 @@
 
     .product-main-img {
         transition: transform 0.3s ease;
-         border: 1px solid #555555;
-    border-radius: 6px;
     }
 
-    .product-main-img:hover {
+    .product-main-media {
+        border: 1px solid #555555;
+        border-radius: 6px;
+    }
+
+    .product-main-media:hover .product-main-img {
         transform: scale(1.03);
     }
 
@@ -513,5 +680,73 @@
             .catch(() => alert('Có lỗi xảy ra. Vui lòng thử lại.'))
             .finally(() => { buyNowBtn.disabled = false; });
         });
+
+        (function initRelatedCarousel() {
+            const viewport = document.getElementById('relatedCarouselViewport');
+            const prevBtn = document.querySelector('.related-carousel-prev');
+            const nextBtn = document.querySelector('.related-carousel-next');
+            const slides = viewport ? viewport.querySelectorAll('.related-carousel-slide') : [];
+            const currentEl = document.querySelector('.related-carousel-current');
+            const totalEl = document.querySelector('.related-carousel-total');
+
+            if (!viewport || slides.length === 0 || !prevBtn || !nextBtn) {
+                return;
+            }
+
+            function slideWidth() {
+                return viewport.clientWidth;
+            }
+
+            function maxScrollLeft() {
+                return Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+            }
+
+            function updateRelatedNav() {
+                const maxS = maxScrollLeft();
+                const left = viewport.scrollLeft;
+                prevBtn.disabled = left <= 2;
+                nextBtn.disabled = left >= maxS - 2;
+
+                const w = slideWidth();
+                const idx = w > 0 ? Math.min(slides.length, Math.max(1, Math.round(left / w) + 1)) : 1;
+                if (currentEl) {
+                    currentEl.textContent = String(idx);
+                }
+                if (totalEl && slides.length) {
+                    totalEl.textContent = String(slides.length);
+                }
+            }
+
+            function scrollByOne(dir) {
+                viewport.scrollBy({ left: dir * slideWidth(), behavior: 'smooth' });
+            }
+
+            prevBtn.addEventListener('click', function () {
+                scrollByOne(-1);
+            });
+            nextBtn.addEventListener('click', function () {
+                scrollByOne(1);
+            });
+
+            viewport.addEventListener('scroll', function () {
+                window.requestAnimationFrame(updateRelatedNav);
+            }, { passive: true });
+
+            viewport.addEventListener('keydown', function (e) {
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    scrollByOne(-1);
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    scrollByOne(1);
+                }
+            });
+
+            window.addEventListener('resize', function () {
+                window.requestAnimationFrame(updateRelatedNav);
+            });
+
+            updateRelatedNav();
+        })();
     });
 </script>
