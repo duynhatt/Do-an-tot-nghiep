@@ -827,6 +827,10 @@
             });
 
             let currentStatus = '';
+            const ordersByStatusFilters = {
+                from: @json($startDate->format('Y-m-d')),
+                to: @json($endDate->format('Y-m-d')),
+            };
 
             $('.order-status-card').click(function() {
 
@@ -850,7 +854,9 @@
 
                 $.get("{{ route('admin.dashboard.orders-by-status') }}", {
                     status: status,
-                    page: page
+                    page: page,
+                    from: ordersByStatusFilters.from,
+                    to: ordersByStatusFilters.to
                 }, function(res) {
 
                     let html = '';

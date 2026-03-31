@@ -19,6 +19,9 @@ class ShopController extends Controller
     {
         $danhMucs = Category::hienThi()->orderBy('ten_danh_muc')->get();
         $tuKhoa = $request->get('q');
+        $selectedDanhMucs = array_filter((array) $request->input('danh_muc', []), fn($id) => is_numeric($id));
+        $selectedSizes = array_filter((array) $request->input('size', []), fn($id) => is_numeric($id));
+        $selectedColors = array_filter((array) $request->input('color', []), fn($id) => is_numeric($id));
 
         $query = SanPham::with('category')
             ->where('trang_thai', true)
@@ -33,8 +36,8 @@ class ShopController extends Controller
                 $q->where('trang_thai', 1);
             }], 'gia');
 
-        if ($request->filled('danh_muc')) {
-            $query->where('danh_muc_id', $request->danh_muc);
+        if (!empty($selectedDanhMucs)) {
+            $query->whereIn('danh_muc_id', $selectedDanhMucs);
         }
 
         $tableVariant = (new BienThe())->getTable();
@@ -52,25 +55,38 @@ class ShopController extends Controller
         $sizes = KichThuoc::all();
         $colors = MauSac::all();
 
-        if ($request->filled('min_price') && $request->filled('max_price')) {
-            $query->whereHas('variants', function ($q) use ($request) {
+        $inputMinPrice = $request->filled('min_price') ? (float) $request->min_price : null;
+        $inputMaxPrice = $request->filled('max_price') ? (float) $request->max_price : null;
+
+        if (!is_null($inputMinPrice) || !is_null($inputMaxPrice)) {
+            if (!is_null($inputMinPrice) && !is_null($inputMaxPrice) && $inputMinPrice > $inputMaxPrice) {
+                [$inputMinPrice, $inputMaxPrice] = [$inputMaxPrice, $inputMinPrice];
+            }
+
+            $query->whereHas('variants', function ($q) use ($inputMinPrice, $inputMaxPrice) {
+                $q->where('trang_thai', 1);
+
+                if (!is_null($inputMinPrice)) {
+                    $q->where(DB::raw('COALESCE(gia_khuyen_mai, gia)'), '>=', $inputMinPrice);
+                }
+
+                if (!is_null($inputMaxPrice)) {
+                    $q->where(DB::raw('COALESCE(gia_khuyen_mai, gia)'), '<=', $inputMaxPrice);
+                }
+            });
+        }
+
+        if (!empty($selectedSizes)) {
+            $query->whereHas('variants', function ($q) use ($selectedSizes) {
                 $q->where('trang_thai', 1)
-                ->whereBetween(DB::raw('COALESCE(gia_khuyen_mai, gia)'), [
-                    $request->min_price,
-                    $request->max_price
-                ]);
+                    ->whereIn('kich_thuoc_id', $selectedSizes);
             });
         }
 
-        if ($request->filled('size')) {
-            $query->whereHas('variants', function ($q) use ($request) {
-                $q->where('kich_thuoc_id', $request->size);
-            });
-        }
-
-        if ($request->filled('color')) {
-            $query->whereHas('variants', function ($q) use ($request) {
-                $q->where('mau_sac_id', $request->color);
+        if (!empty($selectedColors)) {
+            $query->whereHas('variants', function ($q) use ($selectedColors) {
+                $q->where('trang_thai', 1)
+                    ->whereIn('mau_sac_id', $selectedColors);
             });
         }
 

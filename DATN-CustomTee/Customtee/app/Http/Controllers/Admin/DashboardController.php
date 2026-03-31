@@ -407,8 +407,30 @@ class DashboardController extends Controller
     public function ordersByStatus(Request $request)
     {
         $status = $request->status;
+        $from = $request->input('from');
+        $to = $request->input('to');
 
         $query = DonHang::with('nguoiDung');
+
+        if (!empty($from) || !empty($to)) {
+            try {
+                $startDate = $from ? Carbon::parse($from)->startOfDay() : Carbon::today()->startOfDay();
+                $endDate = $to ? Carbon::parse($to)->endOfDay() : Carbon::parse($from)->endOfDay();
+
+                if ($startDate->gt($endDate)) {
+                    [$startDate, $endDate] = [$endDate->startOfDay(), $startDate->endOfDay()];
+                }
+
+                $query->whereBetween('created_at', [$startDate, $endDate]);
+            } catch (\Throwable $e) {
+                Log::warning('Invalid orders-by-status filter from/to', [
+                    'from' => $from,
+                    'to' => $to,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         if ($status === 'tra_hang') {
             $query->where('yeu_cau_tra', true);
         } else {
