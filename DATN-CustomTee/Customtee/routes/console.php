@@ -4,12 +4,12 @@ use App\Models\DonHang;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Lệnh auto hoàn thành đơn hàng sau 3 ngày ở trạng thái "Đã giao"
 Artisan::command('orders:auto-complete-delivered', function () {
     $this->info('Bắt đầu auto hoàn thành đơn "Đã giao" đủ 3 ngày...');
 
@@ -43,3 +43,5 @@ Artisan::command('orders:auto-complete-delivered', function () {
 
     $this->info("Đã tự động hoàn thành {$count} đơn hàng.");
 })->purpose('Tự động chuyển các đơn \"Đã giao\" sang \"Đã hoàn thành\" sau 3 ngày');
+//php artisan schedule:work
+Schedule::command('orders:auto-complete-delivered')->everyMinute();
