@@ -3,6 +3,7 @@
         <h5 class="mb-0 fw-semibold">Trạng thái đơn hàng</h5>
     </div>
     <div class="card-body p-4">
+
         @php
             $statusMap = [
                 'cho_xac_nhan' => ['Chờ xác nhận', 'warning', 'bi bi-hourglass-split', 'Đang chờ xác nhận từ cửa hàng'],
@@ -39,11 +40,13 @@
             </div>
 
             <p class="text-muted mb-4">{{ $current[3] }}</p>
+
             @if (in_array($donHang->trang_thai, ['da_giao', 'da_hoan_thanh']) && $donHang->da_giao_at)
                 <div class="alert alert-light border small mb-4">
                     <strong>Thời gian đã giao:</strong> {{ $donHang->da_giao_at->format('d/m/Y H:i') }}
                 </div>
             @endif
+
             <div class="d-flex justify-content-between position-relative mt-4 timeline-compact">
                 <div
                     class="timeline-step {{ in_array($donHang->trang_thai, ['cho_xac_nhan', 'dang_xu_ly', 'dang_giao', 'da_giao', 'da_hoan_thanh']) ? 'active' : '' }}">
@@ -67,38 +70,28 @@
             </div>
         @endif
 
-
+        {{-- ==================== PHẦN YÊU CẦU HOÀN TIỀN ==================== --}}
         @php
-            $showRefundButton =
-                ($donHang->phuong_thuc_thanh_toan === 'vnpay' &&
-                    !in_array($donHang->trang_thai, ['da_hoan_thanh', 'cho_xac_nhan', 'dang_giao', 'da_huy'])) ||
-                ($donHang->phuong_thuc_thanh_toan === 'cod' && $donHang->trang_thai === 'da_giao');
-
             $yeuCauHoanTien = $donHang->refunds()->latest()->first();
 
             $refundStatusMap = [
                 'cho_xu_ly' => [
                     'Chờ xác nhận',
                     'warning',
-                    'glyphicon glyphicon-hourglass',
+                    'bi bi-hourglass',
                     'Yêu cầu hoàn tiền đang chờ cửa hàng xác nhận.',
                 ],
                 'da_chap_nhan' => [
                     'Đã chấp nhận',
                     'success',
-                    'glyphicon glyphicon-refresh',
+                    'bi bi-arrow-repeat',
                     'Đang kiểm tra và chuẩn bị hoàn tiền.',
                 ],
-                'da_tu_choi' => [
-                    'Đã từ chối',
-                    'danger',
-                    'glyphicon glyphicon-remove-circle',
-                    'Yêu cầu hoàn tiền đã bị từ chối.',
-                ],
+                'da_tu_choi' => ['Đã từ chối', 'danger', 'bi bi-x-circle', 'Yêu cầu hoàn tiền đã bị từ chối.'],
                 'da_hoan_tien' => [
                     'Đã hoàn tiền',
                     'primary',
-                    'glyphicon glyphicon-ok-circle',
+                    'bi bi-check-circle',
                     'Hoàn tiền thành công cho khách hàng.',
                 ],
             ];
@@ -107,34 +100,39 @@
                 ? $refundStatusMap[$yeuCauHoanTien->trang_thai] ?? [
                         'Không xác định',
                         'secondary',
-                        'glyphicon glyphicon-question-sign',
+                        'bi bi-question-circle',
                         '',
                     ]
                 : null;
-            $canCreateNewRefundRequest = !$yeuCauHoanTien || $yeuCauHoanTien->trang_thai === 'da_tu_choi';
+
+            $canCreateNewRefund = !$yeuCauHoanTien || $yeuCauHoanTien->trang_thai === 'da_tu_choi';
+
+            // Logic mới theo yêu cầu của bạn
+            if ($donHang->phuong_thuc_thanh_toan === 'vnpay') {
+                $showRefundButton = $donHang->trang_thai === 'da_huy' && $canCreateNewRefund;
+            } elseif ($donHang->phuong_thuc_thanh_toan === 'cod') {
+                $showRefundButton = $donHang->trang_thai === 'da_giao' && $canCreateNewRefund;
+            } else {
+                $showRefundButton = false;
+            }
+
+            // Kiểm tra thời hạn hoàn tiền (3 ngày)
+            $hoanThanhTime = $donHang->da_hoan_thanh_at ?? $donHang->updated_at;
+            $conTrongThoiHan = $hoanThanhTime && \Carbon\Carbon::parse($hoanThanhTime)->addDays(3)->isFuture();
         @endphp
 
         @if ($showRefundButton)
-
-            @php
-                $hoanThanhTime = $donHang->da_hoan_thanh_at ?? $donHang->updated_at;
-                $conTrongThoiHan = $hoanThanhTime && \Carbon\Carbon::parse($hoanThanhTime)->addDays(3)->isFuture();
-            @endphp
-
             @if ($conTrongThoiHan)
-
-                @if (!$canCreateNewRefundRequest && $yeuCauHoanTien && $currentRefund)
+                @if ($yeuCauHoanTien && $currentRefund && !$canCreateNewRefund)
+                    {{-- Hiển thị thông tin yêu cầu hoàn tiền đang xử lý --}}
                     <div class="mt-4 card border-{{ $currentRefund[1] }} shadow-sm">
                         <div class="card-header bg-{{ $currentRefund[1] }} text-white fw-semibold">
-                            <i class="{{ $currentRefund[2] }} me-2"></i>
-                            Yêu cầu hoàn tiền
+                            <i class="{{ $currentRefund[2] }} me-2"></i> Yêu cầu hoàn tiền
                         </div>
                         <div class="card-body small">
                             <div class="d-flex justify-content-between mb-2">
                                 <span class="text-muted">Trạng thái:</span>
-                                <span class="badge bg-{{ $currentRefund[1] }}">
-                                    {{ $currentRefund[0] }}
-                                </span>
+                                <span class="badge bg-{{ $currentRefund[1] }}">{{ $currentRefund[0] }}</span>
                             </div>
                             <div class="d-flex justify-content-between mb-2">
                                 <span class="text-muted">Số tiền:</span>
@@ -151,29 +149,29 @@
                         </div>
                     </div>
                 @else
+                    {{-- Nút yêu cầu hoàn tiền --}}
                     <div class="mt-4">
-                        <button type="button" class="btn btn-warning btn-block" data-bs-toggle="modal"
+                        <button type="button" class="btn btn-warning btn-block w-100" data-bs-toggle="modal"
                             data-bs-target="#modalYeuCauHoanTra">
-                            <i class="glyphicon glyphicon-arrow-left"></i>
-                            Yêu cầu hoàn tiền
+                            <i class="bi bi-arrow-left-circle me-2"></i> Yêu cầu hoàn tiền
                         </button>
                     </div>
                 @endif
             @else
                 <div class="alert alert-info mt-4 text-center">
-                    <i class="glyphicon glyphicon-info-sign"></i>
+                    <i class="bi bi-info-circle me-2"></i>
                     Hết thời gian yêu cầu hoàn tiền (quá 3 ngày kể từ khi hoàn thành)
                 </div>
             @endif
-
         @endif
 
-        @if ($donHang->trang_thai === 'cho_xac_nhan')
+        {{-- Nút hủy đơn khi đang chờ xác nhận --}}
+        @if ($donHang->trang_thai === 'cho_xac_nhan' || $donHang->trang_thai === 'dang_xu_ly')
             <div class="mt-4">
                 <form action="{{ route('order.cancel', $donHang->id) }}" method="post">
                     @csrf
-                    <button class="btn btn-danger btn-sm">
-                        <i class="glyphicon glyphicon-remove"></i> Hủy đơn
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="bi bi-x-circle me-2"></i> Hủy đơn
                     </button>
                 </form>
             </div>

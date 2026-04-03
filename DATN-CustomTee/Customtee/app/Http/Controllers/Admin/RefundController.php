@@ -96,9 +96,22 @@ class RefundController extends Controller
         }
     }
 
-    public function RefundComplete(Refund $refund)
+    public function RefundComplete(Request $request, Refund $refund)
     {
-        $refund->update(['trang_thai' => 'da_hoan_tien']);
-        return redirect()->back()->with('success', 'Hoàn tiền thành công cho đơn hàng này');
+        $request->validate([
+            'hinh_anh_xac_nhan' => 'required|image|mimes:jpg,jpeg,png|max:2048'
+        ]);
+
+        if ($request->hasFile('hinh_anh_xac_nhan')) {
+            $path = $request->file('hinh_anh_xac_nhan')
+                ->store('refund_confirm', 'public');
+
+            $refund->hinh_anh_xac_nhan = $path;
+        }
+
+        $refund->trang_thai = 'da_hoan_tien';
+        $refund->save();
+
+        return back()->with('success', 'Hoàn tiền thành công');
     }
 }

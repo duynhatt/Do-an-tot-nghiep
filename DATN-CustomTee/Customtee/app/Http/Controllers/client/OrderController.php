@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
-
+use PhpParser\Node\Stmt\If_;
 
 class OrderController extends Controller
 {
@@ -88,7 +88,7 @@ class OrderController extends Controller
             ->where('nguoi_dung_id', Auth::id())
             ->firstOrFail();
 
-        if ($donHang->trang_thai !== DonHang::TRANG_THAI_CHO_XAC_NHAN) {
+        if ($donHang->trang_thai !== DonHang::TRANG_THAI_CHO_XAC_NHAN && $donHang->trang_thai !== DonHang::TRANG_THAI_DANG_XU_LY) {
             return back()->with('error', 'Chỉ có thể hủy đơn khi đơn đang chờ xác nhận.');
         }
 
@@ -129,7 +129,14 @@ class OrderController extends Controller
             $donHang->update(['trang_thai' => DonHang::TRANG_THAI_DA_HUY]);
         });
 
-        return back()->with('success', 'Đơn hàng đã được hủy.');
+        return back()->with(
+            'success',
+            'Đơn hàng đã được hủy.' .
+                ($donHang->phuong_thuc_thanh_toan == 'vnpay'
+                    ? ' Bạn có thể yêu cầu hoàn tiền cho đơn hàng này.'
+                    : ''
+                )
+        );
     }
 
     public function confirm(Request $request, $id)
@@ -165,7 +172,6 @@ class OrderController extends Controller
         if (
             $donHang->trang_thai === 'da_hoan_thanh'
             || $donHang->trang_thai === 'dang_giao'
-            || $donHang->trang_thai === 'da_huy'
             || ($donHang->phuong_thuc_thanh_toan === 'cod' && $donHang->trang_thai !== 'da_giao')
         ) {
             return back()->with('error', 'Đơn hàng không ở trạng thái cho phép yêu cầu hoàn tiền.');
