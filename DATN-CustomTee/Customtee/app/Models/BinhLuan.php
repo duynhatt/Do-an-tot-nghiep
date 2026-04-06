@@ -17,7 +17,13 @@ class BinhLuan extends Model
         'don_hang_id',
         'noi_dung',
         'so_sao',
-        'trang_thai'
+        'trang_thai',
+        'hien_thi_trang_chu',
+    ];
+
+    protected $casts = [
+        'trang_thai' => 'boolean',
+        'hien_thi_trang_chu' => 'boolean',
     ];
 
     // Người bình luận

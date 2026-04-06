@@ -15,6 +15,7 @@ class DonHang extends Model
     /** Trạng thái đơn hàng */
     const TRANG_THAI_CHO_XAC_NHAN = 'cho_xac_nhan';
     const TRANG_THAI_DANG_XU_LY = 'dang_xu_ly';
+    const TRANG_THAI_CHO_DUYET_HUY = 'cho_duyet_huy';
     const TRANG_THAI_DANG_GIAO = 'dang_giao';
     const TRANG_THAI_DA_GIAO = 'da_giao';
     const TRANG_THAI_DA_HOAN_THANH = 'da_hoan_thanh';
@@ -30,7 +31,12 @@ class DonHang extends Model
             ],
             self::TRANG_THAI_DANG_XU_LY => [
                 self::TRANG_THAI_DANG_GIAO    => 'Đang giao',
+                self::TRANG_THAI_CHO_DUYET_HUY => 'Chờ duyệt hủy',
                 self::TRANG_THAI_DA_HUY       => 'Đã hủy',
+            ],
+            self::TRANG_THAI_CHO_DUYET_HUY => [
+                self::TRANG_THAI_DA_HUY       => 'Đã hủy',
+                self::TRANG_THAI_DANG_XU_LY   => 'Đang xử lý',
             ],
             self::TRANG_THAI_DANG_GIAO => [
                 self::TRANG_THAI_DA_GIAO      => 'Đã giao',
@@ -50,6 +56,7 @@ class DonHang extends Model
         $ten = [
             self::TRANG_THAI_CHO_XAC_NHAN   => 'Chờ xác nhận',
             self::TRANG_THAI_DANG_XU_LY     => 'Đang xử lý',
+            self::TRANG_THAI_CHO_DUYET_HUY  => 'Chờ duyệt hủy',
             self::TRANG_THAI_DANG_GIAO      => 'Đang giao',
             self::TRANG_THAI_DA_GIAO        => 'Đã giao',
             self::TRANG_THAI_DA_HOAN_THANH  => 'Đã hoàn thành',
@@ -88,6 +95,11 @@ class DonHang extends Model
         'yeu_cau_tra',
         'ly_do_tra',
         'ngay_yeu_cau_tra',
+        'yeu_cau_huy',
+        'ly_do_yeu_cau_huy',
+        'ly_do_tu_choi_huy',
+        'ly_do_huy_boi_admin',
+        'ngay_yeu_cau_huy',
         'da_giao_at',
     ];
 
@@ -98,6 +110,7 @@ class DonHang extends Model
         'tong_tien' => 'float',
         'yeu_cau_tra' => 'boolean',
         'ngay_yeu_cau_tra' => 'datetime',
+        'ngay_yeu_cau_huy' => 'datetime',
         'da_giao_at' => 'datetime',
     ];
 
@@ -154,7 +167,12 @@ class DonHang extends Model
                     'trang_thai' => 'da_huy',
                     'ly_do_tra' => 'Hết hạn thanh toán',
                     'ngay_yeu_cau_tra' => now(),
-                    'ghi_chu' => 'Tự động hủy đơn hàng vì khách hàng quá hạn thanh toán'
+                    'ghi_chu' => 'Tự động hủy đơn hàng vì khách hàng quá hạn thanh toán',
+                    'yeu_cau_huy' => 0,
+                    'ly_do_yeu_cau_huy' => null,
+                    'ly_do_tu_choi_huy' => null,
+                    'ly_do_huy_boi_admin' => null,
+                    'ngay_yeu_cau_huy' => null,
                 ]);
             });
         }

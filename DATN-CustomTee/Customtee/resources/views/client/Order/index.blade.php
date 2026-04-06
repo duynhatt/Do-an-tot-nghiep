@@ -146,6 +146,8 @@
                                                             'bi bi-hourglass-split',
                                                         ],
                                                         'dang_xu_ly' => ['Đang xử lý', 'info', 'bi bi-gear'],
+                                                        // Dữ liệu cũ có thể đang nằm ở 'cho_duyet_huy' nhưng hiển thị chung như 'đang xử lý'.
+                                                        'cho_duyet_huy' => ['Đang xử lý', 'info', 'bi bi-gear'],
                                                         'dang_giao' => ['Đang giao', 'primary', 'bi bi-truck'],
                                                         'da_giao' => ['Đã giao', 'success', 'bi bi-check2-circle'],
                                                         'da_hoan_thanh' => [

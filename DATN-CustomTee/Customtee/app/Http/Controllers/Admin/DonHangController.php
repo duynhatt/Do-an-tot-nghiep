@@ -32,6 +32,7 @@ class DonHangController extends Controller
             if (in_array($trangThai, [
                 DonHang::TRANG_THAI_CHO_XAC_NHAN,
                 DonHang::TRANG_THAI_DANG_XU_LY,
+                DonHang::TRANG_THAI_CHO_DUYET_HUY,
                 DonHang::TRANG_THAI_DANG_GIAO,
                 DonHang::TRANG_THAI_DA_GIAO,
                 DonHang::TRANG_THAI_DA_HOAN_THANH,
@@ -132,16 +133,31 @@ class DonHangController extends Controller
     public function updateStatus(Request $request, DonHang $donHang)
     {
         $request->validate([
-            'trang_thai' => 'required|string|in:cho_xac_nhan,dang_xu_ly,dang_giao,da_giao,da_hoan_thanh,da_huy',
+            'trang_thai' => 'required|string|in:cho_xac_nhan,dang_xu_ly,cho_duyet_huy,dang_giao,da_giao,da_hoan_thanh,da_huy',
+            'ly_do_huy_boi_admin' => 'nullable|required_if:trang_thai,da_huy|string|max:2000',
         ], [
             'trang_thai.required' => 'Vui lòng chọn trạng thái.',
             'trang_thai.in' => 'Trạng thái không hợp lệ.',
+            'ly_do_huy_boi_admin.required_if' => 'Vui lòng nhập lý do khi hủy đơn.',
         ]);
 
         $trangThaiMoi = $request->trang_thai;
         $latestRefundStatus = Refund::where('don_hang_id', $donHang->id)
             ->latest()
             ->value('trang_thai');
+
+        $isPendingCancelRequest =
+            (bool) $donHang->yeu_cau_huy
+            && in_array($donHang->trang_thai, [
+                DonHang::TRANG_THAI_DANG_XU_LY,
+                DonHang::TRANG_THAI_CHO_DUYET_HUY,
+            ], true);
+
+        // Đơn đang chờ duyệt hủy: bắt buộc dùng nút approve/reject chuyên biệt
+        // để đảm bảo lưu lý do (khi từ chối) và xử lý hoàn tồn kho (khi đồng ý).
+        if ($isPendingCancelRequest) {
+            return back()->with('error', 'Vui lòng duyệt/từ chối yêu cầu hủy bằng nút tương ứng.');
+        }
 
         // Chặn admin chuyển đơn sang "đã hoàn thành" – chỉ khách hàng được xác nhận nhận hàng
         if ($trangThaiMoi === DonHang::TRANG_THAI_DA_HOAN_THANH) {
@@ -200,6 +216,12 @@ class DonHangController extends Controller
         }
 
         if ($trangThaiMoi === DonHang::TRANG_THAI_DA_HUY) {
+            $payload['ly_do_huy_boi_admin'] = $request->ly_do_huy_boi_admin;
+            $payload['yeu_cau_huy'] = 0;
+            $payload['ly_do_tu_choi_huy'] = null;
+            $payload['ly_do_yeu_cau_huy'] = null;
+            $payload['ngay_yeu_cau_huy'] = null;
+
             DB::transaction(function () use ($donHang, $payload) {
                 // Chỉ hoàn tồn kho khi hệ thống đã trừ tồn trước đó.
                 // - COD: trừ ngay khi tạo đơn.
@@ -235,5 +257,87 @@ class DonHangController extends Controller
         return back()->with('success', 'Đã cập nhật trạng thái đơn hàng thành "' . DonHang::tenTrangThai($trangThaiMoi) . '".');
     }
 
-    
+    /**
+     * Admin duyệt yêu cầu hủy đơn (từ trạng thái cho_duyet_huy -> da_huy).
+     */
+    public function approveCancelRequest(DonHang $donHang)
+    {
+        $isPendingCancelRequest =
+            (bool) $donHang->yeu_cau_huy
+            && in_array($donHang->phuong_thuc_thanh_toan, ['vnpay', 'cod'], true)
+            && in_array($donHang->trang_thai, [DonHang::TRANG_THAI_DANG_XU_LY, DonHang::TRANG_THAI_CHO_DUYET_HUY], true);
+
+        if (!$isPendingCancelRequest) {
+            return back()->with('error', 'Đơn hàng không ở trạng thái chờ duyệt hủy.');
+        }
+
+        DB::transaction(function () use ($donHang) {
+            // Chỉ hoàn tồn kho khi hệ thống đã trừ tồn trước đó.
+            // - COD: trừ ngay khi tạo đơn.
+            // - VNPAY: chỉ trừ tồn khi thanh toán thành công (trang_thai_thanh_toan = da_thanh_toan).
+            $shouldRefundInventory = $donHang->phuong_thuc_thanh_toan === 'cod'
+                || $donHang->trang_thai_thanh_toan === 'da_thanh_toan';
+
+            // Với VNPAY chưa thanh toán: đã reserve giỏ bằng `da_dat_hang`,
+            // cần đưa lại các dòng giỏ về "đang trong giỏ" khi admin duyệt hủy.
+            $shouldRestoreCart = $donHang->phuong_thuc_thanh_toan === 'vnpay'
+                && $donHang->trang_thai_thanh_toan !== 'da_thanh_toan';
+
+            $donHang->load('chiTietDonHangs.bienThe');
+            foreach ($donHang->chiTietDonHangs as $ct) {
+                if ($shouldRefundInventory && $ct->bienThe) {
+                    $ct->bienThe->increment('so_luong', $ct->so_luong);
+                }
+
+                if ($shouldRestoreCart) {
+                    GioHang::where('nguoi_dung_id', $donHang->nguoi_dung_id)
+                        ->where('san_pham_id', $ct->san_pham_id)
+                        ->where('bien_the_id', $ct->bien_the_id)
+                        ->where('trang_thai', GioHang::TRANG_THAI_DA_DAT_HANG)
+                        ->update(['trang_thai' => GioHang::TRANG_THAI_DANG_TRONG_GIO]);
+                }
+            }
+
+            $donHang->update([
+                'trang_thai' => DonHang::TRANG_THAI_DA_HUY,
+                'ly_do_tu_choi_huy' => null,
+                'ly_do_huy_boi_admin' => null,
+                // Giữ yeu_cau_huy = 1 để UI cho phép khách yêu cầu hoàn tiền.
+                'ghi_chu' => 'Admin đã duyệt hủy đơn theo yêu cầu của khách',
+            ]);
+        });
+
+        return back()->with('success', 'Đã đồng ý hủy đơn. Khách có thể yêu cầu hoàn tiền.');
+    }
+
+    /**
+     * Admin từ chối yêu cầu hủy đơn (từ trạng thái cho_duyet_huy -> dang_xu_ly).
+     */
+    public function rejectCancelRequest(Request $request, DonHang $donHang)
+    {
+        $request->validate([
+            'ly_do_tu_choi_huy' => 'required|string|max:2000',
+        ], [
+            'ly_do_tu_choi_huy.required' => 'Vui lòng nhập lý do từ chối hủy.',
+        ]);
+
+        $isPendingCancelRequest =
+            (bool) $donHang->yeu_cau_huy
+            && in_array($donHang->phuong_thuc_thanh_toan, ['vnpay', 'cod'], true)
+            && in_array($donHang->trang_thai, [DonHang::TRANG_THAI_DANG_XU_LY, DonHang::TRANG_THAI_CHO_DUYET_HUY], true);
+
+        if (!$isPendingCancelRequest) {
+            return back()->with('error', 'Đơn hàng không ở trạng thái chờ duyệt hủy.');
+        }
+
+        $donHang->update([
+            'trang_thai' => DonHang::TRANG_THAI_DANG_XU_LY,
+            'yeu_cau_huy' => 0,
+            'ly_do_tu_choi_huy' => $request->ly_do_tu_choi_huy,
+            'ghi_chu' => 'Admin từ chối hủy đơn theo yêu cầu của khách',
+        ]);
+
+        return back()->with('success', 'Đã từ chối yêu cầu hủy. Khách sẽ nhận được lý do.');
+    }
+
 }

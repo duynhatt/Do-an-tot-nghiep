@@ -22,8 +22,9 @@
                 <th>Nội dung</th>
                 <th>Số sao</th>
                 <th>Trạng thái</th>
+                <th>Trang chủ</th>
                 <th>Ngày</th>
-                <th width="150">Hành động</th>
+                <th width="260">Hành động</th>
             </tr>
         </thead>
 
@@ -58,14 +59,25 @@
                     @endif
                 </td>
 
+                <td>
+                    @if($bl->hien_thi_trang_chu)
+                        <span class="badge bg-primary">Hiển thị trang chủ</span>
+                    @else
+                        <span class="badge bg-secondary">Không hiển thị</span>
+                    @endif
+                </td>
+
                 <td>{{ $bl->created_at->format('d/m/Y') }}</td>
 
                 <td>
-
-                    {{-- Ẩn / Hiện --}}
                     <a href="{{ route('admin.binh-luan.toggle',$bl->id) }}"
-                       class="btn btn-warning btn-sm">
+                       class="btn btn-warning btn-sm mb-1">
                         Ẩn/Hiện
+                    </a>
+                    <a href="{{ route('admin.binh-luan.toggle-home',$bl->id) }}"
+                       class="btn btn-info btn-sm mb-1 {{ !$bl->trang_thai ? 'disabled' : '' }}"
+                       @if(!$bl->trang_thai) aria-disabled="true" @endif>
+                        Hiển thị trang chủ
                     </a>
                 </td>
             </tr>

@@ -97,14 +97,14 @@
                 </ul>
             </div>
 
-            <div class="- ">
+            {{-- <div class="- ">
                 <ul class="nav pull-right top-menu">
                     <a class="active" href="{{ url('/') }}">
                         <i class="fa fa-dashboard"></i>
                         <span>fashionTee</span>
                     </a>
                 </ul>
-            </div>
+            </div> --}}
         </header>
 
         <!-- Sidebar -->
@@ -114,10 +114,11 @@
                     <ul class="sidebar-menu" id="nav-accordion">
                         <!-- Dashboard -->
                         <li>
-                            <a class="active" href="{{ url('admin') }}">
-                                <i class="fa fa-dashboard"></i>
-                                <span>Dashboard</span>
-                            </a>
+                           <a class="active" href="{{ url('/') }}">
+                        <i class="fa fa-dashboard"></i>
+                        <span>fashionTee</span>
+                    </a>
+                            
                         </li>
 
                         <!-- Categories -->
@@ -190,7 +191,7 @@
                         <li class="sub-menu">
                             <a href="javascript:;">
                                 <i class="fa fa-shopping-cart"></i>
-                                <span>bình luận</span>
+                                <span>đánh giá</span>
                             </a>
                             <ul class="sub">
                                 <li><a href="{{ route('admin.binh-luan.index') }}"> bình luận</a></li>

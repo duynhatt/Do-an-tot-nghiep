@@ -13,6 +13,23 @@ use Carbon\Carbon;
 
 class RefundController extends Controller
 {
+    private function isForcedAcceptCase(Refund $refund): bool
+    {
+        $order = $refund->donHang;
+
+        if (!$order) {
+            return false;
+        }
+
+        return $order->phuong_thuc_thanh_toan === 'vnpay'
+            && $order->trang_thai_thanh_toan === 'da_thanh_toan'
+            && $order->trang_thai === DonHang::TRANG_THAI_DA_HUY
+            && (
+                (bool) $order->yeu_cau_huy
+                || !empty($order->ly_do_huy_boi_admin)
+            );
+    }
+
     public function index(Request $request)
     {
         $query = Refund::with(['donHang', 'user', 'items.chiTietDonHang.sanPham'])
@@ -39,13 +56,23 @@ class RefundController extends Controller
             'images'
         ]);
 
-        return view('admin.hoan-tra.show', compact('refund'));
+        $isForcedAcceptCase = $this->isForcedAcceptCase($refund);
+
+        return view('admin.hoan-tra.show', compact('refund', 'isForcedAcceptCase'));
     }
 
     public function reject(Request $request, Refund $refund)
     {
         if ($refund->da_hoan_tien) {
             return redirect()->back()->with('error', 'Yêu cầu này đã được xử lý trước đó.');
+        }
+
+        $refund->loadMissing('donHang');
+        if ($this->isForcedAcceptCase($refund)) {
+            return redirect()->back()->with(
+                'error',
+                'Đơn online đã thanh toán và bị admin hủy chủ động thì không được từ chối hoàn tiền.'
+            );
         }
 
         DB::beginTransaction();

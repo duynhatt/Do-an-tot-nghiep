@@ -34,7 +34,8 @@ class BinhLuanController extends Controller
             'don_hang_id' => $request->don_hang_id,
             'noi_dung' => $request->noi_dung,
             'so_sao' => $request->so_sao,
-            'trang_thai' => 1
+            'trang_thai' => 1,
+            'hien_thi_trang_chu' => 0,
         ]);
 
         return back()->with('success', 'Đánh giá thành công');
@@ -67,8 +68,26 @@ class BinhLuanController extends Controller
         $binhLuan = BinhLuan::findOrFail($id);
 
         $binhLuan->trang_thai = !$binhLuan->trang_thai;
+        if (!$binhLuan->trang_thai) {
+            // Khi bình luận bị ẩn khỏi hệ thống thì cũng tắt khỏi trang chủ.
+            $binhLuan->hien_thi_trang_chu = false;
+        }
         $binhLuan->save();
 
         return back();
+    }
+
+    public function toggleHome($id)
+    {
+        $binhLuan = BinhLuan::findOrFail($id);
+
+        if (!$binhLuan->trang_thai) {
+            return back()->with('error', 'Bình luận đang ẩn, hãy bật hiển thị trước.');
+        }
+
+        $binhLuan->hien_thi_trang_chu = !$binhLuan->hien_thi_trang_chu;
+        $binhLuan->save();
+
+        return back()->with('success', 'Đã cập nhật hiển thị trang chủ.');
     }
 }
