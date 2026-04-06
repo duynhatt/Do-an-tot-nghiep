@@ -235,5 +235,27 @@ class DonHangController extends Controller
         return back()->with('success', 'Đã cập nhật trạng thái đơn hàng thành "' . DonHang::tenTrangThai($trangThaiMoi) . '".');
     }
 
-    
+    public function chapNhanHoanTien($id)
+    {
+        $donHang = DonHang::findOrFail($id);
+
+        $donHang->yeu_cau_tra = 1;
+
+        $donHang->save();
+
+        return back()->with('success', 'Đã chấp nhận hoàn tiền');
+    }
+
+    public function tuChoiHoanTien(Request $request, $id)
+    {
+        $donHang = DonHang::findOrFail($id);
+
+        $donHang->yeu_cau_tra = 0;
+        $donHang->trang_thai = 'dang_xu_ly';
+        $donHang->ly_do_tra = $request->ly_do_tu_choi;
+
+        $donHang->save();
+
+        return back()->with('error', 'Đã từ chối hoàn tiền');
+    }
 }

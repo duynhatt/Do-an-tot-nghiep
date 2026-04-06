@@ -9,7 +9,7 @@
         crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous">
     </script>
@@ -64,10 +64,26 @@
                 <span class="badge bg-{{ $badge }} fs-5 px-4 py-2">
                     {{ $tenTrangThaiHienTai }}
                 </span>
-                @if ($donHang->yeu_cau_tra)
-                    <span class="badge bg-danger fs-6 px-3 py-2 mt-2 d-inline-block">
-                        <i class="fas fa-undo-alt me-1"></i> Yêu cầu trả hàng
-                    </span>
+                @if ($donHang->trang_thai == 'da_huy' && $donHang->yeu_cau_tra == 0)
+                    <form action="{{ route('admin.don-hang.chap-nhan-hoan-tien', $donHang->id) }}" method="POST">
+                        @csrf
+                        @method('PATCH')
+                        <button class="badge bg-success fs-6 px-3 py-2 mt-2 border-0">
+                            <i class="fas fa-undo-alt me-1"></i> Chấp nhận hoàn tiền
+                        </button>
+                    </form>
+
+                    <form action="{{ route('admin.don-hang.tu-choi-hoan-tien', $donHang->id) }}" method="POST"
+                        class="form-tu-choi">
+                        @csrf
+                        @method('PATCH')
+
+                        <input type="hidden" name="ly_do_tu_choi">
+
+                        <button type="button" class="badge bg-warning fs-6 px-3 py-2 mt-2 border-0 btn-tu-choi">
+                            <i class="fas fa-undo-alt me-1"></i> Từ chối hoàn tiền
+                        </button>
+                    </form>
                 @endif
             </div>
         </div>
@@ -322,5 +338,35 @@
 
         </div>
     </div>
+
+    <script>
+        document.querySelectorAll('.btn-tu-choi').forEach(button => {
+            button.addEventListener('click', function() {
+                let form = this.closest('form');
+
+                Swal.fire({
+                    title: 'Nhập lý do từ chối',
+                    input: 'textarea',
+                    inputPlaceholder: 'Nhập lý do...',
+                    inputAttributes: {
+                        'aria-label': 'Nhập lý do'
+                    },
+                    showCancelButton: true,
+                    confirmButtonText: 'Xác nhận',
+                    cancelButtonText: 'Hủy',
+                    inputValidator: (value) => {
+                        if (!value || value.trim() === '') {
+                            return 'Bạn phải nhập lý do!';
+                        }
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.querySelector('input[name="ly_do_tu_choi"]').value = result.value;
+                        form.submit();
+                    }
+                });
+            });
+        });
+    </script>
 
 @endsection

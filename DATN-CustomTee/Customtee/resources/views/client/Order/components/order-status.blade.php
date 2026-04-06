@@ -38,6 +38,12 @@
                     <i class="{{ $current[2] }} me-2 fs-4"></i> {{ $current[0] }}
                 </span>
             </div>
+            @if ($donHang->ly_do_tra && $donHang->trang_thai == 'dang_xu_ly')
+                <div class="alert alert-warning mt-2 mb-0">
+                    <strong>Từ chối hủy đơn:</strong><br>
+                    {{ $donHang->ly_do_tra }}
+                </div>
+            @endif
 
             <p class="text-muted mb-4">{{ $current[3] }}</p>
 
@@ -70,7 +76,6 @@
             </div>
         @endif
 
-        {{-- ==================== PHẦN YÊU CẦU HOÀN TIỀN ==================== --}}
         @php
             $yeuCauHoanTien = $donHang->refunds()->latest()->first();
 
@@ -107,60 +112,70 @@
 
             $canCreateNewRefund = !$yeuCauHoanTien || $yeuCauHoanTien->trang_thai === 'da_tu_choi';
 
-            // Logic mới theo yêu cầu của bạn
-            if ($donHang->phuong_thuc_thanh_toan === 'vnpay') {
-                $showRefundButton = $donHang->trang_thai === 'da_huy' && $canCreateNewRefund;
-            } elseif ($donHang->phuong_thuc_thanh_toan === 'cod') {
-                $showRefundButton = $donHang->trang_thai === 'da_giao' && $canCreateNewRefund;
-            } else {
-                $showRefundButton = false;
+            $showRefundButton = false;
+
+            if ($donHang->yeu_cau_tra == 1) {
+                if ($donHang->phuong_thuc_thanh_toan === 'vnpay') {
+                    $showRefundButton = $donHang->trang_thai === 'da_huy' && $canCreateNewRefund;
+                } elseif ($donHang->phuong_thuc_thanh_toan === 'cod') {
+                    $showRefundButton = $donHang->trang_thai === 'da_giao' && $canCreateNewRefund;
+                }
             }
 
-            // Kiểm tra thời hạn hoàn tiền (3 ngày)
             $hoanThanhTime = $donHang->da_hoan_thanh_at ?? $donHang->updated_at;
             $conTrongThoiHan = $hoanThanhTime && \Carbon\Carbon::parse($hoanThanhTime)->addDays(3)->isFuture();
         @endphp
 
+        @if ($yeuCauHoanTien && $currentRefund)
+            <div class="mt-4 card border-{{ $currentRefund[1] }} shadow-sm">
+                <div class="card-header bg-{{ $currentRefund[1] }} text-white fw-semibold">
+                    <i class="{{ $currentRefund[2] }} me-2"></i> Yêu cầu hoàn tiền
+                </div>
+                <div class="card-body small">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Trạng thái:</span>
+                        <span class="badge bg-{{ $currentRefund[1] }}">
+                            {{ $currentRefund[0] }}
+                        </span>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Số tiền:</span>
+                        <strong>
+                            {{ number_format($yeuCauHoanTien->so_tien_yeu_cau ?? 0, 0, ',', '.') }} ₫
+                        </strong>
+                    </div>
+
+                    @if ($yeuCauHoanTien->ly_do)
+                        <div class="mt-2">
+                            <span class="text-muted">Lý do:</span><br>
+                            <small>{{ $yeuCauHoanTien->ly_do }}</small>
+                        </div>
+                    @endif
+                    @if ($yeuCauHoanTien->hinh_anh_xac_nhan)
+                        <div class="mt-2">
+                            <span class="text-muted">Hình ảnh:</span><br>
+                            <img src="{{ asset('storage/' . $yeuCauHoanTien->hinh_anh_xac_nhan) }}" alt="Hình xác nhận"
+                                class="img-fluid rounded" style="max-width: 200px;">
+                        </div>
+                    @endif
+
+                    <p class="text-muted mt-3 mb-0">{{ $currentRefund[3] }}</p>
+                </div>
+            </div>
+        @endif
+
+
         @if ($showRefundButton)
             @if ($conTrongThoiHan)
-                @if ($yeuCauHoanTien && $currentRefund && !$canCreateNewRefund)
-                    {{-- Hiển thị thông tin yêu cầu hoàn tiền đang xử lý --}}
-                    <div class="mt-4 card border-{{ $currentRefund[1] }} shadow-sm">
-                        <div class="card-header bg-{{ $currentRefund[1] }} text-white fw-semibold">
-                            <i class="{{ $currentRefund[2] }} me-2"></i> Yêu cầu hoàn tiền
-                        </div>
-                        <div class="card-body small">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted">Trạng thái:</span>
-                                <span class="badge bg-{{ $currentRefund[1] }}">{{ $currentRefund[0] }}</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted">Số tiền:</span>
-                                <strong>{{ number_format($yeuCauHoanTien->so_tien_yeu_cau ?? 0, 0, ',', '.') }}
-                                    ₫</strong>
-                            </div>
-                            @if ($yeuCauHoanTien->ly_do)
-                                <div class="mt-2">
-                                    <span class="text-muted">Lý do:</span><br>
-                                    <small>{{ $yeuCauHoanTien->ly_do }}</small>
-                                </div>
-                            @endif
-                            <p class="text-muted mt-3 mb-0">{{ $currentRefund[3] }}</p>
-                        </div>
-                    </div>
-                @else
+                @if (!$yeuCauHoanTien || $yeuCauHoanTien->trang_thai === 'da_tu_choi')
                     <div class="mt-4">
                         <button type="button"
                             class="btn btn-warning w-100 d-flex align-items-center justify-content-center gap-2"
-                            data-bs-toggle="modal" data-bs-target="#modalYeuCauHoanTra" aria-label="Yêu cầu hoàn tiền">
+                            data-bs-toggle="modal" data-bs-target="#modalYeuCauHoanTra">
                             <i class="bi bi-arrow-return-left"></i>
                             Yêu cầu hoàn tiền
                         </button>
-
-                        <p class="text-small text-muted text-center mt-2 mb-0">
-                            <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
-                            Đơn hàng của bạn sẽ bị hủy
-                        </p>
                     </div>
                 @endif
             @else
@@ -171,8 +186,7 @@
             @endif
         @endif
 
-        {{-- Nút hủy đơn khi đang chờ xác nhận --}}
-        @if ($donHang->trang_thai === 'cho_xac_nhan' || $donHang->trang_thai === 'dang_xu_ly')
+        @if (($donHang->trang_thai === 'cho_xac_nhan' || $donHang->trang_thai === 'dang_xu_ly') && !$donHang->ly_do_tra)
             <div class="mt-4">
                 <form action="{{ route('order.cancel', $donHang->id) }}" method="post">
                     @csrf

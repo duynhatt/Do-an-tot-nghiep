@@ -77,19 +77,6 @@
                         @enderror
                     </div>
 
-                    @if (!$isOnlineCancelRefund)
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold">Hình ảnh minh chứng (tối đa 5 ảnh)</label>
-                            <input type="file" name="hinh_anh[]" id="hinhAnhInput" class="form-control" accept="image/*"
-                                multiple>
-                            <small class="form-text text-muted d-block mt-1">Hỗ trợ: jpg, jpeg, png. Tối đa 5 ảnh.</small>
-                            <div id="previewContainer" class="mt-3 row g-2"></div>
-                            @error('hinh_anh.*')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    @endif
-
                     <div class="mb-5">
                         <label class="form-label fw-semibold mb-3">Chọn cách cung cấp thông tin tài khoản ngân
                             hàng</label>

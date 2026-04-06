@@ -97,7 +97,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('dat-hang');
     Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
-    
+
     // Mua ngay (không dùng giỏ hàng)
     Route::post('/buy-now', [CheckoutController::class, 'buyNow'])->name('buy-now');
     Route::get('/checkout/buy-now', [CheckoutController::class, 'checkoutBuyNow'])->name('checkout.buy-now');
@@ -136,13 +136,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('don-hang', [DonHangController::class, 'index'])->name('don-hang.index');
     Route::get('don-hang/{donHang}', [DonHangController::class, 'show'])->name('don-hang.show');
     Route::patch('don-hang/{donHang}/status', [DonHangController::class, 'updateStatus'])->name('don-hang.update-status');
-// QUẢN LÝ LIÊN HỆ TRONG ADMIN
-Route::prefix('lien-he')->name('lien-he.')->group(function () {
-    // Chỉ định rõ là \App\Http\Controllers\Admin\ContactController
-    Route::get('/', [\App\Http\Controllers\Admin\ContactController::class, 'index'])->name('index');
-    Route::post('/{id}/status', [\App\Http\Controllers\Admin\ContactController::class, 'updateStatus'])->name('updateStatus'); 
-    Route::delete('/{id}', [\App\Http\Controllers\Admin\ContactController::class, 'destroy'])->name('destroy');
-});
+    // QUẢN LÝ LIÊN HỆ TRONG ADMIN
+
+
+    Route::prefix('lien-he')->name('lien-he.')->group(function () {
+        // Chỉ định rõ là \App\Http\Controllers\Admin\ContactController
+        Route::get('/', [\App\Http\Controllers\Admin\ContactController::class, 'index'])->name('index');
+        Route::post('/{id}/status', [\App\Http\Controllers\Admin\ContactController::class, 'updateStatus'])->name('updateStatus');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\ContactController::class, 'destroy'])->name('destroy');
+    });
 
     Route::get('/hoan-tra', [RefundController::class, 'index'])->name('hoan-tra.index');
     Route::get('/hoan-tra/{refund}', [RefundController::class, 'show'])->name('hoan-tra.show');
@@ -150,8 +152,13 @@ Route::prefix('lien-he')->name('lien-he.')->group(function () {
         ->name('hoan-tra.accept');
     Route::patch('/hoan-tra/{refund}/reject', [RefundController::class, 'reject'])
         ->name('hoan-tra.reject');
-    Route::patch('hoan_tra/{refund}/refund-complete',[RefundController::class,'RefundComplete'])->name('hoan-tra.complete');
+    Route::patch('hoan_tra/{refund}/refund-complete', [RefundController::class, 'RefundComplete'])->name('hoan-tra.complete');
 
+    Route::patch('/don-hang/{id}/chap-nhan-hoan-tien', [DonHangController::class, 'chapNhanHoanTien'])
+        ->name('don-hang.chap-nhan-hoan-tien');
+
+    Route::patch('/don-hang/{id}/tu-choi-hoan-tien', [DonHangController::class, 'tuChoiHoanTien'])
+        ->name('don-hang.tu-choi-hoan-tien');
 });
 
 Route::prefix('admin/variants')->name('variants.')->middleware(['auth', 'admin'])->group(function () {

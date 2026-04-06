@@ -97,14 +97,9 @@ class OrderController extends Controller
         }
 
         DB::transaction(function () use ($donHang) {
-            // Chỉ hoàn tồn kho khi hệ thống đã trừ tồn trước đó.
-            // - COD: trừ tồn ngay khi tạo đơn, dù trang_thai_thanh_toan vẫn là 'chua_thanh_toan'
-            // - VNPAY: chỉ trừ tồn khi return thành công (khi trang_thai_thanh_toan = 'da_thanh_toan')
             $shouldRefundInventory = $donHang->phuong_thuc_thanh_toan === 'cod'
                 || $donHang->trang_thai_thanh_toan === 'da_thanh_toan';
 
-            // Với VNPAY: khi đang "chờ thanh toán lại" thì chúng ta đã reserve giỏ bằng `da_dat_hang`.
-            // Khi hủy đơn thì cần đưa lại các dòng giỏ về trạng thái "đang trong giỏ".
             $shouldRestoreCart = $donHang->phuong_thuc_thanh_toan === 'vnpay'
                 && $donHang->trang_thai_thanh_toan !== 'da_thanh_toan';
 
@@ -126,14 +121,16 @@ class OrderController extends Controller
                         ->update(['trang_thai' => GioHang::TRANG_THAI_DANG_TRONG_GIO]);
                 }
             }
-            $donHang->update(['trang_thai' => DonHang::TRANG_THAI_DA_HUY]);
+            $donHang->update([
+                'trang_thai' => DonHang::TRANG_THAI_DA_HUY,
+            ]);
         });
 
         return back()->with(
             'success',
             'Đơn hàng đã được hủy.' .
                 ($donHang->phuong_thuc_thanh_toan == 'vnpay'
-                    ? ' Bạn có thể yêu cầu hoàn tiền cho đơn hàng này.'
+                    ? ' Bạn có thể yêu cầu hoàn tiền cho đơn hàng này sau khi admin xét duyệt yêu cầu này!'
                     : ''
                 )
         );
@@ -191,7 +188,6 @@ class OrderController extends Controller
             $rules['chi_tiet_ids.*'] = 'exists:don_hang_chi_tiets,id';
             $rules['so_luong'] = 'required|array';
             $rules['so_luong.*'] = 'integer|min:1';
-            $rules['hinh_anh.*'] = 'nullable|image|mimes:jpg,jpeg,png|max:5120';
         }
 
         if (in_array($donHang->phuong_thuc_thanh_toan, ['cod', 'vnpay'])) {
