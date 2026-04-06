@@ -319,21 +319,6 @@
                 </div>
 
                 <div class="col">
-                    <div class="card h-100">
-                        <div class="stat-header"
-                            style="background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);">
-                            <div class="clearfix">
-                                <div style="float:left">
-                                    <h6>Tỷ lệ chuyển đổi</h6>
-                                    <h3>{{ $stats['conversion_rate'] }}</h3>
-                                </div>
-                                <i class="fas fa-percentage fa-2x text-white" style="float:right"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col">
 
                     <div class="card h-100 low-stock-card" style="cursor:pointer" data-toggle="modal"
                         data-target="#lowStockModal">

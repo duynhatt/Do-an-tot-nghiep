@@ -31,17 +31,24 @@
         unset($trangThaiTiepTheo[\App\Models\DonHang::TRANG_THAI_CHO_DUYET_HUY]);
 
         if ($donHang->phuong_thuc_thanh_toan === 'vnpay' && $donHang->trang_thai_thanh_toan !== 'da_thanh_toan') {
-            $trangThaiTiepTheo = array_filter(
-                $trangThaiTiepTheo,
-                fn($key) => $key === \App\Models\DonHang::TRANG_THAI_DA_HUY,
-                ARRAY_FILTER_USE_KEY,
-            );
+            if ($donHang->trang_thai === \App\Models\DonHang::TRANG_THAI_CHO_XAC_NHAN) {
+                $trangThaiTiepTheo = [];
+            } else {
+                $trangThaiTiepTheo = array_filter(
+                    $trangThaiTiepTheo,
+                    fn($key) => $key === \App\Models\DonHang::TRANG_THAI_DA_HUY,
+                    ARRAY_FILTER_USE_KEY,
+                );
+            }
         }
 
         $tenTrangThaiHienTai = \App\Models\DonHang::tenTrangThai($donHang->trang_thai);
         $latestRefund = $donHang->refunds->first();
         $returnRequestedAt = $latestRefund?->created_at ?? $donHang->ngay_yeu_cau_tra;
         $returnReason = $latestRefund?->ly_do ?? $donHang->ly_do_tra;
+        $refundRequestLabel = $donHang->trang_thai === \App\Models\DonHang::TRANG_THAI_DA_GIAO
+            ? 'Yêu cầu trả hàng hoàn tiền'
+            : 'Yêu cầu hoàn tiền';
         $isPendingCancelRequest =
             (bool) $donHang->yeu_cau_huy
             && in_array($donHang->trang_thai, [
@@ -80,7 +87,7 @@
                 @endif
                 @if ($donHang->yeu_cau_tra)
                     <span class="badge bg-danger fs-6 px-3 py-2 mt-2 d-inline-block">
-                        <i class="fas fa-undo-alt me-1"></i> Yêu cầu trả hàng
+                        <i class="fas fa-undo-alt me-1"></i> {{ $refundRequestLabel }}
                     </span>
                 @endif
             </div>
@@ -330,7 +337,7 @@
                             @if ($donHang->yeu_cau_tra)
                                 <div>
                                     <h6 class="fw-semibold text-danger mb-2">
-                                        <i class="fas fa-undo-alt me-2"></i> Yêu cầu trả hàng từ khách
+                                        <i class="fas fa-undo-alt me-2"></i> {{ $refundRequestLabel }} từ khách
                                     </h6>
                                     <div class="alert alert-danger border-0">
                                         <strong>Thời gian:</strong>
@@ -352,7 +359,15 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        @if ($isRefundFlowLocked)
+                        @if (
+                            $donHang->phuong_thuc_thanh_toan === 'vnpay' &&
+                                $donHang->trang_thai_thanh_toan !== 'da_thanh_toan' &&
+                                $donHang->trang_thai === \App\Models\DonHang::TRANG_THAI_CHO_XAC_NHAN)
+                            <div class="alert alert-info text-center py-4 mb-0">
+                                <i class="fas fa-hourglass-half me-2"></i>
+                                Đơn thanh toán online chưa hoàn tất. Vui lòng đợi khách thanh toán lại.
+                            </div>
+                        @elseif ($isRefundFlowLocked)
                             <div class="alert alert-warning text-center py-4 mb-0">
                                 <i class="fas fa-lock me-2"></i>
                                 Không thể chuyển trạng thái đơn hàng.

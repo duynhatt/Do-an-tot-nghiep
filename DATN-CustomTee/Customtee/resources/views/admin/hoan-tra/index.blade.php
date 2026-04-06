@@ -78,9 +78,12 @@
                                         <div class="d-flex align-items-center gap-2">
                                             <i class="bi bi-person-circle fs-5 text-secondary"></i>
                                             <div class="d-flex flex-column">
-                                                <span
-                                                    class="fw-medium">{{ $refund->user->name ?? 'Khách vãng lai' }}</span>
-                                                <small class="text-muted">{{ $refund->user->email ?? '' }}</small>
+                                                <span class="fw-medium">
+                                                    {{ $refund->donHang->ten_nguoi_nhan ?? 'Khách vãng lai' }}
+                                                </span>
+                                                <small class="text-muted">
+                                                    {{ $refund->donHang->so_dien_thoai_nhan_hang ?? $refund->user->phone ?? 'Chưa có số điện thoại' }}
+                                                </small>
                                             </div>
                                         </div>
                                     </td>

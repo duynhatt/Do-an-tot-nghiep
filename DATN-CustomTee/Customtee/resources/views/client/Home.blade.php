@@ -478,7 +478,7 @@
                 <div class="border border-2 rounded-5 p-3 h-100" style="background: #ececee; border-color: rgba(0,0,0,0.08); border-radius: 20px;">
                     <div class="text-center mb-3">
                         <h1 class="hot-sale-section-title">Đang giảm giá</h1>
-                        <p class="hot-sale-section-sub mb-0">Các sản phẩm có giá khuyến mãi từ các biến thể còn hiệu lực.</p>
+                        <p class="hot-sale-section-sub mb-0">Các sản phẩm có giá khuyến mãi</p>
                     </div>
 
                     @if($sanPhamsGiamGia->isNotEmpty())

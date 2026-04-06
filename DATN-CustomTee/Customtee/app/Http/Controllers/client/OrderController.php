@@ -260,14 +260,18 @@ class OrderController extends Controller
         $isOnlineCancelRefund = $donHang->phuong_thuc_thanh_toan === 'vnpay'
             && $donHang->trang_thai === DonHang::TRANG_THAI_DA_HUY
             && $donHang->trang_thai_thanh_toan === 'da_thanh_toan';
+        $isDeliveredReturn = $donHang->trang_thai === DonHang::TRANG_THAI_DA_GIAO;
+        $requiresFullReturn = $isOnlineCancelRefund || $isDeliveredReturn;
         $rules = [
             'ly_do' => ($isOnlineCancelRefund ? 'nullable' : 'required') . '|string|max:2000',
         ];
-        if (!$isOnlineCancelRefund) {
+        if (!$requiresFullReturn) {
             $rules['chi_tiet_ids'] = 'required|array|min:1';
             $rules['chi_tiet_ids.*'] = 'exists:don_hang_chi_tiets,id';
             $rules['so_luong'] = 'required|array';
             $rules['so_luong.*'] = 'integer|min:1';
+        }
+        if (!$isOnlineCancelRefund) {
             $rules['hinh_anh.*'] = 'nullable|image|mimes:jpg,jpeg,png|max:5120';
         }
 
@@ -298,7 +302,7 @@ class OrderController extends Controller
         }
 
         $chiTietIds = [];
-        if (!$isOnlineCancelRefund) {
+        if (!$requiresFullReturn) {
             foreach ($request->chi_tiet_ids as $chiTietId) {
                 $chiTiet = $donHang->chiTietDonHangs->firstWhere('id', $chiTietId);
 
@@ -364,7 +368,7 @@ class OrderController extends Controller
 
             foreach ($chiTietIds as $chiTietId) {
                 $chiTiet = $donHang->chiTietDonHangs->firstWhere('id', $chiTietId);
-                $soLuong = $isOnlineCancelRefund
+                $soLuong = $requiresFullReturn
                     ? (int) $chiTiet->so_luong
                     : (int) ($request->so_luong[$chiTietId] ?? 0);
                 $thanhTien = $soLuong * $chiTiet->don_gia;

@@ -164,6 +164,16 @@ class DonHangController extends Controller
             return back()->with('error', 'Chỉ khách hàng mới có thể xác nhận hoàn thành đơn hàng.');
         }
 
+        // Đơn VNPAY chưa thanh toán: không cho admin hủy/thao tác trạng thái.
+        // Cần chờ khách thanh toán lại hoặc hệ thống tự xử lý theo timeout.
+        if (
+            $donHang->phuong_thuc_thanh_toan === 'vnpay'
+            && $donHang->trang_thai_thanh_toan !== 'da_thanh_toan'
+            && $donHang->trang_thai === DonHang::TRANG_THAI_CHO_XAC_NHAN
+        ) {
+            return back()->with('error', 'Đơn chưa thanh toán online. Vui lòng đợi khách thanh toán lại.');
+        }
+
         // Với đơn thanh toán online (VNPAY), nếu CHƯA thanh toán thành công thì
         // KHÔNG cho phép admin chuyển sang các trạng thái xử lý/giao hàng.
         if (
