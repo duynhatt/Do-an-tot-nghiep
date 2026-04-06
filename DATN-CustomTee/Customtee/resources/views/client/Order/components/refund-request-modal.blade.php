@@ -17,9 +17,18 @@
                         $isOnlineCancelRefund = $donHang->phuong_thuc_thanh_toan === 'vnpay'
                             && $donHang->trang_thai === 'da_huy'
                             && $donHang->trang_thai_thanh_toan === 'da_thanh_toan';
+                        $isDeliveredReturn = $donHang->trang_thai === 'da_giao';
+                        $requiresFullReturn = $isOnlineCancelRefund || $isDeliveredReturn;
                     @endphp
 
-                    @if (!$isOnlineCancelRefund)
+                    @if ($requiresFullReturn)
+                        <div class="alert alert-info mb-4">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Với đơn hàng đã giao, hệ thống chỉ hỗ trợ yêu cầu hoàn trả toàn bộ đơn hàng.
+                        </div>
+                    @endif
+
+                    @if (!$requiresFullReturn)
                         <div class="mb-5">
                             <h6 class="fw-semibold mb-3">Chọn sản phẩm và số lượng muốn hoàn trả</h6>
                             <div class="list-group">
@@ -65,6 +74,34 @@
                             <small class="form-text text-muted mt-2 d-block">
                                 Chọn sản phẩm và điều chỉnh số lượng muốn hoàn trả (tối thiểu 1, tối đa bằng số đã mua).
                             </small>
+                        </div>
+                    @elseif ($isDeliveredReturn)
+                        <div class="mb-5">
+                            <h6 class="fw-semibold mb-3">Sản phẩm sẽ được hoàn trả toàn bộ</h6>
+                            <div class="list-group">
+                                @foreach ($donHang->chiTietDonHangs as $chiTiet)
+                                    <div
+                                        class="list-group-item list-group-item-action d-flex align-items-center justify-content-between flex-wrap gap-3 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ $chiTiet->sanPham->hinh_anh_chinh ? asset('storage/' . $chiTiet->sanPham->hinh_anh_chinh) : 'https://via.placeholder.com/50' }}"
+                                                alt="" class="rounded me-3" width="50" height="50"
+                                                style="object-fit: cover;">
+                                            <div>
+                                                <div class="fw-medium">{{ $chiTiet->sanPham->ten_san_pham }}</div>
+                                                @if ($chiTiet->bienThe)
+                                                    <small class="text-muted">
+                                                        {{ $chiTiet->bienThe->color->ten_mau ?? '—' }} /
+                                                        {{ $chiTiet->bienThe->size->ten_kich_thuoc ?? '—' }}
+                                                    </small>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <div class="small text-muted">
+                                            Hoàn trả toàn bộ: <strong>{{ $chiTiet->so_luong }}</strong>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
                     @endif
 

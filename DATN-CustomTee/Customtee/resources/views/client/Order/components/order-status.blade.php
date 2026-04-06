@@ -94,6 +94,15 @@
                     <strong>Lý do hủy từ cửa hàng:</strong> {{ $donHang->ly_do_huy_boi_admin }}
                 </div>
             @endif
+
+            @if (
+                $donHang->phuong_thuc_thanh_toan === 'cod' &&
+                    in_array($donHang->trang_thai, ['dang_xu_ly', 'cho_duyet_huy'], true) &&
+                    !empty($donHang->ly_do_yeu_cau_huy))
+                <div class="alert alert-info border small mb-4">
+                    <strong>Lý do hủy bạn đã gửi:</strong> {{ $donHang->ly_do_yeu_cau_huy }}
+                </div>
+            @endif
         @endif
 
         {{-- ==================== PHẦN YÊU CẦU HOÀN TIỀN ==================== --}}
@@ -148,6 +157,7 @@
             // Kiểm tra thời hạn hoàn tiền (3 ngày)
             $hoanThanhTime = $donHang->da_hoan_thanh_at ?? $donHang->updated_at;
             $conTrongThoiHan = $hoanThanhTime && \Carbon\Carbon::parse($hoanThanhTime)->addDays(3)->isFuture();
+            $refundButtonLabel = $donHang->trang_thai === 'da_giao' ? 'Hoàn tiền/Trả hàng' : 'Hoàn tiền';
         @endphp
 
         @if ($yeuCauHoanTien && $currentRefund)
@@ -221,9 +231,10 @@
                     <div class="mt-4">
                         <button type="button"
                             class="btn btn-warning w-100 d-flex align-items-center justify-content-center gap-2"
-                            data-bs-toggle="modal" data-bs-target="#modalYeuCauHoanTra" aria-label="Hoàn tiền/trả hàng">
+                            data-bs-toggle="modal" data-bs-target="#modalYeuCauHoanTra"
+                            aria-label="{{ $refundButtonLabel }}">
                             <i class="bi bi-arrow-return-left"></i>
-                            Hoàn tiền/trả hàng
+                            {{ $refundButtonLabel }}
                         </button>
 
                         <p class="text-small text-muted text-center mt-2 mb-0">

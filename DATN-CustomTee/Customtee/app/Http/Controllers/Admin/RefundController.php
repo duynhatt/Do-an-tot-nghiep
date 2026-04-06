@@ -91,22 +91,33 @@ class RefundController extends Controller
 
     public function accept(Request $request, Refund $refund)
     {
-        if ($refund->da_hoan_tien) {
-            return redirect()->back()->with('error', 'Yêu cầu này đã được xử lý trước đó.');
-        }
-
         DB::beginTransaction();
 
         try {
+            // Khóa bản ghi để tránh duyệt trùng khi có nhiều request đồng thời.
+            $refund = Refund::whereKey($refund->id)->lockForUpdate()->firstOrFail();
+            if ($refund->trang_thai !== 'cho_xu_ly') {
+                DB::rollBack();
+                return redirect()->back()->with('error', 'Yêu cầu này không còn ở trạng thái chờ xử lý.');
+            }
+
+            $refund->loadMissing('donHang', 'items.chiTietDonHang.bienThe');
             $refund->update(['trang_thai' => 'da_chap_nhan']);
 
             $order = $refund->donHang;
 
             $amount = (int) $refund->so_tien_yeu_cau;
 
-            foreach ($refund->items as $item) {
-                if ($item->chiTietDonHang?->bienThe) {
-                    $item->chiTietDonHang->bienThe->increment('so_luong', $item->so_luong_yeu_cau);
+            // Chỉ cộng lại tồn kho cho case "trả hàng sau khi đã giao".
+            // Với case đơn online đã thanh toán rồi hủy, tồn đã được cộng ở luồng hủy đơn.
+            $shouldRestockInventory = $order
+                && $order->trang_thai === DonHang::TRANG_THAI_DA_GIAO;
+
+            if ($shouldRestockInventory) {
+                foreach ($refund->items as $item) {
+                    if ($item->chiTietDonHang?->bienThe) {
+                        $item->chiTietDonHang->bienThe->increment('so_luong', $item->so_luong_yeu_cau);
+                    }
                 }
             }
 

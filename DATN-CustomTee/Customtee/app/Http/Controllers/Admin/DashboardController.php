@@ -144,13 +144,10 @@ class DashboardController extends Controller
             ->where('role', '!=', 'admin')
             ->count();
 
-        $conversionRate = $newCustomers > 0 ? round(($ordersCount / $newCustomers) * 100, 2) : 0;
-
         return [
             'revenue'         => number_format($revenue, 0, ',', '.'),
             'orders_count'    => number_format($ordersCount),
             'new_customers'   => number_format($newCustomers),
-            'conversion_rate' => $conversionRate . '%',
         ];
     }
 

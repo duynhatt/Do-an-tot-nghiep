@@ -257,7 +257,12 @@
                             @php
                                 $latestRefund = $donHang->refunds->first();
                                 $refundBadgeMap = [
-                                    'cho_xu_ly' => ['warning', 'Yêu cầu trả hàng'],
+                                    'cho_xu_ly' => [
+                                        'warning',
+                                        $donHang->trang_thai === \App\Models\DonHang::TRANG_THAI_DA_GIAO
+                                            ? 'Yêu cầu trả hàng hoàn tiền'
+                                            : 'Yêu cầu hoàn tiền',
+                                    ],
                                     'da_chap_nhan' => ['primary', 'Đã chấp nhận hoàn tiền'],
                                     'da_tu_choi' => ['danger', 'Đã từ chối hoàn tiền'],
                                     'da_hoan_tien' => ['info', 'Đã hoàn tiền'],

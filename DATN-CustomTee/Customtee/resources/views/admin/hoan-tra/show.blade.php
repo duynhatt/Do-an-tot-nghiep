@@ -4,6 +4,11 @@
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 
+    @php
+        $refundInfoLabel = ($refund->donHang?->trang_thai === \App\Models\DonHang::TRANG_THAI_DA_GIAO)
+            ? 'Thông tin yêu cầu hoàn trả'
+            : 'Thông tin yêu cầu hoàn tiền';
+    @endphp
     <div class="container-fluid px-0">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
             <div>
@@ -61,13 +66,13 @@
                 <div class="card border-0 shadow-sm rounded-3 mb-4">
                     <div class="card-header bg-white border-bottom py-3">
                         <h6 class="mb-0 fw-semibold text-primary">
-                            <i class="bi bi-info-circle me-2"></i>Thông tin yêu cầu hoàn trả
+                            <i class="bi bi-info-circle me-2"></i>{{ $refundInfoLabel }}
                         </h6>
                     </div>
                     <div class="card-body">
-                        <div class="row g-3">
+                        <div class="row g-4">
                             <div class="col-md-6">
-                                <label class="form-label small fw-medium text-muted mb-1">Trạng thái</label>
+                                <label class="form-label small fw-medium text-muted mb-2">Trạng thái</label>
                                 <div>
                                     @php
                                         $statusClasses = [
@@ -86,30 +91,34 @@
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label small fw-medium text-muted mb-1">Số tiền yêu cầu</label>
-                                <h5 class="fw-bold text-danger mb-0">
+                                <label class="form-label small fw-medium text-muted mb-2">Số tiền yêu cầu</label>
+                                <h4 class="fw-bold text-danger mb-0">
                                     {{ number_format($refund->so_tien_yeu_cau, 0, ',', '.') }} ₫
-                                </h5>
-                            </div>
-
-                            <div style="margin-left: 10px" class="col-12">
-                                <label class="form-label small fw-medium text-muted mb-1">Lý do hoàn trả</label>
-                                <p class="mb-0">{{ $refund->ly_do ?? 'Không có lý do cụ thể' }}</p>
+                                </h4>
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label small fw-medium text-muted mb-1">Phương thức hoàn tiền</label>
-                                <p class="mb-0 fw-medium">{{ $refund->phuong_thuc_thanh_toan ?? 'Không xác định' }}</p>
+                                <label class="form-label small fw-medium text-muted mb-2">Phương thức hoàn tiền</label>
+                                <p class="mb-0 fw-medium text-uppercase">{{ $refund->phuong_thuc_thanh_toan ?? 'Không xác định' }}</p>
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label small fw-medium text-muted mb-1">Khách hàng</label>
-                                <div class="d-flex align-items-center gap-2">
+                                <label class="form-label small fw-medium text-muted mb-2">Khách hàng</label>
+                                <div class="d-flex align-items-start gap-2">
                                     <i class="bi bi-person-circle fs-4 text-secondary"></i>
                                     <div>
-                                        <div class="fw-medium">{{ $refund->user->name ?? 'Khách vãng lai' }}</div>
-                                        <small class="text-muted">{{ $refund->user->email ?? 'N/A' }}</small>
+                                        <div class="fw-medium">{{ $refund->donHang?->ten_nguoi_nhan ?? 'Khách vãng lai' }}</div>
+                                        <div class="small text-muted">
+                                            {{ $refund->donHang?->so_dien_thoai_nhan_hang ?? $refund->user?->phone ?? 'Chưa có số điện thoại' }}
+                                        </div>
                                     </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-medium text-muted mb-2">Lý do yêu cầu</label>
+                                <div class="bg-light rounded-3 p-3 border">
+                                    {{ $refund->ly_do ?? 'Không có lý do cụ thể' }}
                                 </div>
                             </div>
                         </div>
@@ -118,13 +127,13 @@
 
                 <div class="card border-0 shadow-sm rounded-3">
                     <div class="card-header bg-white border-bottom py-3">
-                        <h6 class="mb-0 fw-semibold text-primary">
-                            <i class="bi bi-box-seam me-2"></i>Sản phẩm yêu cầu hoàn trả
-                        </h6>
+                        <h5 class="mb-0 fw-semibold text-primary">
+                            <i class="bi bi-box-seam me-2"></i>Sản phẩm yêu cầu
+                        </h5>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0 small">
+                            <table class="table table-hover align-middle mb-0">
                                 <thead class="bg-light-subtle">
                                     <tr>
                                         <th class="ps-4 py-3">Sản phẩm</th>
@@ -146,22 +155,22 @@
                                                     <div class="">
                                                         @if ($sanPham?->hinh_anh_chinh)
                                                             <img src="{{ asset('storage/' . $sanPham->hinh_anh_chinh) }}"
-                                                                alt="{{ $sanPham->ten_san_pham }}" width="90"
-                                                                height="50px" class="rounded">
+                                                                alt="{{ $sanPham->ten_san_pham }}" width="180"
+                                                                height="130" class="rounded shadow-sm refund-product-thumb">
                                                         @else
                                                             <div class="bg-light border rounded d-flex align-items-center justify-content-center"
-                                                                style="width:50px;height:50px;">
+                                                                style="width:180px;height:130px;">
                                                                 <i class="bi bi-image text-muted"></i>
                                                             </div>
                                                         @endif
                                                     </div>
                                                     <div>
-                                                        <div class="fw-medium">{{ $sanPham?->ten_san_pham ?? 'N/A' }}</div>
+                                                        <div class="fw-semibold fs-5">{{ $sanPham?->ten_san_pham ?? 'N/A' }}</div>
                                                         @if ($bienThe)
-                                                            <small class="text-muted d-block">
+                                                            <div class="text-muted fs-6 d-block">
                                                                 {{ $bienThe->color->ten_mau ?? 'Mặc định' }} -
                                                                 {{ $bienThe->size->ten_kich_thuoc ?? 'Mặc định' }}
-                                                            </small>
+                                                            </div>
                                                         @endif
                                                     </div>
                                                 </div>
@@ -240,13 +249,13 @@
                                     <i class="bi bi-upload me-1"></i> Khách hàng đã tải lên ảnh thông tin tài khoản / QR
                                     Code
                                 </div>
-                                <div class="row g-2 mb-3">
+                                <div class="row g-3 mb-3">
                                     @foreach ($bankImages as $image)
-                                        <div class="col-6">
-                                            <a href="{{ $image->url }}" target="_blank" class="d-block">
+                                        <div class="col-6 col-md-4">
+                                            <a href="{{ $image->url }}" target="_blank" class="d-block refund-image-link"
+                                                title="Mở ảnh kích thước lớn">
                                                 <img src="{{ $image->url }}" alt="{{ $image->original_name }}"
-                                                    class="img-fluid rounded shadow-sm" loading="lazy"
-                                                    style="height: 80px;">
+                                                    class="img-fluid rounded shadow-sm refund-thumb-lg" loading="lazy">
                                             </a>
                                         </div>
                                     @endforeach
@@ -290,12 +299,12 @@
                                 @endif
 
                                 @if ($refund->hinh_anh_xac_nhan)
-                                    <dt class="col-sm-5 text-muted">Ảnh xác nhận</dt>
-                                    <dd class="col-sm-7 text-end">
-                                        <a href="{{ asset('storage/' . $refund->hinh_anh_xac_nhan) }}" target="_blank">
+                                    <dt class="col-sm-12 text-primary fw-semibold">Ảnh xác nhận</dt>
+                                    <dd class="col-sm-12 mt-2">
+                                        <a href="{{ asset('storage/' . $refund->hinh_anh_xac_nhan) }}" target="_blank"
+                                            class="refund-image-link" title="Mở ảnh xác nhận kích thước lớn">
                                             <img src="{{ asset('storage/' . $refund->hinh_anh_xac_nhan) }}"
-                                                class="img-thumbnail shadow-sm"
-                                                style="max-width: 120px; border-radius: 8px;">
+                                                class="img-thumbnail shadow-sm refund-thumb-confirm">
                                         </a>
                                     </dd>
                                 @endif
@@ -309,16 +318,17 @@
                     <div class="card border-0 shadow-sm rounded-3">
                         <div class="card-header bg-white border-bottom py-3">
                             <h6 class="mb-0 fw-semibold text-primary">
-                                <i class="bi bi-images me-2"></i>Hình ảnh minh chứng đơn hàng hoàn trả  
+                                <i class="bi bi-images me-2"></i>Hình ảnh minh chứng đơn hàng hoàn trả
                             </h6>
                         </div>
                         <div class="card-body">
-                            <div class="row g-2">
+                            <div class="row g-3">
                                 @foreach ($proofImages as $image)
                                     <div class="col-6 col-md-4">
-                                        <a href="{{ $image->url }}" target="_blank" class="d-block">
+                                        <a href="{{ $image->url }}" target="_blank" class="d-block refund-image-link"
+                                            title="Mở ảnh kích thước lớn">
                                             <img src="{{ $image->url }}" alt="{{ $image->original_name }}"
-                                                class="img-fluid rounded shadow-sm" loading="lazy" style="height: 60px;">
+                                                class="img-fluid rounded shadow-sm refund-thumb-lg" loading="lazy">
                                         </a>
                                     </div>
                                 @endforeach
@@ -344,6 +354,39 @@
             background-color: rgba(13, 110, 253, 0.04);
             transition: background-color 0.15s;
         }
+
+        .refund-image-link {
+            border-radius: 10px;
+            overflow: hidden;
+            display: block;
+        }
+
+        .refund-image-link:hover img {
+            transform: scale(1.03);
+            filter: brightness(1.03);
+        }
+
+        .refund-thumb-lg {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            transition: transform 0.2s ease, filter 0.2s ease;
+            border: 1px solid #e9ecef;
+            background: #f8f9fa;
+        }
+
+        .refund-thumb-confirm {
+            width: 190px;
+            height: 130px;
+            object-fit: cover;
+            border-radius: 8px;
+            transition: transform 0.2s ease, filter 0.2s ease;
+            background: #f8f9fa;
+        }
+
+        .refund-product-thumb {
+            object-fit: cover;
+        }
     </style>
 
     <form action="{{ route('admin.hoan-tra.complete', $refund) }}" method="POST" style="margin-bottom: 0;"
@@ -363,7 +406,7 @@
                         </div>
 
                         <div class="text-center mb-4">
-                            <p class="text-muted small" style="margin-bottom: 5px;">Số tiền cần hoàn trả</p>
+                            <p class="text-muted small" style="margin-bottom: 5px;">Số tiền cần hoàn tiền</p>
                             <h2 class="text-success" style="font-weight: bold; margin: 0;">
                                 {{ number_format($refund->so_tien_yeu_cau ?? 0) }} <small
                                     style="font-size: 18px;">VND</small>
