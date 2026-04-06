@@ -1,3 +1,107 @@
 /*
 Custom Css
 */
+
+/* Ảnh sản phẩm / danh mục: nền trắng, hiển thị trọn chủ thể (không crop) */
+.product-thumb-white {
+    background-color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.product-thumb-white--sm {
+    height: 140px;
+}
+
+.product-thumb-white--sm img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    object-position: center center;
+}
+
+.product-thumb-white--cart {
+    height: 80px;
+    width: 80px;
+    flex-shrink: 0;
+}
+
+.product-thumb-white--cart img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    object-position: center center;
+}
+
+.product-thumb-white--order {
+    width: 70px;
+    height: 70px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+
+.product-thumb-white--order img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    object-position: center center;
+}
+
+.product-thumb-white--60 {
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+
+.product-thumb-white--60 img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    object-position: center center;
+}
+
+.product-thumb-white--50 {
+    width: 50px;
+    height: 50px;
+    flex-shrink: 0;
+    border-radius: 6px;
+    border: 1px solid #eee;
+}
+
+.product-thumb-white--50 img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    object-position: center center;
+}
+
+.product-thumb-white--shop {
+    min-height: 300px;
+    padding: 0.75rem;
+}
+
+.product-thumb-white--shop img {
+    max-width: 100%;
+    max-height: 360px;
+    width: auto;
+    margin-left: auto;
+    margin-right: auto;
+    object-fit: contain;
+    object-position: center center;
+    display: block;
+}

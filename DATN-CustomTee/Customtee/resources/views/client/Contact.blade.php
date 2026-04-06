@@ -2,7 +2,7 @@
 
 <div class="container-fluid bg-light py-5">
     <div class="col-md-6 m-auto text-center">
-        <h1 class="h1">Contact Us</h1>
+        <h1 class="h1">Liên hệ</h1>
         <p>
             Hãy để lại lời nhắn cho chúng tôi, chúng tôi sẽ phản hồi bạn sớm nhất có thể.
         </p>
@@ -29,16 +29,16 @@
                 </div>
             </div>
             <div class="mb-3">
-                <label for="inputsubject">Subject (Tiêu đề)</label>
+                <label for="inputsubject">Tiêu đề</label>
                 <input type="text" class="form-control mt-1" id="subject" name="tieu_de" placeholder="Nhập tiêu đề liên hệ" required>
             </div>
             <div class="mb-3">
-                <label for="inputmessage">Message (Nội dung)</label>
+                <label for="inputmessage">Nội dung</label>
                 <textarea class="form-control mt-1" id="message" name="noi_dung" placeholder="Nhập nội dung tin nhắn" rows="8" required></textarea>
             </div>
             <div class="row">
                 <div class="col text-end mt-2">
-                    <button type="submit" class="btn btn-success btn-lg px-3">Let’s Talk</button>
+                    <button type="submit" class="btn btn-success btn-lg px-3">Gửi tin nhắn</button>
                 </div>
             </div>
         </form>
