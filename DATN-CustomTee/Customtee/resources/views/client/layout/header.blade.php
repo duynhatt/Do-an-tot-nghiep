@@ -96,16 +96,16 @@
                 <div class="flex-fill">
                     <ul class="nav navbar-nav d-flex justify-content-between mx-lg-auto">
                         <li class="nav-item">
-<a class="nav-link" href="{{ url('/') }}">Home</a>
+<a class="nav-link" href="{{ url('/') }}">Trang chủ</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url('/About') }}">About</a>
+                            <a class="nav-link" href="{{ url('/About') }}">giới thiệu</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url('/Shop') }}">Shop</a>
+                            <a class="nav-link" href="{{ url('/Shop') }}">Cửa hàng</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url('/Contact') }}">Contact</a>
+                            <a class="nav-link" href="{{ url('/Contact') }}">Liên hệ</a>
                         </li>
                     </ul>
                 </div>

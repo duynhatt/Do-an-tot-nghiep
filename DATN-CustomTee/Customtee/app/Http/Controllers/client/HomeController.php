@@ -16,31 +16,23 @@ class HomeController extends Controller
 {
     public function index()
     {
-        // Ưu tiên hiển thị danh mục có sản phẩm bán chạy nhất.
         $startDate = Carbon::now()->subDays(30);
         $endDate = Carbon::now();
 
-        $salesByCategory = ChiTietDonHang::query()
-            ->join('don_hangs', 'don_hang_chi_tiets.don_hang_id', '=', 'don_hangs.id')
-            ->join('san_phams', 'don_hang_chi_tiets.san_pham_id', '=', 'san_phams.id')
-            ->select(
-                'san_phams.danh_muc_id as danh_muc_id',
-                DB::raw('SUM(don_hang_chi_tiets.so_luong) as sold_qty')
-            )
-            ->whereBetween('don_hangs.created_at', [$startDate, $endDate])
-            ->whereIn('don_hangs.trang_thai', [
-                DonHang::TRANG_THAI_DA_GIAO,
-                DonHang::TRANG_THAI_DA_HOAN_THANH,
-            ])
-            ->groupBy('san_phams.danh_muc_id');
+        // Danh mục nổi bật: số lượng sản phẩm đang hiển thị trong danh mục, nhiều → ít
+        $productCountByCategory = SanPham::query()
+            ->select('danh_muc_id', DB::raw('COUNT(*) as product_count'))
+            ->where('trang_thai', true)
+            ->groupBy('danh_muc_id');
 
         $danhMucs = Category::hienThi()
-            ->leftJoinSub($salesByCategory, 'sales', function ($join) {
-                $join->on('sales.danh_muc_id', '=', 'danh_mucs.id');
+            ->leftJoinSub($productCountByCategory, 'pc', function ($join) {
+                $join->on('pc.danh_muc_id', '=', 'danh_mucs.id');
             })
-            ->orderByDesc(DB::raw('COALESCE(sales.sold_qty, 0)'))
+            ->orderByDesc(DB::raw('COALESCE(pc.product_count, 0)'))
             ->orderByDesc('danh_mucs.id')
-            ->take(3)
+            ->select('danh_mucs.*')
+            ->take(4)
             ->get();
 
         $sanPhamsMoiNhat = SanPham::with('category')

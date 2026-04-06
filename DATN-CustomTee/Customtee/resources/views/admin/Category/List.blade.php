@@ -168,13 +168,13 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label>Tên danh mục <span class="text-danger">*</span></label>
-                        <input type="text" id="edit_ten_danh_muc" class="form-control" required maxlength="255" placeholder="Nhập tên danh mục">
+                        <input type="text" name="ten_danh_muc" id="edit_ten_danh_muc" class="form-control" required maxlength="255" placeholder="Nhập tên danh mục">
                         <small class="text-muted">Tối đa 255 ký tự, không được trùng với danh mục khác</small>
                     </div>
 
                     <div class="form-group">
                         <label>Mô tả</label>
-                        <textarea id="edit_mo_ta" class="form-control" rows="3" maxlength="1000" placeholder="Mô tả danh mục (tùy chọn)"></textarea>
+                        <textarea name="mo_ta" id="edit_mo_ta" class="form-control" rows="3" maxlength="1000" placeholder="Mô tả danh mục (tùy chọn)"></textarea>
                         <small class="text-muted">Tối đa 1000 ký tự</small>
                     </div>
 
@@ -194,7 +194,7 @@
 
                     <div class="form-group">
                         <label>Trạng thái</label>
-                        <select id="edit_trang_thai" class="form-control">
+                        <select name="trang_thai" id="edit_trang_thai" class="form-control">
                             <option value="1">Hiển thị</option>
                             <option value="0">Ẩn</option>
                         </select>
