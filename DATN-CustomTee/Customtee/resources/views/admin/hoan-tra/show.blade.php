@@ -144,8 +144,8 @@
                                                     <div class="">
                                                         @if ($sanPham?->hinh_anh_chinh)
                                                             <img src="{{ asset('storage/' . $sanPham->hinh_anh_chinh) }}"
-                                                                alt="{{ $sanPham->ten_san_pham }}" width="90" height="50px"
-                                                                class="rounded">
+                                                                alt="{{ $sanPham->ten_san_pham }}" width="90"
+                                                                height="50px" class="rounded">
                                                         @else
                                                             <div class="bg-light border rounded d-flex align-items-center justify-content-center"
                                                                 style="width:50px;height:50px;">
@@ -215,9 +215,14 @@
                 </div>
 
                 @php
-                    $bankImages = $refund->images->filter(fn($image) => str_contains((string) $image->path, 'refund_bank_info/'));
-                    $proofImages = $refund->images->filter(fn($image) => str_contains((string) $image->path, 'refund_images/'));
-                    $hasManualBankInfo = $refund->ngan_hang || $refund->so_tai_khoan || $refund->chi_nhanh || $refund->ten_chu_tk;
+                    $bankImages = $refund->images->filter(
+                        fn($image) => str_contains((string) $image->path, 'refund_bank_info/'),
+                    );
+                    $proofImages = $refund->images->filter(
+                        fn($image) => str_contains((string) $image->path, 'refund_images/'),
+                    );
+                    $hasManualBankInfo =
+                        $refund->ngan_hang || $refund->so_tai_khoan || $refund->chi_nhanh || $refund->ten_chu_tk;
                     $hasUploadedBankImages = $bankImages->isNotEmpty();
                 @endphp
                 @if ($hasManualBankInfo || $hasUploadedBankImages)
@@ -238,7 +243,8 @@
                                         <div class="col-6">
                                             <a href="{{ $image->url }}" target="_blank" class="d-block">
                                                 <img src="{{ $image->url }}" alt="{{ $image->original_name }}"
-                                                    class="img-fluid rounded shadow-sm" loading="lazy" style="height: 80px;">
+                                                    class="img-fluid rounded shadow-sm" loading="lazy"
+                                                    style="height: 80px;">
                                             </a>
                                         </div>
                                     @endforeach
@@ -249,26 +255,49 @@
                                 </div>
                             @endif
 
-                            <dl class="row mb-0 gy-2">
+                            <dl class="row mb-0 gy-3">
+
                                 @if ($refund->ngan_hang)
                                     <dt class="col-sm-5 text-muted">Ngân hàng</dt>
-                                    <dd class="col-sm-7 fw-medium text-end">{{ $refund->ngan_hang }}</dd>
+                                    <dd class="col-sm-7 fw-medium text-end">
+                                        {{ $refund->ngan_hang }}
+                                    </dd>
                                 @endif
 
                                 @if ($refund->so_tai_khoan)
                                     <dt class="col-sm-5 text-muted">Số tài khoản</dt>
-                                    <dd class="col-sm-7 fw-medium text-end">{{ $refund->so_tai_khoan }}</dd>
+                                    <dd class="col-sm-7 fw-medium text-end">
+                                        <span class="badge bg-light text-dark px-2 py-1">
+                                            {{ $refund->so_tai_khoan }}
+                                        </span>
+                                    </dd>
                                 @endif
 
                                 @if ($refund->chi_nhanh)
                                     <dt class="col-sm-5 text-muted">Chi nhánh</dt>
-                                    <dd class="col-sm-7 text-end">{{ $refund->chi_nhanh }}</dd>
+                                    <dd class="col-sm-7 text-end">
+                                        {{ $refund->chi_nhanh }}
+                                    </dd>
                                 @endif
 
                                 @if ($refund->ten_chu_tk)
                                     <dt class="col-sm-5 text-muted">Chủ tài khoản</dt>
-                                    <dd class="col-sm-7 fw-medium text-end">{{ $refund->ten_chu_tk }}</dd>
+                                    <dd class="col-sm-7 fw-medium text-end">
+                                        {{ $refund->ten_chu_tk }}
+                                    </dd>
                                 @endif
+
+                                @if ($refund->hinh_anh_xac_nhan)
+                                    <dt class="col-sm-5 text-muted">Ảnh xác nhận</dt>
+                                    <dd class="col-sm-7 text-end">
+                                        <a href="{{ asset('storage/' . $refund->hinh_anh_xac_nhan) }}" target="_blank">
+                                            <img src="{{ asset('storage/' . $refund->hinh_anh_xac_nhan) }}"
+                                                class="img-thumbnail shadow-sm"
+                                                style="max-width: 120px; border-radius: 8px;">
+                                        </a>
+                                    </dd>
+                                @endif
+
                             </dl>
                         </div>
                     </div>
@@ -278,7 +307,7 @@
                     <div class="card border-0 shadow-sm rounded-3">
                         <div class="card-header bg-white border-bottom py-3">
                             <h6 class="mb-0 fw-semibold text-primary">
-                                <i class="bi bi-images me-2"></i>Hình ảnh minh chứng
+                                <i class="bi bi-images me-2"></i>Hình ảnh minh chứng đơn hàng hoàn trả  
                             </h6>
                         </div>
                         <div class="card-body">
@@ -315,96 +344,109 @@
         }
     </style>
 
-    <div class="modal fade" id="modalHoanTien" tabindex="-1" role="dialog" aria-labelledby="modalHoanTienLabel">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content" style="border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+    <form action="{{ route('admin.hoan-tra.complete', $refund) }}" method="POST" style="margin-bottom: 0;"
+        enctype="multipart/form-data">
+        @csrf
+        @method('PATCH')
 
-                <div class="modal-body">
+        <div class="modal fade" id="modalHoanTien" tabindex="-1" role="dialog" aria-labelledby="modalHoanTienLabel">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content" style="border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
 
-                    <div class="alert alert-info" style="border-radius: 6px;">
-                        <i class="glyphicon glyphicon-info-sign"></i>
-                        Vui lòng kiểm tra kỹ thông tin trước khi xác nhận hoàn tiền.
-                    </div>
+                    <div class="modal-body">
 
-                    <div class="text-center mb-4">
-                        <p class="text-muted small" style="margin-bottom: 5px;">Số tiền cần hoàn trả</p>
-                        <h2 class="text-success" style="font-weight: bold; margin: 0;">
-                            {{ number_format($refund->so_tien_yeu_cau ?? 0) }} <small style="font-size: 18px;">VND</small>
-                        </h2>
-                    </div>
+                        <div class="alert alert-info" style="border-radius: 6px;">
+                            <i class="glyphicon glyphicon-info-sign"></i>
+                            Vui lòng kiểm tra kỹ thông tin trước khi xác nhận hoàn tiền.
+                        </div>
 
-                    <div class="well well-sm" style="background: #f8f9fa; border-radius: 6px; padding: 15px;">
-                        <h5 style="margin-top: 0; color: #337ab7;">
-                            <i class="glyphicon glyphicon-user"></i> Thông tin tài khoản nhận tiền
-                        </h5>
+                        <div class="text-center mb-4">
+                            <p class="text-muted small" style="margin-bottom: 5px;">Số tiền cần hoàn trả</p>
+                            <h2 class="text-success" style="font-weight: bold; margin: 0;">
+                                {{ number_format($refund->so_tien_yeu_cau ?? 0) }} <small
+                                    style="font-size: 18px;">VND</small>
+                            </h2>
+                        </div>
 
-                        @if (!empty($refund->qr_code_bank))
-                            <div class="text-center">
-                                <p class="small text-muted">Quét mã QR để chuyển khoản nhanh</p>
-                                <div
-                                    style="display: inline-block; background: white; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
-                                    {!! $refund->qr_code_bank !!}
+                        <div class="well well-sm" style="background: #f8f9fa; border-radius: 6px; padding: 15px;">
+                            <h5 style="margin-top: 0; color: #337ab7;">
+                                <i class="glyphicon glyphicon-user"></i> Thông tin tài khoản nhận tiền
+                            </h5>
+
+                            @if (!empty($refund->qr_code_bank))
+                                <div class="text-center">
+                                    <p class="small text-muted">Quét mã QR để chuyển khoản nhanh</p>
+                                    <div
+                                        style="display: inline-block; background: white; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                                        {!! $refund->qr_code_bank !!}
+                                    </div>
                                 </div>
-                            </div>
-                        @else
-                            <table class="table table-condensed" style="margin-bottom: 0;">
-                                <tbody>
-                                    @if ($refund->ngan_hang)
-                                        <tr>
-                                            <td width="40%" class="text-muted">Ngân hàng:</td>
-                                            <td><strong>{{ $refund->ngan_hang }}</strong></td>
-                                        </tr>
-                                    @endif
+                            @else
+                                <table class="table table-condensed" style="margin-bottom: 0;">
+                                    <tbody>
+                                        @if ($refund->ngan_hang)
+                                            <tr>
+                                                <td width="40%" class="text-muted">Ngân hàng:</td>
+                                                <td><strong>{{ $refund->ngan_hang }}</strong></td>
+                                            </tr>
+                                        @endif
 
-                                    @if ($refund->so_tai_khoan)
-                                        <tr>
-                                            <td class="text-muted">Số tài khoản:</td>
-                                            <td><strong class="font-monospace">{{ $refund->so_tai_khoan }}</strong></td>
-                                        </tr>
-                                    @endif
+                                        @if ($refund->so_tai_khoan)
+                                            <tr>
+                                                <td class="text-muted">Số tài khoản:</td>
+                                                <td><strong class="font-monospace">{{ $refund->so_tai_khoan }}</strong>
+                                                </td>
+                                            </tr>
+                                        @endif
 
-                                    @if ($refund->ten_chu_tk)
-                                        <tr>
-                                            <td class="text-muted">Chủ tài khoản:</td>
-                                            <td><strong>{{ $refund->ten_chu_tk }}</strong></td>
-                                        </tr>
-                                    @endif
+                                        @if ($refund->ten_chu_tk)
+                                            <tr>
+                                                <td class="text-muted">Chủ tài khoản:</td>
+                                                <td><strong>{{ $refund->ten_chu_tk }}</strong></td>
+                                            </tr>
+                                        @endif
 
-                                    @if ($refund->chi_nhanh)
-                                        <tr>
-                                            <td class="text-muted">Chi nhánh:</td>
-                                            <td><strong>{{ $refund->chi_nhanh }}</strong></td>
-                                        </tr>
-                                    @endif
-                                </tbody>
-                            </table>
-                        @endif
+                                        @if ($refund->chi_nhanh)
+                                            <tr>
+                                                <td class="text-muted">Chi nhánh:</td>
+                                                <td><strong>{{ $refund->chi_nhanh }}</strong></td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
+                                </table>
+                            @endif
+                        </div>
+                        <div class="form-group mt-3">
+                            <label class="fw-medium">Ảnh xác nhận chuyển khoản</label>
+                            <input type="file" name="hinh_anh_xac_nhan" class="form-control" accept="image/*"
+                                required>
+
+                            <small class="text-muted">
+                                Upload ảnh bill chuyển khoản để xác nhận hoàn tiền
+                            </small>
+                        </div>
+
+                        <div class="alert alert-danger mt-4" style="border-radius: 6px;">
+                            <i class="glyphicon glyphicon-exclamation-sign"></i>
+                            <strong>Hành động này không thể hoàn tác!</strong><br>
+                            <small>Hãy chắc chắn bạn đã chuyển khoản đúng số tiền và đúng thông tin cho khách hàng.</small>
+                        </div>
+
                     </div>
 
-                    <div class="alert alert-danger mt-4" style="border-radius: 6px;">
-                        <i class="glyphicon glyphicon-exclamation-sign"></i>
-                        <strong>Hành động này không thể hoàn tác!</strong><br>
-                        <small>Hãy chắc chắn bạn đã chuyển khoản đúng số tiền và đúng thông tin cho khách hàng.</small>
-                    </div>
+                    <div class="modal-footer"
+                        style="background: #f8f9fa; border-top: 1px solid #ddd; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
 
-                </div>
-
-                <div class="modal-footer"
-                    style="background: #f8f9fa; border-top: 1px solid #ddd; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
-                    <form action="{{ route('admin.hoan-tra.complete', $refund) }}" method="POST"
-                        style="margin-bottom: 0;">
-                        @csrf
-                        @method('PATCH')
 
                         <button type="submit" class="btn btn-success"
                             onclick="return confirm('XÁC NHẬN ĐÃ HOÀN TIỀN?\n\nSố tiền: {{ number_format($refund->so_tien_yeu_cau ?? 0) }} VND')">
                             <i class="glyphicon glyphicon-ok"></i>
                             Xác nhận đã hoàn tiền
                         </button>
-                    </form>
-                </div>
+    </form>
+    </div>
 
-            </div>
-        </div>
+    </div>
+    </div>
     </div>
 @endsection

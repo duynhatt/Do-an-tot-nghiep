@@ -50,13 +50,36 @@
 </head>
 
 <body>
+    @if (session('success'))
+        <script>
+            toastr.success("{{ session('success') }}");
+        </script>
+    @endif
+
+    @if (session('error'))
+        <script>
+            toastr.error("{{ session('error') }}");
+        </script>
+    @endif
+
+    @if (session('warning'))
+        <script>
+            toastr.warning("{{ session('warning') }}");
+        </script>
+    @endif
+
+    @if (session('info'))
+        <script>
+            toastr.info("{{ session('info') }}");
+        </script>
+    @endif
     <style>
         .dropup .dropdown-menu,
         .dropdown-menu {
             z-index: 3000 !important;
         }
 
- */
+        */
     </style>
     <section id="container">
 
