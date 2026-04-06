@@ -24,14 +24,16 @@
                         </button>
                     </form>
 
-                    <form action="{{ route('admin.hoan-tra.reject', $refund) }}" method="POST" class="d-inline">
-                        @csrf
-                        @method('PATCH')
-                        <button type="submit" class="btn btn-danger btn-sm d-flex align-items-center gap-1"
-                            onclick="return confirm('Bạn chắc chắn muốn từ chối yêu cầu này?')">
-                            <i class="bi bi-x-circle"></i> Từ chối
-                        </button>
-                    </form>
+                    @if (!$isForcedAcceptCase)
+                        <form action="{{ route('admin.hoan-tra.reject', $refund) }}" method="POST" class="d-inline">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="btn btn-danger btn-sm d-flex align-items-center gap-1"
+                                onclick="return confirm('Bạn chắc chắn muốn từ chối yêu cầu này?')">
+                                <i class="bi bi-x-circle"></i> Từ chối
+                            </button>
+                        </form>
+                    @endif
                 @elseif ($refund->trang_thai === 'da_chap_nhan')
                     <button type="button" class="btn btn-primary btn-sm d-flex align-items-center gap-1"
                         data-toggle="modal" data-target="#modalHoanTien">

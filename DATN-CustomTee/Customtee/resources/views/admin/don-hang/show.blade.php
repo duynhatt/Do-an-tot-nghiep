@@ -22,11 +22,13 @@
                 'da_giao' => 'success',
                 'da_hoan_thanh' => 'success',
                 'da_huy' => 'danger',
+                'cho_duyet_huy' => 'warning',
             ][$donHang->trang_thai] ?? 'secondary';
 
         $trangThaiTiepTheo = \App\Models\DonHang::trangThaiTiepTheo($donHang->trang_thai);
 
         unset($trangThaiTiepTheo[\App\Models\DonHang::TRANG_THAI_DA_HOAN_THANH]);
+        unset($trangThaiTiepTheo[\App\Models\DonHang::TRANG_THAI_CHO_DUYET_HUY]);
 
         if ($donHang->phuong_thuc_thanh_toan === 'vnpay' && $donHang->trang_thai_thanh_toan !== 'da_thanh_toan') {
             $trangThaiTiepTheo = array_filter(
@@ -40,9 +42,16 @@
         $latestRefund = $donHang->refunds->first();
         $returnRequestedAt = $latestRefund?->created_at ?? $donHang->ngay_yeu_cau_tra;
         $returnReason = $latestRefund?->ly_do ?? $donHang->ly_do_tra;
+        $isPendingCancelRequest =
+            (bool) $donHang->yeu_cau_huy
+            && in_array($donHang->trang_thai, [
+                \App\Models\DonHang::TRANG_THAI_DANG_XU_LY,
+                \App\Models\DonHang::TRANG_THAI_CHO_DUYET_HUY,
+            ], true);
         $isRefundFlowLocked =
             (bool) $donHang->yeu_cau_tra ||
-            in_array($latestRefund?->trang_thai, ['cho_xu_ly', 'da_chap_nhan', 'da_hoan_tien'], true);
+            in_array($latestRefund?->trang_thai, ['cho_xu_ly', 'da_chap_nhan', 'da_hoan_tien'], true) ||
+            $isPendingCancelRequest;
     @endphp
     <div class="container-fluid" style="margin-top: 30px;">
         <div class="row mb-4 align-items-center">
@@ -64,6 +73,11 @@
                 <span class="badge bg-{{ $badge }} fs-5 px-4 py-2">
                     {{ $tenTrangThaiHienTai }}
                 </span>
+                @if ($isPendingCancelRequest)
+                    <span class="badge bg-warning text-dark fs-6 px-3 py-2 mt-2 d-inline-block">
+                        <i class="fas fa-hourglass-half me-1"></i> Yêu cầu hủy
+                    </span>
+                @endif
                 @if ($donHang->yeu_cau_tra)
                     <span class="badge bg-danger fs-6 px-3 py-2 mt-2 d-inline-block">
                         <i class="fas fa-undo-alt me-1"></i> Yêu cầu trả hàng
@@ -238,6 +252,62 @@
                                 </span>
                             </div>
                         </div>
+
+                        @if ($isPendingCancelRequest)
+                            <div class="p-4 border-top">
+                                @if ($donHang->ly_do_yeu_cau_huy)
+                                    <div class="alert alert-info small mb-3">
+                                        <strong>Lý do khách hủy:</strong> {{ $donHang->ly_do_yeu_cau_huy }}
+                                    </div>
+                                @endif
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <form action="{{ route('admin.don-hang.cancel-request.approve', $donHang) }}"
+                                            method="post">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="btn btn-success btn-lg w-100"
+                                                onclick="return confirm('Xác nhận đồng ý hủy đơn này?')">
+                                                <i class="fas fa-check me-2"></i> Đồng ý hủy
+                                            </button>
+                                        </form>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <button type="button" class="btn btn-outline-danger btn-lg w-100"
+                                            data-bs-toggle="collapse" data-bs-target="#rejectCancelForm"
+                                            aria-expanded="{{ $errors->has('ly_do_tu_choi_huy') ? 'true' : 'false' }}"
+                                            aria-controls="rejectCancelForm">
+                                            <i class="fas fa-times me-2"></i> Từ chối hủy
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="collapse mt-3 {{ $errors->has('ly_do_tu_choi_huy') ? 'show' : '' }}"
+                                    id="rejectCancelForm">
+                                    <div class="card card-body border-danger-subtle">
+                                        <form action="{{ route('admin.don-hang.cancel-request.reject', $donHang) }}"
+                                            method="post">
+                                            @csrf
+                                            @method('PATCH')
+
+                                            <label class="form-label fw-medium text-muted">Lý do từ chối hủy</label>
+                                            <textarea name="ly_do_tu_choi_huy" class="form-control mb-2" rows="3" required
+                                                placeholder="Nhập lý do từ chối...">{{ old('ly_do_tu_choi_huy') }}</textarea>
+                                            @error('ly_do_tu_choi_huy')
+                                                <div class="text-danger small mb-2">{{ $message }}</div>
+                                            @enderror
+
+                                            <button type="submit" class="btn btn-danger w-100"
+                                                onclick="return confirm('Xác nhận từ chối yêu cầu hủy?')">
+                                                <i class="fas fa-paper-plane me-2"></i> Xác nhận từ chối
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -295,11 +365,20 @@
 
                                 <div class="col-md-6 col-lg-4">
                                     <label class="form-label fw-medium text-muted">Chuyển sang trạng thái</label>
-                                    <select name="trang_thai" class="form-select form-select-lg" required>
+                                    <select name="trang_thai" id="trangThaiSelect" class="form-select form-select-lg" required>
                                         @foreach ($trangThaiTiepTheo as $value => $label)
                                             <option value="{{ $value }}">{{ $label }}</option>
                                         @endforeach
                                     </select>
+                                </div>
+
+                                <div class="col-12 d-none" id="lyDoHuyAdminWrapper">
+                                    <label class="form-label fw-medium text-muted">Lý do hủy đơn (gửi cho khách)</label>
+                                    <textarea name="ly_do_huy_boi_admin" class="form-control" rows="3"
+                                        placeholder="Nhập lý do hủy để khách hàng nắm được...">{{ old('ly_do_huy_boi_admin') }}</textarea>
+                                    @error('ly_do_huy_boi_admin')
+                                        <div class="text-danger small mt-1">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
                                 <div class="col-md-6 col-lg-3">
@@ -322,5 +401,24 @@
 
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const trangThaiSelect = document.getElementById('trangThaiSelect');
+            const lyDoHuyWrapper = document.getElementById('lyDoHuyAdminWrapper');
+            const lyDoHuyTextarea = lyDoHuyWrapper ? lyDoHuyWrapper.querySelector('textarea[name="ly_do_huy_boi_admin"]') : null;
+
+            if (!trangThaiSelect || !lyDoHuyWrapper || !lyDoHuyTextarea) return;
+
+            function toggleLyDoHuyField() {
+                const isDaHuy = trangThaiSelect.value === 'da_huy';
+                lyDoHuyWrapper.classList.toggle('d-none', !isDaHuy);
+                lyDoHuyTextarea.required = isDaHuy;
+            }
+
+            trangThaiSelect.addEventListener('change', toggleLyDoHuyField);
+            toggleLyDoHuyField();
+        });
+    </script>
 
 @endsection

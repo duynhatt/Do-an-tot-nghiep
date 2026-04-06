@@ -38,16 +38,23 @@ class OrderController extends Controller
             if (in_array($trangThai, [
                 DonHang::TRANG_THAI_CHO_XAC_NHAN,
                 DonHang::TRANG_THAI_DANG_XU_LY,
+                DonHang::TRANG_THAI_CHO_DUYET_HUY,
                 DonHang::TRANG_THAI_DANG_GIAO,
                 DonHang::TRANG_THAI_DA_GIAO,
                 DonHang::TRANG_THAI_DA_HOAN_THANH,
                 DonHang::TRANG_THAI_DA_HUY,
             ], true)) {
-                $query->where('trang_thai', $trangThai)
-                    ->where(function ($q) {
-                        // Các đơn đã gửi yêu cầu hoàn tiền chỉ hiển thị ở tab "Trả hàng"
-                        $q->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
-                    });
+                $query->where(function ($q) use ($trangThai) {
+                    if ($trangThai === DonHang::TRANG_THAI_DANG_XU_LY) {
+                        // Yêu cầu hủy online hiện được hiển thị như "đang xử lý" trên tab đơn hàng.
+                        $q->whereIn('trang_thai', [DonHang::TRANG_THAI_DANG_XU_LY, DonHang::TRANG_THAI_CHO_DUYET_HUY]);
+                    } else {
+                        $q->where('trang_thai', $trangThai);
+                    }
+                })->where(function ($q) {
+                    // Các đơn đã gửi yêu cầu hoàn tiền chỉ hiển thị ở tab "Trả hàng"
+                    $q->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
+                });
             }
             // Lọc "Trả hàng": các đơn có yêu cầu trả
             elseif ($trangThai === 'tra_hang') {
@@ -88,15 +95,64 @@ class OrderController extends Controller
             ->where('nguoi_dung_id', Auth::id())
             ->firstOrFail();
 
+        if ((bool) $donHang->yeu_cau_huy) {
+            if ($donHang->trang_thai === DonHang::TRANG_THAI_DA_HUY) {
+                return back()->with('error', 'Đơn hàng đã bị hủy.');
+            }
+
+            return back()->with('error', 'Đơn hàng đang chờ admin duyệt hủy.');
+        }
+
         if ($donHang->trang_thai !== DonHang::TRANG_THAI_CHO_XAC_NHAN && $donHang->trang_thai !== DonHang::TRANG_THAI_DANG_XU_LY) {
             return back()->with('error', 'Chỉ có thể hủy đơn khi đơn đang chờ xác nhận.');
+        }
+
+        $skipReasonForUnpaidOnline = $donHang->phuong_thuc_thanh_toan === 'vnpay'
+            && $donHang->trang_thai === DonHang::TRANG_THAI_CHO_XAC_NHAN
+            && $donHang->trang_thai_thanh_toan !== 'da_thanh_toan';
+
+        $skipReasonCodChoXacNhan = $donHang->phuong_thuc_thanh_toan === 'cod'
+            && $donHang->trang_thai === DonHang::TRANG_THAI_CHO_XAC_NHAN;
+
+        $lyDoHuy = null;
+        if (!$skipReasonForUnpaidOnline && !$skipReasonCodChoXacNhan) {
+            $validated = $request->validate([
+                'ly_do_yeu_cau_huy' => 'required|string|max:2000',
+            ], [
+                'ly_do_yeu_cau_huy.required' => 'Vui lòng nhập lý do hủy đơn.',
+            ]);
+            $lyDoHuy = $validated['ly_do_yeu_cau_huy'];
+        }
+
+        $isPendingCancelRequest = $donHang->trang_thai === DonHang::TRANG_THAI_DANG_XU_LY
+            && in_array($donHang->phuong_thuc_thanh_toan, ['vnpay', 'cod'], true);
+
+        // Với đơn đang xử lý (VNPAY/COD): chuyển sang luồng "chờ admin duyệt hủy".
+        if ($isPendingCancelRequest) {
+            if (
+                $donHang->phuong_thuc_thanh_toan === 'vnpay'
+                && $donHang->trang_thai_thanh_toan !== 'da_thanh_toan'
+            ) {
+                return back()->with('error', 'Đơn thanh toán online chưa thành công, không thể gửi yêu cầu hủy.');
+            }
+
+            DB::transaction(function () use ($donHang, $lyDoHuy) {
+                $donHang->update([
+                    'yeu_cau_huy' => 1,
+                    'ngay_yeu_cau_huy' => now(),
+                    'ly_do_yeu_cau_huy' => $lyDoHuy,
+                    'ly_do_tu_choi_huy' => null,
+                ]);
+            });
+
+            return back()->with('success', 'Đã gửi yêu cầu hủy. Admin sẽ phản hồi khi duyệt.');
         }
 
         if (!DonHang::coTheChuyenSang($donHang->trang_thai, DonHang::TRANG_THAI_DA_HUY)) {
             return back()->with('error', 'Không thể hủy đơn hàng này.');
         }
 
-        DB::transaction(function () use ($donHang) {
+        DB::transaction(function () use ($donHang, $lyDoHuy) {
             // Chỉ hoàn tồn kho khi hệ thống đã trừ tồn trước đó.
             // - COD: trừ tồn ngay khi tạo đơn, dù trang_thai_thanh_toan vẫn là 'chua_thanh_toan'
             // - VNPAY: chỉ trừ tồn khi return thành công (khi trang_thai_thanh_toan = 'da_thanh_toan')
@@ -126,17 +182,16 @@ class OrderController extends Controller
                         ->update(['trang_thai' => GioHang::TRANG_THAI_DANG_TRONG_GIO]);
                 }
             }
-            $donHang->update(['trang_thai' => DonHang::TRANG_THAI_DA_HUY]);
+            $donHang->update([
+                'trang_thai' => DonHang::TRANG_THAI_DA_HUY,
+                'yeu_cau_huy' => 0,
+                'ngay_yeu_cau_huy' => null,
+                'ly_do_yeu_cau_huy' => $lyDoHuy,
+                'ly_do_tu_choi_huy' => null,
+            ]);
         });
 
-        return back()->with(
-            'success',
-            'Đơn hàng đã được hủy.' .
-                ($donHang->phuong_thuc_thanh_toan == 'vnpay'
-                    ? ' Bạn có thể yêu cầu hoàn tiền cho đơn hàng này.'
-                    : ''
-                )
-        );
+        return back()->with('success', 'Đơn hàng đã được hủy.');
     }
 
     public function confirm(Request $request, $id)
@@ -172,9 +227,29 @@ class OrderController extends Controller
         if (
             $donHang->trang_thai === 'da_hoan_thanh'
             || $donHang->trang_thai === 'dang_giao'
-            || ($donHang->phuong_thuc_thanh_toan === 'cod' && $donHang->trang_thai !== 'da_giao')
         ) {
             return back()->with('error', 'Đơn hàng không ở trạng thái cho phép yêu cầu hoàn tiền.');
+        }
+
+        // VNPAY: cho phép hoàn tiền/trả hàng khi:
+        // - đơn đã hủy và đã thanh toán (bao gồm cả admin tự hủy)
+        // - hoặc đơn đã giao (trả hàng thông thường).
+        if ($donHang->phuong_thuc_thanh_toan === 'vnpay') {
+            $laHoanTienSauHuy =
+                $donHang->trang_thai === DonHang::TRANG_THAI_DA_HUY
+                && $donHang->trang_thai_thanh_toan === 'da_thanh_toan';
+            $laTraHangSauGiao = $donHang->trang_thai === DonHang::TRANG_THAI_DA_GIAO;
+
+            if (!$laHoanTienSauHuy && !$laTraHangSauGiao) {
+                return back()->with('error', 'Đơn hàng không ở trạng thái cho phép yêu cầu hoàn tiền.');
+            }
+        }
+
+        // COD: chỉ cho phép yêu cầu hoàn tiền khi đã giao hàng.
+        if ($donHang->phuong_thuc_thanh_toan === 'cod') {
+            if ($donHang->trang_thai !== DonHang::TRANG_THAI_DA_GIAO) {
+                return back()->with('error', 'Đơn hàng không ở trạng thái cho phép yêu cầu hoàn tiền.');
+            }
         }
 
         $hoanThanhTime = $donHang->da_hoan_thanh_at ?? $donHang->updated_at;
@@ -182,9 +257,11 @@ class OrderController extends Controller
             return back()->with('error', 'Đã hết thời hạn yêu cầu hoàn tiền (3 ngày sau khi hoàn thành).');
         }
 
-        $isOnlineCancelRefund = $donHang->phuong_thuc_thanh_toan === 'vnpay' && $donHang->trang_thai === 'dang_xu_ly';
+        $isOnlineCancelRefund = $donHang->phuong_thuc_thanh_toan === 'vnpay'
+            && $donHang->trang_thai === DonHang::TRANG_THAI_DA_HUY
+            && $donHang->trang_thai_thanh_toan === 'da_thanh_toan';
         $rules = [
-            'ly_do' => 'required|string|max:2000',
+            'ly_do' => ($isOnlineCancelRefund ? 'nullable' : 'required') . '|string|max:2000',
         ];
         if (!$isOnlineCancelRefund) {
             $rules['chi_tiet_ids'] = 'required|array|min:1';
@@ -210,7 +287,15 @@ class OrderController extends Controller
             }
         }
 
-        $request->validate($rules);
+        $validated = $request->validate($rules);
+
+        $lyDoHoanTra = trim((string) ($validated['ly_do'] ?? ''));
+        if ($isOnlineCancelRefund && $lyDoHoanTra === '') {
+            $lyDoHoanTra = trim((string) ($donHang->ly_do_yeu_cau_huy ?? ''));
+        }
+        if ($lyDoHoanTra === '') {
+            $lyDoHoanTra = 'Khách hàng yêu cầu hoàn tiền.';
+        }
 
         $chiTietIds = [];
         if (!$isOnlineCancelRefund) {
@@ -252,7 +337,7 @@ class OrderController extends Controller
                 $refund->images()->delete();
                 $refund->update([
                     'trang_thai'             => 'cho_xu_ly',
-                    'ly_do'                  => $request->ly_do,
+                    'ly_do'                  => $lyDoHoanTra,
                     'phuong_thuc_thanh_toan' => $donHang->phuong_thuc_thanh_toan,
                     'so_tien_yeu_cau'        => 0,
                     'ngan_hang'              => $request->ngan_hang ?? null,
@@ -265,7 +350,7 @@ class OrderController extends Controller
                     'don_hang_id'            => $donHang->id,
                     'user_id'                => Auth::id(),
                     'trang_thai'             => 'cho_xu_ly',
-                    'ly_do'                  => $request->ly_do,
+                    'ly_do'                  => $lyDoHoanTra,
                     'phuong_thuc_thanh_toan' => $donHang->phuong_thuc_thanh_toan,
                     'so_tien_yeu_cau'        => 0,
                     'ngan_hang'              => $request->ngan_hang ?? null,

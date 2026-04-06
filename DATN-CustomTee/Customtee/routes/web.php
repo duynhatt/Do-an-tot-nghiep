@@ -131,11 +131,19 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('binh-luan', [BinhLuanController::class, 'index'])->name('binh-luan.index');
     Route::get('binh-luan/toggle/{id}', [BinhLuanController::class, 'toggle'])
         ->name('binh-luan.toggle');
+    Route::get('binh-luan/toggle-home/{id}', [BinhLuanController::class, 'toggleHome'])
+        ->name('binh-luan.toggle-home');
 
     // Đơn hàng: danh sách, chi tiết, cập nhật trạng thái
     Route::get('don-hang', [DonHangController::class, 'index'])->name('don-hang.index');
     Route::get('don-hang/{donHang}', [DonHangController::class, 'show'])->name('don-hang.show');
     Route::patch('don-hang/{donHang}/status', [DonHangController::class, 'updateStatus'])->name('don-hang.update-status');
+
+    // Duyệt/từ chối yêu cầu hủy đơn
+    Route::patch('don-hang/{donHang}/cancel-request/approve', [DonHangController::class, 'approveCancelRequest'])
+        ->name('don-hang.cancel-request.approve');
+    Route::patch('don-hang/{donHang}/cancel-request/reject', [DonHangController::class, 'rejectCancelRequest'])
+        ->name('don-hang.cancel-request.reject');
 // QUẢN LÝ LIÊN HỆ TRONG ADMIN
 Route::prefix('lien-he')->name('lien-he.')->group(function () {
     // Chỉ định rõ là \App\Http\Controllers\Admin\ContactController

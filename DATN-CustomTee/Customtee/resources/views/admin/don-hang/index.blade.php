@@ -46,6 +46,7 @@
                         @foreach([
                             'cho_xac_nhan' => 'Chờ xác nhận',
                             'dang_xu_ly' => 'Đang xử lý',
+                            'cho_duyet_huy' => 'Chờ duyệt hủy',
                             'dang_giao' => 'Đang giao',
                             'da_giao' => 'Đã giao',
                             'da_huy' => 'Đã hủy',
@@ -264,14 +265,21 @@
                                 $orderBadgeMap = [
                                     'cho_xac_nhan' => ['warning', \App\Models\DonHang::tenTrangThai('cho_xac_nhan')],
                                     'dang_xu_ly' => ['info', \App\Models\DonHang::tenTrangThai('dang_xu_ly')],
+                                    'cho_duyet_huy' => ['warning', \App\Models\DonHang::tenTrangThai('cho_duyet_huy')],
                                     'dang_giao' => ['primary', \App\Models\DonHang::tenTrangThai('dang_giao')],
                                     'da_giao' => ['success', \App\Models\DonHang::tenTrangThai('da_giao')],
                                     'da_hoan_thanh' => ['success', \App\Models\DonHang::tenTrangThai('da_hoan_thanh')],
                                     'da_huy' => ['danger', \App\Models\DonHang::tenTrangThai('da_huy')],
                                 ];
 
+                                $isPendingCancelRequest =
+                                    (bool) $donHang->yeu_cau_huy
+                                    && in_array($donHang->trang_thai, ['dang_xu_ly', 'cho_duyet_huy'], true);
+
                                 $displayStatus = $orderBadgeMap[$donHang->trang_thai] ?? ['secondary', 'Không xác định'];
-                                if ($latestRefund && isset($refundBadgeMap[$latestRefund->trang_thai])) {
+                                if ($isPendingCancelRequest) {
+                                    $displayStatus = ['warning', 'Yêu cầu hủy'];
+                                } elseif ($latestRefund && isset($refundBadgeMap[$latestRefund->trang_thai])) {
                                     $displayStatus = $refundBadgeMap[$latestRefund->trang_thai];
                                 }
                             @endphp

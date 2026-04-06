@@ -102,6 +102,7 @@ class HomeController extends Controller
         // Đánh giá nổi bật (ví dụ lấy 3 đánh giá mới nhất)
         $danhGias = BinhLuan::with('user')
             ->where('trang_thai', 1)
+            ->where('hien_thi_trang_chu', 1)
             ->where('so_sao', '>=', 4)
             ->latest()
             ->take(6)

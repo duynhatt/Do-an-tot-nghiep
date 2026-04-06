@@ -12,7 +12,13 @@
                         đặt</span><span>{{ $donHang->created_at->format('d/m/Y H:i') }}</span></li>
                 @if ($donHang->yeu_cau_tra == 0)
                     <li class="d-flex justify-content-between mb-1"><span class="text-muted">Trạng thái</span><span
-                            class="badge bg-primary-subtle text-primary border">{{ \App\Models\DonHang::tenTrangThai($donHang->trang_thai) }}</span>
+                            class="badge bg-primary-subtle text-primary border">
+                            {{
+                                ($donHang->trang_thai === \App\Models\DonHang::TRANG_THAI_CHO_DUYET_HUY && (bool) $donHang->yeu_cau_huy)
+                                    ? \App\Models\DonHang::tenTrangThai(\App\Models\DonHang::TRANG_THAI_DANG_XU_LY)
+                                    : \App\Models\DonHang::tenTrangThai($donHang->trang_thai)
+                            }}
+                        </span>
                     </li>
                 @endif
             </ul>

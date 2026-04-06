@@ -315,7 +315,7 @@ value="{{ old('q', $tuKhoa ?? request('q')) }}">
                 </div>
             </div>
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                <p class="mb-0 text-muted small" id="shopResultsCount">Hiển thị {{ $sanPhams->count() }} / {{ $sanPhams->total() }} sản phẩm</p>
+                {{-- <p class="mb-0 text-muted small" id="shopResultsCount">Hiển thị {{ $sanPhams->count() }} / {{ $sanPhams->total() }} sản phẩm</p> --}}
                 <div class="d-flex flex-wrap gap-2" id="shopActiveFilters">
                     @if($hasAnyFilter)
                         @foreach($danhMucs as $danhMuc)

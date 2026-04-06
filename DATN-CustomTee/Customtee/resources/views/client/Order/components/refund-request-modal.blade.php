@@ -3,7 +3,7 @@
         <div class="modal-content">
             <div class="modal-header bg-warning text-dark">
                 <h5 class="modal-title fw-bold" id="modalYeuCauHoanTraLabel">
-                    <i class="bi bi-arrow-counterclockwise me-2"></i> Yêu cầu hoàn tiền / trả hàng
+                    <i class="bi bi-arrow-counterclockwise me-2"></i> Hoàn tiền/trả hàng
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -14,7 +14,9 @@
 
                 <div class="modal-body">
                     @php
-                        $isOnlineCancelRefund = $donHang->phuong_thuc_thanh_toan === 'vnpay' && $donHang->trang_thai === 'dang_xu_ly';
+                        $isOnlineCancelRefund = $donHang->phuong_thuc_thanh_toan === 'vnpay'
+                            && $donHang->trang_thai === 'da_huy'
+                            && $donHang->trang_thai_thanh_toan === 'da_thanh_toan';
                     @endphp
 
                     @if (!$isOnlineCancelRefund)
@@ -68,10 +70,15 @@
 
                     <div class="mb-4">
                         <label for="ly_do" class="form-label fw-semibold">
-                            {{ $isOnlineCancelRefund ? 'Lý do yêu cầu hoàn tiền' : 'Lý do hoàn trả / khiếu nại' }}
+                            {{ $isOnlineCancelRefund ? 'Lý do hoàn tiền/trả hàng' : 'Lý do hoàn trả / khiếu nại' }}
                         </label>
+                        @if ($isOnlineCancelRefund)
+                            <small class="d-block text-muted mb-2">
+                                Lý do được điền sẵn từ yêu cầu hủy ban đầu, bạn có thể chỉnh sửa nếu cần.
+                            </small>
+                        @endif
                         <textarea name="ly_do" id="ly_do" class="form-control" rows="4"
-                            placeholder="Vui lòng mô tả chi tiết vấn đề (hàng lỗi, không đúng mô tả, hư hỏng khi vận chuyển...)" required></textarea>
+                            placeholder="Vui lòng mô tả chi tiết vấn đề (hàng lỗi, không đúng mô tả, hư hỏng khi vận chuyển...)">{{ old('ly_do', $isOnlineCancelRefund ? ($donHang->ly_do_yeu_cau_huy ?? '') : '') }}</textarea>
                         @error('ly_do')
                             <div class="text-danger small mt-1">{{ $message }}</div>
                         @enderror
@@ -150,7 +157,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
                     <button type="submit" class="btn btn-warning" id="btnSubmitHoanTra">
-                        <i class="bi bi-arrow-counterclockwise me-2"></i> Gửi yêu cầu hoàn tiền
+                        <i class="bi bi-arrow-counterclockwise me-2"></i> Gửi hoàn tiền/trả hàng
                     </button>
                 </div>
             </form>
