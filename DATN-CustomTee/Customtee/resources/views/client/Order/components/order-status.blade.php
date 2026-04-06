@@ -149,12 +149,18 @@
                         </div>
                     </div>
                 @else
-                    {{-- Nút yêu cầu hoàn tiền --}}
                     <div class="mt-4">
-                        <button type="button" class="btn btn-warning btn-block w-100" data-bs-toggle="modal"
-                            data-bs-target="#modalYeuCauHoanTra">
-                            <i class="bi bi-arrow-left-circle me-2"></i> Yêu cầu hoàn tiền
+                        <button type="button"
+                            class="btn btn-warning w-100 d-flex align-items-center justify-content-center gap-2"
+                            data-bs-toggle="modal" data-bs-target="#modalYeuCauHoanTra" aria-label="Yêu cầu hoàn tiền">
+                            <i class="bi bi-arrow-return-left"></i>
+                            Yêu cầu hoàn tiền
                         </button>
+
+                        <p class="text-small text-muted text-center mt-2 mb-0">
+                            <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
+                            Đơn hàng của bạn sẽ bị hủy
+                        </p>
                     </div>
                 @endif
             @else
