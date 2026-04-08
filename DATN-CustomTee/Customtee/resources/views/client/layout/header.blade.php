@@ -52,6 +52,11 @@
             background: #dc3545;
         }
 
+        .custom-toast.warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
         @keyframes slideIn {
             from {
                 opacity: 0;

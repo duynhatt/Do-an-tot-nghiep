@@ -88,8 +88,10 @@
                                                 @if ($donHang->trang_thai === 'da_giao' && !$donHang->yeu_cau_tra)
                                                     <form action="{{ route('order.confirm', $donHang->id) }}"
                                                         method="post"
-                                                        onsubmit="return confirm('Bạn xác nhận đã nhận đủ hàng và đồng ý hoàn tất đơn này?');">
-                                                        @csrf<button type="submit"
+                                                        class="js-client-confirm-submit"
+                                                        data-confirm-message="Bạn xác nhận đã nhận đủ hàng và đồng ý hoàn tất đơn này?">
+                                                        @csrf
+                                                        <button type="submit"
                                                             class="btn btn-success btn-sm px-3 rounded-pill">
                                                             <i class="bi bi-check2-circle me-1"></i>
                                                             Xác nhận nhận hàng
@@ -312,5 +314,88 @@
     }
 </style>
 
+<div id="clientOrderConfirmModal"
+    class="position-fixed top-0 start-0 w-100 h-100 align-items-center justify-content-center d-none"
+    style="z-index: 10500; background-color: rgba(0, 0, 0, 0.5);"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="clientOrderConfirmTitle">
+    <div class="card shadow-lg border-0 m-3 rounded-4" style="max-width: 420px; width: 100%;">
+        <div class="card-header bg-white border-0 py-3 fw-semibold rounded-top-4" id="clientOrderConfirmTitle">
+            Xác nhận nhận hàng
+        </div>
+        <div class="card-body text-secondary" id="clientOrderConfirmBody"></div>
+        <div class="card-footer bg-white border-0 d-flex gap-2 justify-content-end py-3 rounded-bottom-4">
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
+                id="clientOrderConfirmCancel">Hủy</button>
+            <button type="button" class="btn btn-success rounded-pill px-4" id="clientOrderConfirmOk">Xác nhận</button>
+        </div>
+    </div>
+</div>
+
 @include('client.layout.footer')
 @include('client.layout.scripts')
+
+<script>
+    (function() {
+        function openClientOrderConfirm(message, onConfirm) {
+            const modal = document.getElementById('clientOrderConfirmModal');
+            const body = document.getElementById('clientOrderConfirmBody');
+            const okBtn = document.getElementById('clientOrderConfirmOk');
+            const cancelBtn = document.getElementById('clientOrderConfirmCancel');
+            if (!modal || !body || !okBtn || !cancelBtn) {
+                if (window.confirm(message)) {
+                    onConfirm();
+                }
+                return;
+            }
+
+            body.textContent = message;
+            modal.classList.remove('d-none');
+            modal.classList.add('d-flex');
+
+            function close() {
+                modal.classList.add('d-none');
+                modal.classList.remove('d-flex');
+                okBtn.removeEventListener('click', handleOk);
+                cancelBtn.removeEventListener('click', close);
+            }
+
+            function handleOk() {
+                close();
+                onConfirm();
+            }
+
+            okBtn.addEventListener('click', handleOk);
+            cancelBtn.addEventListener('click', close);
+        }
+
+        function bindOrderConfirmForms() {
+            document.querySelectorAll('form.js-client-confirm-submit').forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    if (form.getAttribute('data-confirmed') === '1') {
+                        form.removeAttribute('data-confirmed');
+                        return;
+                    }
+                    e.preventDefault();
+                    const msg = form.getAttribute('data-confirm-message') ||
+                        'Bạn có chắc chắn muốn thực hiện thao tác này?';
+                    openClientOrderConfirm(msg, function() {
+                        form.setAttribute('data-confirmed', '1');
+                        if (typeof form.requestSubmit === 'function') {
+                            form.requestSubmit();
+                        } else {
+                            form.submit();
+                        }
+                    });
+                });
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bindOrderConfirmForms);
+        } else {
+            bindOrderConfirmForms();
+        }
+    })();
+</script>
