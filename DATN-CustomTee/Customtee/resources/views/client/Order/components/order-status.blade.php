@@ -8,10 +8,16 @@
             $statusMap = [
                 'cho_xac_nhan' => ['Chờ xác nhận', 'warning', 'bi bi-hourglass-split', 'Đang chờ xác nhận từ cửa hàng'],
                 'dang_xu_ly' => ['Đang xử lý', 'info', 'bi bi-gear', 'Đang chuẩn bị và đóng gói'],
+                'dang_yeu_cau_huy' => [
+                    'Đang yêu cầu hủy',
+                    'warning',
+                    'bi bi-hourglass-split',
+                    'Đơn hàng đang chờ admin duyệt yêu cầu hủy.',
+                ],
                 'cho_duyet_huy' => ['Chờ duyệt hủy', 'warning', 'bi bi-hourglass-split', 'Đang chờ admin duyệt yêu cầu hủy'],
                 'dang_giao' => ['Đang giao', 'primary', 'bi bi-truck', 'Đơn hàng đang được vận chuyển'],
                 'da_giao' => [
-                    'Đã giao',
+                    'Đã giao hàng',
                     'success',
                     'bi bi-check-circle-fill',
                     'Giao hàng thành công. Vui lòng kiểm tra và xác nhận nếu bạn đã nhận đủ hàng.',
@@ -27,12 +33,10 @@
 
             $effectiveTrangThai = $donHang->trang_thai;
             if (
-                $donHang->phuong_thuc_thanh_toan === 'vnpay'
-                && (bool) $donHang->yeu_cau_huy
+                (bool) $donHang->yeu_cau_huy
                 && in_array($donHang->trang_thai, ['dang_xu_ly', 'cho_duyet_huy'], true)
             ) {
-                // Luồng hủy online đang chờ duyệt hiển thị như "đang xử lý" ở UI khách hàng.
-                $effectiveTrangThai = 'dang_xu_ly';
+                $effectiveTrangThai = 'dang_yeu_cau_huy';
             }
 
             $current = $statusMap[$effectiveTrangThai] ?? [
@@ -98,6 +102,7 @@
             @if (
                 $donHang->phuong_thuc_thanh_toan === 'cod' &&
                     in_array($donHang->trang_thai, ['dang_xu_ly', 'cho_duyet_huy'], true) &&
+                    !(bool) $donHang->yeu_cau_huy &&
                     !empty($donHang->ly_do_yeu_cau_huy))
                 <div class="alert alert-info border small mb-4">
                     <strong>Lý do hủy bạn đã gửi:</strong> {{ $donHang->ly_do_yeu_cau_huy }}
@@ -140,7 +145,10 @@
                     ]
                 : null;
 
-            $canCreateNewRefund = !$yeuCauHoanTien || $yeuCauHoanTien->trang_thai === 'da_tu_choi';
+            $refundAttempts = $yeuCauHoanTien ? (int) ($yeuCauHoanTien->so_lan_yeu_cau ?? 1) : 0;
+            $canCreateNewRefund =
+                !$yeuCauHoanTien
+                || ($yeuCauHoanTien->trang_thai === 'da_tu_choi' && $refundAttempts < 2);
 
             // Logic mới theo yêu cầu của bạn
             if ($donHang->phuong_thuc_thanh_toan === 'vnpay') {
@@ -251,12 +259,23 @@
             @endif
         @endif
 
+        @if ($yeuCauHoanTien && $yeuCauHoanTien->trang_thai === 'da_tu_choi' && $refundAttempts >= 2)
+            <div class="alert alert-secondary mt-4 mb-0 text-center">
+                Bạn đã dùng hết 2 lần yêu cầu hoàn tiền cho đơn hàng này.
+            </div>
+        @endif
+
         {{-- Nút hủy đơn --}}
-        @if (
-            $donHang->phuong_thuc_thanh_toan === 'vnpay'
-            && (bool) $donHang->yeu_cau_huy
-            && in_array($donHang->trang_thai, ['dang_xu_ly', 'cho_duyet_huy'], true)
-        )
+        @php
+            $isPendingCancelRequest = (bool) $donHang->yeu_cau_huy
+                && in_array($donHang->trang_thai, ['dang_xu_ly', 'cho_duyet_huy'], true);
+            $cancelRequestAttempts = (int) ($donHang->so_lan_yeu_cau_huy ?? 0);
+            $canRequestCancelInProcessing = $donHang->trang_thai === 'dang_xu_ly'
+                && !$isPendingCancelRequest
+                && $cancelRequestAttempts < 2;
+        @endphp
+
+        @if ($isPendingCancelRequest)
             <div class="mt-4 alert alert-warning mb-0">
                 <i class="bi bi-hourglass-split me-2"></i> Đơn đang chờ admin duyệt hủy.
                 @if ($donHang->ly_do_yeu_cau_huy)
@@ -272,7 +291,7 @@
                     <i class="bi bi-x-circle me-2"></i> Hủy đơn
                 </button>
             </div>
-        @elseif ($donHang->trang_thai === 'dang_xu_ly')
+        @elseif ($canRequestCancelInProcessing)
             <div class="mt-4">
                 <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal"
                     data-bs-target="#modalHuyDon">
@@ -285,18 +304,14 @@
         @if (
             $donHang->trang_thai === 'cho_xac_nhan' ||
                 ($donHang->trang_thai === 'dang_xu_ly' &&
-                    !(
-                        $donHang->phuong_thuc_thanh_toan === 'vnpay' &&
-                        (bool) $donHang->yeu_cau_huy &&
-                        in_array($donHang->trang_thai, ['dang_xu_ly', 'cho_duyet_huy'], true)
-                    )))
+                    !$isPendingCancelRequest &&
+                    $cancelRequestAttempts < 2))
             @php
                 $laYeuCauHuyOnline =
                     $donHang->phuong_thuc_thanh_toan === 'vnpay' && $donHang->trang_thai === 'dang_xu_ly';
                 $boQuaLyDoHuy =
                     ($donHang->phuong_thuc_thanh_toan === 'vnpay'
-                        && $donHang->trang_thai === 'cho_xac_nhan'
-                        && $donHang->trang_thai_thanh_toan !== 'da_thanh_toan')
+                        && $donHang->trang_thai === 'cho_xac_nhan')
                     || ($donHang->phuong_thuc_thanh_toan === 'cod'
                         && $donHang->trang_thai === 'cho_xac_nhan');
             @endphp
@@ -341,6 +356,12 @@
                         </form>
                     </div>
                 </div>
+            </div>
+        @endif
+
+        @if ($donHang->trang_thai === 'dang_xu_ly' && !$isPendingCancelRequest && $cancelRequestAttempts >= 2)
+            <div class="alert alert-secondary mt-4 mb-0">
+                Bạn đã dùng hết 2 lần yêu cầu hủy cho đơn hàng này.
             </div>
         @endif
 

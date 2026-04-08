@@ -729,7 +729,8 @@ class CheckoutController extends Controller
 
             $donHang->update([
                 'trang_thai_thanh_toan' => 'da_thanh_toan',
-                'trang_thai'            => 'dang_xu_ly',
+                // Sau khi thanh toán online thành công vẫn chờ admin xác nhận đơn.
+                'trang_thai'            => 'cho_xac_nhan',
                 'vnp_PayDate' => $request->vnp_PayDate,
                 'vnp_TransactionNo' => $request->vnp_TransactionNo
             ]);

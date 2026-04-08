@@ -21,13 +21,11 @@ class RefundController extends Controller
             return false;
         }
 
+        // Đơn online đã thanh toán và đã hủy phải được ưu tiên hoàn tiền,
+        // admin không được từ chối ở bước duyệt yêu cầu.
         return $order->phuong_thuc_thanh_toan === 'vnpay'
             && $order->trang_thai_thanh_toan === 'da_thanh_toan'
-            && $order->trang_thai === DonHang::TRANG_THAI_DA_HUY
-            && (
-                (bool) $order->yeu_cau_huy
-                || !empty($order->ly_do_huy_boi_admin)
-            );
+            && $order->trang_thai === DonHang::TRANG_THAI_DA_HUY;
     }
 
     public function index(Request $request)
