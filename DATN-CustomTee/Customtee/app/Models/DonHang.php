@@ -58,7 +58,7 @@ class DonHang extends Model
             self::TRANG_THAI_DANG_XU_LY     => 'Đang xử lý',
             self::TRANG_THAI_CHO_DUYET_HUY  => 'Chờ duyệt hủy',
             self::TRANG_THAI_DANG_GIAO      => 'Đang giao',
-            self::TRANG_THAI_DA_GIAO        => 'Đã giao hàng',
+            self::TRANG_THAI_DA_GIAO        => 'Đã giao',
             self::TRANG_THAI_DA_HOAN_THANH  => 'Đã hoàn thành',
             self::TRANG_THAI_DA_HUY         => 'Đã hủy',
         ];
@@ -102,6 +102,7 @@ class DonHang extends Model
         'ngay_yeu_cau_huy',
         'so_lan_yeu_cau_huy',
         'da_giao_at',
+        'da_nhan_hang_at',
     ];
 
     protected $casts = [
@@ -114,6 +115,7 @@ class DonHang extends Model
         'ngay_yeu_cau_huy' => 'datetime',
         'so_lan_yeu_cau_huy' => 'integer',
         'da_giao_at' => 'datetime',
+        'da_nhan_hang_at' => 'datetime',
     ];
 
 

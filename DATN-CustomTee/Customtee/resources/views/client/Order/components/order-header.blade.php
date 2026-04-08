@@ -16,9 +16,9 @@
         $canShowReturnCountdown =
             $donHang->trang_thai === \App\Models\DonHang::TRANG_THAI_DA_GIAO
             && !$donHang->yeu_cau_tra
-            && !empty($donHang->da_giao_at);
+            && !empty($donHang->da_nhan_hang_at);
         $returnDeadlineTs = $canShowReturnCountdown
-            ? $donHang->da_giao_at->copy()->addDays(3)->getTimestampMs()
+            ? $donHang->da_nhan_hang_at->copy()->addDays(3)->getTimestampMs()
             : null;
     @endphp
     <div>

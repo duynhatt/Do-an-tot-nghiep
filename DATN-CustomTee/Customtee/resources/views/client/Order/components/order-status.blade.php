@@ -17,10 +17,16 @@
                 'cho_duyet_huy' => ['Chờ duyệt hủy', 'warning', 'bi bi-hourglass-split', 'Đang chờ admin duyệt yêu cầu hủy'],
                 'dang_giao' => ['Đang giao', 'primary', 'bi bi-truck', 'Đơn hàng đang được vận chuyển'],
                 'da_giao' => [
-                    'Đã giao hàng',
+                    'Đã giao',
                     'success',
                     'bi bi-check-circle-fill',
-                    'Giao hàng thành công. Vui lòng kiểm tra và xác nhận nếu bạn đã nhận đủ hàng.',
+                    'Đơn hàng đã được giao thành công.',
+                ],
+                'da_nhan_hang' => [
+                    'Đã nhận hàng',
+                    'success',
+                    'bi bi-box-seam',
+                    'Bạn đã xác nhận nhận hàng. Có thể gửi yêu cầu hoàn tiền/trả hàng trong 3 ngày.',
                 ],
                 'da_hoan_thanh' => [
                     'Đã hoàn thành',
@@ -37,6 +43,9 @@
                 && in_array($donHang->trang_thai, ['dang_xu_ly', 'cho_duyet_huy'], true)
             ) {
                 $effectiveTrangThai = 'dang_yeu_cau_huy';
+            }
+            if ($effectiveTrangThai === 'da_giao' && !empty($donHang->da_nhan_hang_at)) {
+                $effectiveTrangThai = 'da_nhan_hang';
             }
 
             $current = $statusMap[$effectiveTrangThai] ?? [
@@ -56,25 +65,30 @@
 
             <p class="text-muted mb-4">{{ $current[3] }}</p>
 
-            @if (in_array($effectiveTrangThai, ['da_giao', 'da_hoan_thanh']) && $donHang->da_giao_at)
+            @if (in_array($effectiveTrangThai, ['da_giao', 'da_nhan_hang', 'da_hoan_thanh']) && $donHang->da_giao_at)
                 <div class="alert alert-light border small mb-4">
                     <strong>Thời gian đã giao:</strong> {{ $donHang->da_giao_at->format('d/m/Y H:i') }}
+                </div>
+            @endif
+            @if (in_array($effectiveTrangThai, ['da_nhan_hang', 'da_hoan_thanh']) && $donHang->da_nhan_hang_at)
+                <div class="alert alert-light border small mb-4">
+                    <strong>Thời gian đã nhận hàng:</strong> {{ $donHang->da_nhan_hang_at->format('d/m/Y H:i') }}
                 </div>
             @endif
 
             <div class="d-flex justify-content-between position-relative mt-4 timeline-compact">
                 <div
-                    class="timeline-step {{ in_array($effectiveTrangThai, ['cho_xac_nhan', 'dang_xu_ly', 'dang_giao', 'da_giao', 'da_hoan_thanh']) ? 'active' : '' }}">
+                    class="timeline-step {{ in_array($effectiveTrangThai, ['cho_xac_nhan', 'dang_xu_ly', 'dang_giao', 'da_giao', 'da_nhan_hang', 'da_hoan_thanh']) ? 'active' : '' }}">
                     <div class="step-icon"><i class="bi bi-check-circle"></i></div>
                     <small>Xác nhận</small>
                 </div>
                 <div
-                    class="timeline-step {{ in_array($effectiveTrangThai, ['dang_xu_ly', 'cho_duyet_huy', 'dang_giao', 'da_giao', 'da_hoan_thanh']) ? 'active' : '' }}">
+                    class="timeline-step {{ in_array($effectiveTrangThai, ['dang_xu_ly', 'cho_duyet_huy', 'dang_giao', 'da_giao', 'da_nhan_hang', 'da_hoan_thanh']) ? 'active' : '' }}">
                     <div class="step-icon"><i class="bi bi-gear"></i></div>
                     <small>Xử lý</small>
                 </div>
                 <div
-                    class="timeline-step {{ in_array($effectiveTrangThai, ['dang_giao', 'da_giao', 'da_hoan_thanh']) ? 'active' : '' }}">
+                    class="timeline-step {{ in_array($effectiveTrangThai, ['dang_giao', 'da_giao', 'da_nhan_hang', 'da_hoan_thanh']) ? 'active' : '' }}">
                     <div class="step-icon"><i class="bi bi-truck"></i></div>
                     <small>Giao hàng</small>
                 </div>
@@ -154,16 +168,18 @@
             if ($donHang->phuong_thuc_thanh_toan === 'vnpay') {
                 $showRefundButton = (
                     ($donHang->trang_thai === 'da_huy' && $donHang->trang_thai_thanh_toan === 'da_thanh_toan')
-                    || $donHang->trang_thai === 'da_giao'
+                    || ($donHang->trang_thai === 'da_giao' && !empty($donHang->da_nhan_hang_at))
                 ) && $canCreateNewRefund;
             } elseif ($donHang->phuong_thuc_thanh_toan === 'cod') {
-                $showRefundButton = $donHang->trang_thai === 'da_giao' && $canCreateNewRefund;
+                $showRefundButton = $donHang->trang_thai === 'da_giao'
+                    && !empty($donHang->da_nhan_hang_at)
+                    && $canCreateNewRefund;
             } else {
                 $showRefundButton = false;
             }
 
             // Kiểm tra thời hạn hoàn tiền (3 ngày)
-            $hoanThanhTime = $donHang->da_hoan_thanh_at ?? $donHang->updated_at;
+            $hoanThanhTime = $donHang->da_nhan_hang_at ?? $donHang->da_giao_at;
             $conTrongThoiHan = $hoanThanhTime && \Carbon\Carbon::parse($hoanThanhTime)->addDays(3)->isFuture();
             $refundButtonLabel = $donHang->trang_thai === 'da_giao' ? 'Hoàn tiền/Trả hàng' : 'Hoàn tiền';
         @endphp
@@ -254,7 +270,7 @@
             @else
                 <div class="alert alert-info mt-4 text-center">
                     <i class="bi bi-info-circle me-2"></i>
-                    Hết thời gian hoàn tiền/trả hàng (quá 3 ngày kể từ khi hoàn thành)
+                    Hết thời gian hoàn tiền/trả hàng (quá 3 ngày kể từ khi nhận hàng)
                 </div>
             @endif
         @endif

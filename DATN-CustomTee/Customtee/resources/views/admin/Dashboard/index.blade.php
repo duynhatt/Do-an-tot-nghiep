@@ -149,6 +149,11 @@
                 color: #0e7490;
             }
 
+            .status-da_nhan_hang {
+                background: #e0e7ff;
+                color: #3730a3;
+            }
+
             .status-da_hoan_thanh {
                 background: #dcfce7;
                 color: #15803d;
@@ -171,8 +176,8 @@
                 }
 
                 .status-summary-col {
-                    flex: 0 0 14.2857%;
-                    max-width: 14.2857%;
+                    flex: 0 0 12.5%;
+                    max-width: 12.5%;
                 }
             }
 
@@ -353,6 +358,7 @@
                             'dang_xu_ly' => ['Đang xử lý', 'info'],
                             'dang_giao' => ['Đang giao', 'primary'],
                             'da_giao' => ['Đã giao', 'info'],
+                            'da_nhan_hang' => ['Đã nhận hàng', 'primary'],
                             'da_hoan_thanh' => ['Đã hoàn thành', 'success'],
                             'da_huy' => ['Đã hủy', 'danger'],
                             'tra_hang' => ['Trả hàng', 'secondary'],
@@ -851,6 +857,7 @@
                         'dang_xu_ly': 'Đang xử lý',
                         'dang_giao': 'Đang giao',
                         'da_giao': 'Đã giao',
+                        'da_nhan_hang': 'Đã nhận hàng',
                         'da_hoan_thanh': 'Đã hoàn thành',
                         'da_huy': 'Đã hủy',
                         'tra_hang': 'Trả hàng'
@@ -868,7 +875,10 @@
 
                         res.data.forEach(order => {
 
-                            const badgeKey = order.yeu_cau_tra ? 'tra_hang' : order.trang_thai;
+                            let badgeKey = order.yeu_cau_tra ? 'tra_hang' : order.trang_thai;
+                            if (!order.yeu_cau_tra && order.trang_thai === 'da_giao' && order.da_nhan_hang_at) {
+                                badgeKey = 'da_nhan_hang';
+                            }
                             let statusBadge = `
                 <span class="badge-status status-${badgeKey}">
                     ${statusMap[badgeKey] ?? statusMap[order.trang_thai]}
