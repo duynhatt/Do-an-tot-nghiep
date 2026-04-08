@@ -1,6 +1,5 @@
 @extends('admin.layout.AdminLayout')
 @section('AdminContent')
-@section('AdminContent')
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
 
@@ -49,6 +48,13 @@
         $refundRequestLabel = $donHang->trang_thai === \App\Models\DonHang::TRANG_THAI_DA_GIAO
             ? 'Yêu cầu trả hàng hoàn tiền'
             : 'Yêu cầu hoàn tiền';
+        $rawCustomerNote = $donHang->ghi_chu ?? '';
+        $appliedVoucherCode = null;
+        $customerNote = $rawCustomerNote;
+        if (preg_match('/\s*\(Voucher:\s*([^)]+)\)\s*$/i', $rawCustomerNote, $matches)) {
+            $appliedVoucherCode = trim($matches[1]);
+            $customerNote = trim(preg_replace('/\s*\(Voucher:\s*([^)]+)\)\s*$/i', '', $rawCustomerNote));
+        }
         $isPendingCancelRequest =
             (bool) $donHang->yeu_cau_huy
             && in_array($donHang->trang_thai, [
@@ -252,6 +258,24 @@
                         </div>
 
                         <div class="bg-light p-4 border-top">
+                            @if ($appliedVoucherCode)
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted">
+                                        Voucher áp dụng
+                                        <span
+                                            class="badge bg-success-subtle text-success-emphasis border border-success-subtle ms-1">
+                                            {{ $appliedVoucherCode }}
+                                        </span>
+                                    </span>
+                                    @if (($donHang->tien_giam ?? 0) > 0)
+                                        <span class="text-danger fw-semibold">
+                                            -{{ number_format($donHang->tien_giam, 0, ',', '.') }} ₫
+                                        </span>
+                                    @else
+                                        <span class="text-muted small">0 ₫</span>
+                                    @endif
+                                </div>
+                            @endif
                             <div class="d-flex justify-content-between align-items-center fs-5">
                                 <span class="fw-bold text-dark">Tổng tiền đơn hàng</span>
                                 <span class="fw-bold text-primary">
@@ -271,11 +295,12 @@
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <form action="{{ route('admin.don-hang.cancel-request.approve', $donHang) }}"
-                                            method="post">
+                                            method="post"
+                                            class="js-confirm-submit"
+                                            data-confirm-message="Xác nhận đồng ý hủy đơn này?">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" class="btn btn-success btn-lg w-100"
-                                                onclick="return confirm('Xác nhận đồng ý hủy đơn này?')">
+                                            <button type="submit" class="btn btn-success btn-lg w-100">
                                                 <i class="fas fa-check me-2"></i> Đồng ý hủy
                                             </button>
                                         </form>
@@ -295,7 +320,9 @@
                                     id="rejectCancelForm">
                                     <div class="card card-body border-danger-subtle">
                                         <form action="{{ route('admin.don-hang.cancel-request.reject', $donHang) }}"
-                                            method="post">
+                                            method="post"
+                                            class="js-confirm-submit"
+                                            data-confirm-message="Xác nhận từ chối yêu cầu hủy?">
                                             @csrf
                                             @method('PATCH')
 
@@ -306,8 +333,7 @@
                                                 <div class="text-danger small mb-2">{{ $message }}</div>
                                             @enderror
 
-                                            <button type="submit" class="btn btn-danger w-100"
-                                                onclick="return confirm('Xác nhận từ chối yêu cầu hủy?')">
+                                            <button type="submit" class="btn btn-danger w-100">
                                                 <i class="fas fa-paper-plane me-2"></i> Xác nhận từ chối
                                             </button>
                                         </form>
@@ -319,17 +345,17 @@
                 </div>
             </div>
 
-            @if ($donHang->ghi_chu || $donHang->yeu_cau_tra)
+            @if ($customerNote || $donHang->yeu_cau_tra)
                 <div class="col-12">
                     <div class="card shadow-sm border-0">
                         <div class="card-body">
-                            @if ($donHang->ghi_chu)
+                            @if ($customerNote)
                                 <div class="mb-4">
                                     <h6 class="fw-semibold text-muted mb-2">
                                         <i class="fas fa-comment-dots me-2"></i> Ghi chú của khách hàng
                                     </h6>
                                     <div class="bg-light p-3 rounded-3">
-                                        {{ $donHang->ghi_chu }}
+                                        {{ $customerNote }}
                                     </div>
                                 </div>
                             @endif
@@ -374,7 +400,8 @@
                             </div>
                         @elseif (count($trangThaiTiepTheo) > 0)
                             <form action="{{ route('admin.don-hang.update-status', $donHang) }}" method="post"
-                                class="row g-3 align-items-end">
+                                class="row g-3 align-items-end js-confirm-submit"
+                                data-confirm-message="Xác nhận thay đổi trạng thái đơn hàng?">
                                 @csrf
                                 @method('PATCH')
 
@@ -397,8 +424,7 @@
                                 </div>
 
                                 <div class="col-md-6 col-lg-3">
-                                    <button type="submit" class="btn btn-success btn-lg px-5 w-100"
-                                        onclick="return confirm('Xác nhận thay đổi trạng thái đơn hàng?')">
+                                    <button type="submit" class="btn btn-success btn-lg px-5 w-100">
                                         <i class="fas fa-check me-2"></i> Cập nhật trạng thái
                                     </button>
                                 </div>
@@ -417,13 +443,84 @@
         </div>
     </div>
 
+    <div id="adminOrderConfirmModal"
+        class="position-fixed top-0 start-0 w-100 h-100 align-items-center justify-content-center d-none"
+        style="z-index: 10050; background-color: rgba(0, 0, 0, 0.45);"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="adminOrderConfirmTitle">
+        <div class="card shadow-lg border-0 m-3" style="max-width: 440px; width: 100%;">
+            <div class="card-header bg-white py-3 fw-semibold" id="adminOrderConfirmTitle">
+                Xác nhận thao tác
+            </div>
+            <div class="card-body text-secondary" id="adminOrderConfirmBody"></div>
+            <div class="card-footer bg-white d-flex gap-2 justify-content-end py-3">
+                <button type="button" class="btn btn-outline-secondary" id="adminOrderConfirmCancel">Hủy</button>
+                <button type="button" class="btn btn-success" id="adminOrderConfirmOk">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            function openAdminOrderConfirm(message, onConfirm) {
+                const modal = document.getElementById('adminOrderConfirmModal');
+                const body = document.getElementById('adminOrderConfirmBody');
+                const okBtn = document.getElementById('adminOrderConfirmOk');
+                const cancelBtn = document.getElementById('adminOrderConfirmCancel');
+                if (!modal || !body || !okBtn || !cancelBtn) {
+                    if (window.confirm(message)) {
+                        onConfirm();
+                    }
+                    return;
+                }
+
+                body.textContent = message;
+                modal.classList.remove('d-none');
+                modal.classList.add('d-flex');
+
+                function close() {
+                    modal.classList.add('d-none');
+                    modal.classList.remove('d-flex');
+                    okBtn.removeEventListener('click', handleOk);
+                    cancelBtn.removeEventListener('click', close);
+                }
+
+                function handleOk() {
+                    close();
+                    onConfirm();
+                }
+
+                okBtn.addEventListener('click', handleOk);
+                cancelBtn.addEventListener('click', close);
+            }
+
+            document.querySelectorAll('form.js-confirm-submit').forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    if (form.getAttribute('data-confirmed') === '1') {
+                        form.removeAttribute('data-confirmed');
+                        return;
+                    }
+                    e.preventDefault();
+                    const msg = form.getAttribute('data-confirm-message') || 'Xác nhận thực hiện thao tác này?';
+                    openAdminOrderConfirm(msg, function() {
+                        form.setAttribute('data-confirmed', '1');
+                        if (typeof form.requestSubmit === 'function') {
+                            form.requestSubmit();
+                        } else {
+                            form.submit();
+                        }
+                    });
+                });
+            });
+
             const trangThaiSelect = document.getElementById('trangThaiSelect');
             const lyDoHuyWrapper = document.getElementById('lyDoHuyAdminWrapper');
             const lyDoHuyTextarea = lyDoHuyWrapper ? lyDoHuyWrapper.querySelector('textarea[name="ly_do_huy_boi_admin"]') : null;
 
-            if (!trangThaiSelect || !lyDoHuyWrapper || !lyDoHuyTextarea) return;
+            if (!trangThaiSelect || !lyDoHuyWrapper || !lyDoHuyTextarea) {
+                return;
+            }
 
             function toggleLyDoHuyField() {
                 const isDaHuy = trangThaiSelect.value === 'da_huy';

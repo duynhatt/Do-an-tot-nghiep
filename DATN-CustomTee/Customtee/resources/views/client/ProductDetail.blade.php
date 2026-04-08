@@ -472,6 +472,36 @@
 @include('client.layout.scripts')
 
 <script>
+    (function () {
+        if (typeof window.showClientToast === 'function') {
+            return;
+        }
+        window.showClientToast = function (message, type) {
+            if (message === undefined || message === null || String(message).trim() === '') {
+                return;
+            }
+            type = type === 'error' ? 'error' : (type === 'warning' ? 'warning' : 'success');
+            const el = document.createElement('div');
+            el.className = 'custom-toast ' + type;
+            el.setAttribute('role', 'alert');
+            el.style.whiteSpace = 'pre-wrap';
+            el.textContent = message;
+            document.body.appendChild(el);
+            const ms = type === 'error' ? 5200 : 4000;
+            setTimeout(function () {
+                el.classList.add('fade-out');
+                function cleanup() {
+                    el.removeEventListener('animationend', cleanup);
+                    if (el.parentNode) {
+                        el.remove();
+                    }
+                }
+                el.addEventListener('animationend', cleanup);
+                setTimeout(cleanup, 700);
+            }, ms);
+        };
+    })();
+
     document.addEventListener('DOMContentLoaded', function() {
         const colorButtons = document.querySelectorAll('.color-btn');
         const sizeButtons = document.querySelectorAll('.size-btn');
@@ -626,24 +656,24 @@
 
         addToCartBtn.addEventListener('click', function() {
             if (!selectedColor || !selectedSize) {
-                alert('Vui lòng chọn màu sắc và kích thước!');
+                showClientToast('Vui lòng chọn màu sắc và kích thước!', 'warning');
                 return;
             }
             if (!currentVariantId) {
-                alert('Vui lòng chọn lại màu và kích thước.');
+                showClientToast('Vui lòng chọn lại màu và kích thước.', 'warning');
                 return;
             }
             let qty = parseInt(quantityInput.value, 10) || 1;
             qty = Math.max(1, qty);
             if (currentStock !== null) {
                 if (qty > currentStock) {
-                    alert('Số lượng tối đa có thể mua là ' + currentStock);
+                    showClientToast('Số lượng tối đa có thể mua là ' + currentStock, 'warning');
                     qty = currentStock;
                 }
             }
             const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             if (!token) {
-                alert('Phiên đăng nhập hết hạn. Vui lòng tải lại trang.');
+                showClientToast('Phiên đăng nhập hết hạn. Vui lòng tải lại trang.', 'error');
                 return;
             }
             addToCartBtn.disabled = true;
@@ -669,37 +699,37 @@
                 const data = await r.json();
                 if (!data) return;
                 if (r.ok && data.success) {
-                    alert(data.message || 'Đã thêm vào giỏ hàng!');
+                    showClientToast(data.message || 'Đã thêm vào giỏ hàng!', 'success');
                 } else {
                     const errors = data.errors ? Object.values(data.errors).flat() : [];
                     const msg = errors.length ? errors.join('\n') : (data.message || 'Có lỗi xảy ra.');
-                    alert(msg);
+                    showClientToast(msg, 'error');
                 }
             })
-            .catch(() => alert('Có lỗi xảy ra. Vui lòng thử lại.'))
+            .catch(() => showClientToast('Có lỗi xảy ra. Vui lòng thử lại.', 'error'))
             .finally(() => { addToCartBtn.disabled = false; });
         });
 
         buyNowBtn.addEventListener('click', function() {
             if (!selectedColor || !selectedSize) {
-                alert('Vui lòng chọn màu sắc và kích thước!');
+                showClientToast('Vui lòng chọn màu sắc và kích thước!', 'warning');
                 return;
             }
             if (!currentVariantId) {
-                alert('Vui lòng chọn lại màu và kích thước.');
+                showClientToast('Vui lòng chọn lại màu và kích thước.', 'warning');
                 return;
             }
             let qty = parseInt(quantityInput.value, 10) || 1;
             qty = Math.max(1, qty);
             if (currentStock !== null) {
                 if (qty > currentStock) {
-                    alert('Số lượng tối đa có thể mua là ' + currentStock);
+                    showClientToast('Số lượng tối đa có thể mua là ' + currentStock, 'warning');
                     qty = currentStock;
                 }
             }
             const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             if (!token) {
-                alert('Phiên đăng nhập hết hạn. Vui lòng tải lại trang.');
+                showClientToast('Phiên đăng nhập hết hạn. Vui lòng tải lại trang.', 'error');
                 return;
             }
             buyNowBtn.disabled = true;
@@ -729,10 +759,10 @@
                 } else {
                     const errors = data.errors ? Object.values(data.errors).flat() : [];
                     const msg = errors.length ? errors.join('\n') : (data.message || 'Có lỗi xảy ra.');
-                    alert(msg);
+                    showClientToast(msg, 'error');
                 }
             })
-            .catch(() => alert('Có lỗi xảy ra. Vui lòng thử lại.'))
+            .catch(() => showClientToast('Có lỗi xảy ra. Vui lòng thử lại.', 'error'))
             .finally(() => { buyNowBtn.disabled = false; });
         });
 

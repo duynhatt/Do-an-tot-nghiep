@@ -188,14 +188,11 @@
                                 <li><a href="{{ route('admin.hoan-tra.index') }}">Hoàn trả</a></li>
                             </ul>
                         </li>
-                        <li class="sub-menu">
-                            <a href="javascript:;">
-                                <i class="fa fa-shopping-cart"></i>
-                                <span>đánh giá</span>
+                        <li>
+                            <a href="{{ route('admin.binh-luan.index') }}">
+                                <i class="fa fa-star"></i>
+                                <span>Đánh giá</span>
                             </a>
-                            <ul class="sub">
-                                <li><a href="{{ route('admin.binh-luan.index') }}"> bình luận</a></li>
-                            </ul>
                         </li>
                         <li class="sub-menu">
                             <a href="javascript:;">

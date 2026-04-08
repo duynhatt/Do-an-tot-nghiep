@@ -46,6 +46,7 @@
                         @foreach([
                             'cho_xac_nhan' => 'Chờ xác nhận',
                             'dang_xu_ly' => 'Đang xử lý',
+                            'dang_yeu_cau_huy' => 'Yêu cầu hủy',
                             'cho_duyet_huy' => 'Chờ duyệt hủy',
                             'dang_giao' => 'Đang giao',
                             'da_giao' => 'Đã giao',
@@ -122,6 +123,27 @@
                                             'vnpay' => 'VNPAY',
                                         ] as $value => $label)
                                             <option value="{{ $value }}" {{ request('phuong_thuc_thanh_toan') === $value ? 'selected' : '' }}>
+                                                {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="form-group mb-2" style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+                                    <label class="small text-muted" style="margin-bottom:0; white-space:nowrap; width:125px;">TT hoàn tiền</label>
+                                    <select
+                                        name="refund_trang_thai"
+                                        class="form-control form-control-sm"
+                                        style="flex:1;"
+                                    >
+                                        <option value="">Tất cả</option>
+                                        @foreach([
+                                            'cho_xu_ly' => 'Chờ xử lý',
+                                            'da_chap_nhan' => 'Đã chấp nhận',
+                                            'da_tu_choi' => 'Đã từ chối',
+                                            'da_hoan_tien' => 'Đã hoàn tiền',
+                                        ] as $value => $label)
+                                            <option value="{{ $value }}" {{ request('refund_trang_thai') === $value ? 'selected' : '' }}>
                                                 {{ $label }}
                                             </option>
                                         @endforeach

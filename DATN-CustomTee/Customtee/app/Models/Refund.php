@@ -16,6 +16,7 @@ class Refund extends Model
         'don_hang_id',
         'user_id',
         'trang_thai',
+        'so_lan_yeu_cau',
         'ly_do',
         'so_tien_yeu_cau',
         'phuong_thuc_thanh_toan',
@@ -28,6 +29,7 @@ class Refund extends Model
 
     protected $casts = [
         'so_tien_yeu_cau' => 'integer',
+        'so_lan_yeu_cau' => 'integer',
     ];
 
     // Quan hệ với đơn hàng

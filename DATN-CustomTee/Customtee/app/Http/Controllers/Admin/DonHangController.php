@@ -44,6 +44,18 @@ class DonHangController extends Controller
                         $q->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
                     });
             }
+            // Lọc "Yêu cầu hủy": các đơn khách đã gửi yêu cầu hủy, đang chờ admin xử lý.
+            elseif ($trangThai === 'dang_yeu_cau_huy') {
+                $query->where('yeu_cau_huy', true)
+                    ->whereIn('trang_thai', [
+                        DonHang::TRANG_THAI_DANG_XU_LY,
+                        DonHang::TRANG_THAI_CHO_DUYET_HUY,
+                    ])
+                    ->where(function ($q) {
+                        // Đơn đã có yêu cầu trả/hoàn chỉ hiển thị ở tab "Trả hàng".
+                        $q->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
+                    });
+            }
             // Lọc "Trả hàng": các đơn có yêu cầu trả
             elseif ($trangThai === 'tra_hang') {
                 $query->where('yeu_cau_tra', true);
@@ -77,6 +89,23 @@ class DonHangController extends Controller
         if ($phuongThucThanhToan !== null && $phuongThucThanhToan !== '') {
             if (in_array($phuongThucThanhToan, ['cod', 'vnpay'], true)) {
                 $query->where('phuong_thuc_thanh_toan', $phuongThucThanhToan);
+            }
+        }
+
+        $refundTrangThai = $request->query('refund_trang_thai');
+        if ($refundTrangThai !== null && $refundTrangThai !== '') {
+            if (in_array($refundTrangThai, ['cho_xu_ly', 'da_chap_nhan', 'da_tu_choi', 'da_hoan_tien'], true)) {
+                // Lọc theo trạng thái của yêu cầu hoàn tiền mới nhất của từng đơn.
+                $query->whereExists(function ($subQuery) use ($refundTrangThai) {
+                    $subQuery->selectRaw('1')
+                        ->from('refunds as r')
+                        ->whereColumn('r.don_hang_id', 'don_hangs.id')
+                        ->whereNull('r.deleted_at')
+                        ->whereRaw(
+                            'r.id = (select max(r2.id) from refunds r2 where r2.don_hang_id = don_hangs.id and r2.deleted_at is null)'
+                        )
+                        ->where('r.trang_thai', $refundTrangThai);
+                });
             }
         }
 
@@ -313,7 +342,6 @@ class DonHangController extends Controller
                 'ly_do_tu_choi_huy' => null,
                 'ly_do_huy_boi_admin' => null,
                 // Giữ yeu_cau_huy = 1 để UI cho phép khách yêu cầu hoàn tiền.
-                'ghi_chu' => 'Admin đã duyệt hủy đơn theo yêu cầu của khách',
             ]);
         });
 
@@ -344,7 +372,6 @@ class DonHangController extends Controller
             'trang_thai' => DonHang::TRANG_THAI_DANG_XU_LY,
             'yeu_cau_huy' => 0,
             'ly_do_tu_choi_huy' => $request->ly_do_tu_choi_huy,
-            'ghi_chu' => 'Admin từ chối hủy đơn theo yêu cầu của khách',
         ]);
 
         return back()->with('success', 'Đã từ chối yêu cầu hủy. Khách sẽ nhận được lý do.');

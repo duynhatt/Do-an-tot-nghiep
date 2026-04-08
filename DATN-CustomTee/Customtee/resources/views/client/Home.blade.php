@@ -4,7 +4,7 @@
 
 
 
-{{-- Danh mục: bố cục 1 / 2 / 3 / 4 ô tùy số lượng (tối đa 4 từ controller) --}}
+{{-- Danh mục bán chạy: bố cục 1 / 2 / 3 / 4 ô (tối đa 4, xếp theo SL bán trong 30 ngày) --}}
 @if($danhMucs->isNotEmpty())
 @php
     $browseSlots = $danhMucs->take(4)->values();
@@ -199,8 +199,8 @@
         </style>
 
         <div class="browse-by-style-wrap">
-            <h2 class="browse-by-style-title">Danh mục nổi bật</h2>
-            <p class="browse-by-style-sub mb-0">Chọn danh mục để xem sản phẩm phù hợp.</p>
+            <h2 class="browse-by-style-title">Danh mục bán chạy</h2>
+            <p class="browse-by-style-sub mb-0">Gợi ý theo mức độ mua nhiều gần đây — chọn danh mục để xem sản phẩm.</p>
             <div class="browse-style-grid browse-style-grid--{{ $browseCount }} mt-4">
                 @foreach($browseSlots as $idx => $dm)
                     @php $slotClass = 'browse-slot--' . ($idx + 1); @endphp
@@ -221,42 +221,86 @@
 </section>
 @endif
 
-    <!-- Sản phẩm mới nhất -->
-    <section class="bg-white">
-        <div class="container py-4">
+    <!-- Sản phẩm mới nhất: 10 SP, 5 / hàng (desktop) -->
+    <section class="new-products-section">
+        <div class="container-fluid new-products-section__inner px-3 px-md-4 px-xl-5">
             <style>
+                .new-products-section {
+                    background: linear-gradient(180deg, #f8fafb 0%, #ffffff 45%, #f6f7f9 100%);
+                }
+
+                .new-products-section__inner {
+                    padding-top: 3.25rem;
+                    padding-bottom: 4.25rem;
+                    max-width: 1280px;
+                    margin-left: auto;
+                    margin-right: auto;
+                }
+
+                @media (min-width: 992px) {
+                    .new-products-section__inner {
+                        padding-top: 4rem;
+                        padding-bottom: 5rem;
+                    }
+
+                    .new-product-card .card-body {
+                        padding: 1.15rem 1.25rem 1.4rem;
+                    }
+                }
+
                 .new-products-title {
-                    font-size: clamp(1.5rem, 3.2vw, 2.35rem);
+                    font-size: clamp(1.75rem, 4vw, 2.75rem);
                     font-weight: 800;
-                    letter-spacing: 0.06em;
+                    letter-spacing: 0.04em;
                     text-transform: uppercase;
-                    color: #555555;
+                    color: #1a1a1a;
+                    line-height: 1.15;
                 }
 
                 .new-products-sub {
                     text-align: center;
-                    color: #6c757d;
-                    font-size: clamp(1rem, 1.8vw, 1.15rem);
+                    color: #5c636a;
+                    font-size: clamp(1.05rem, 2vw, 1.2rem);
+                    max-width: 36rem;
+                    margin-left: auto;
+                    margin-right: auto;
+                    line-height: 1.55;
                 }
 
                 .new-product-card {
-                    background: #ececee;
-                    border-color: rgba(0,0,0,0.08);
-                    border-radius: 10px;
+                    background: #fff;
+                    border: 1px solid rgba(0, 0, 0, 0.06);
+                    border-radius: 1.25rem;
                     overflow: hidden;
-                    transition: transform 0.22s ease, box-shadow 0.22s ease;
+                    transition: transform 0.28s ease, box-shadow 0.28s ease;
+                    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
                 }
 
                 .new-product-card:hover {
-                    transform: translateY(-8px);
-                    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.16);
+                    transform: translateY(-10px);
+                    box-shadow: 0 28px 56px rgba(25, 135, 84, 0.12), 0 12px 32px rgba(0, 0, 0, 0.1);
                 }
 
-                .new-product-card img {
+                .new-product-card .new-product-media {
+                    display: block;
+                    aspect-ratio: 1;
+                    overflow: hidden;
+                    background: linear-gradient(145deg, #f0f2f5, #e8eaee);
+                }
+
+                .new-product-card .new-product-media img {
+                    width: 100%;
+                    height: 100%;
                     object-fit: cover;
-                    height: 140px;
-                    border-top-left-radius: 10px;
-                    border-top-right-radius: 10px;
+                    transition: transform 0.35s ease;
+                }
+
+                .new-product-card:hover .new-product-media img {
+                    transform: scale(1.06);
+                }
+
+                .new-product-card .card-body {
+                    padding: 1rem 1.1rem 1.25rem;
                 }
 
                 .new-product-name {
@@ -264,34 +308,47 @@
                     -webkit-line-clamp: 2;
                     -webkit-box-orient: vertical;
                     overflow: hidden;
+                    font-size: clamp(0.95rem, 1.35vw, 1.05rem);
+                    font-weight: 700;
+                    line-height: 1.35;
+                    color: #212529;
+                    min-height: 2.7em;
                 }
+
+                .new-product-price {
+                    font-size: clamp(1rem, 1.5vw, 1.15rem);
+                    font-weight: 800;
+                    color: #198754;
+                    letter-spacing: 0.02em;
+                }
+
             </style>
 
-            <div class="row text-center py-3">
-                <div class="col-lg-6 m-auto">
-                    <h2 class="new-products-title">Sản phẩm mới nhất</h2>
+            <div class="row text-center pb-4 pb-lg-5">
+                <div class="col-lg-8 col-xl-7 mx-auto">
+                    <h2 class="new-products-title mb-3">Sản phẩm mới nhất</h2>
                     <p class="new-products-sub mb-0">
-                        Những sản phẩm mới được cập nhật, mời bạn khám phá.
+                        Mười sản phẩm mới cập nhật — xem nhanh, chọn style phù hợp với bạn.
                     </p>
                 </div>
             </div>
-            <div class="row">
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3 g-md-4">
                 @forelse($sanPhamsMoiNhat as $sp)
-                <div class="col-6 col-md-3 col-lg-2 mb-3">
-                    <div class="card h-100 border border-2 shadow-sm new-product-card">
-                        <a href="{{ route('sanpham.chitiet', $sp->slug) }}">
+                <div class="col">
+                    <div class="card h-100 border-0 new-product-card">
+                        <a href="{{ route('sanpham.chitiet', $sp->slug) }}" class="new-product-media text-decoration-none">
                             <img src="{{ $sp->hinh_anh_chinh ? asset('storage/' . $sp->hinh_anh_chinh) : asset('img/shop_01.jpg') }}"
-                                class="card-img-top img-fluid" alt="{{ $sp->ten_san_pham }}">
+                                class="img-fluid" alt="{{ $sp->ten_san_pham }}" loading="lazy" decoding="async">
                         </a>
-                        <div class="card-body p-2">
-                            <a href="{{ route('sanpham.chitiet', $sp->slug) }}" class="h6 text-decoration-none text-dark d-block mb-1 new-product-name">
+                        <div class="card-body d-flex flex-column">
+                            <a href="{{ route('sanpham.chitiet', $sp->slug) }}" class="text-decoration-none text-dark new-product-name mb-2 flex-grow-1">
                                 {{ $sp->ten_san_pham }}
                             </a>
-                            <p class="mb-0">
+                            <p class="mb-0 mt-auto">
                                 @if($sp->variants_min_gia)
-                                    <strong class="text-success" style="font-size: 0.95rem;">{{ number_format($sp->variants_min_gia, 0, ',', '.') }} ₫</strong>
+                                    <span class="new-product-price">{{ number_format($sp->variants_min_gia, 0, ',', '.') }} ₫</span>
                                 @else
-                                    <span class="text-muted">Liên hệ</span>
+                                    <span class="text-muted fw-semibold">Liên hệ</span>
                                 @endif
                             </p>
                         </div>
@@ -305,21 +362,28 @@
                 @endforelse
             </div>
             @if($sanPhamsMoiNhat->isNotEmpty())
-            <div class="text-center mt-3">
-                <a href="{{ url('/Shop') }}" class="btn btn-outline-success">Xem tất cả sản phẩm</a>
+            <div class="text-center mt-4 mt-lg-5 pt-2">
+                <a href="{{ url('/Shop') }}" class="btn btn-success btn-lg rounded-pill px-5 shadow-sm">Xem tất cả sản phẩm</a>
             </div>
             @endif
         </div>
     </section>
 
 <!-- Sản phẩm Hot & Giảm giá -->
-<section class="py-4 bg-white">
-    <div class="container py-3">
-        <div class="row">
+<section class="py-4 py-lg-5 bg-white">
+    <div class="container py-2">
+        <div class="row g-4">
             <!-- Cột trái: Sản phẩm hot -->
             <div class="col-lg-6 mb-4 mb-lg-0">
-                <div class="border border-2 rounded-5 p-3 h-100" style="background: #ececee; border-color: rgba(0,0,0,0.08); border-radius: 20px;">
+                <div class="hot-sale-panel h-100 p-3 p-md-4">
                     <style>
+                        .hot-sale-panel {
+                            background: linear-gradient(165deg, #ffffff 0%, #f5f7f9 48%, #eef1f4 100%);
+                            border: 1px solid rgba(0, 0, 0, 0.06);
+                            border-radius: 1.35rem;
+                            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.07);
+                        }
+
                         .product-strip {
                             overflow: hidden;
                             width: 100%;
@@ -334,76 +398,132 @@
 
                         .strip-item {
                             flex: 0 0 50%;
-                            padding: 0 0.6rem;
+                            padding: 0 0.5rem;
                             box-sizing: border-box;
                         }
 
-                        /* Hiển thị 3 sản phẩm/khung khi đủ rộng */
                         @media (min-width: 768px) {
                             .strip-item {
                                 flex: 0 0 33.333333%;
+                                padding: 0 0.55rem;
                             }
                         }
 
                         .strip-card {
                             background: #fff;
-                            border: 1px solid rgba(0,0,0,0.08);
-                            border-radius: 10px;
+                            border-radius: 1.1rem;
                             overflow: hidden;
-                            transition: transform 0.22s ease, box-shadow 0.22s ease;
+                            box-shadow: 0 8px 26px rgba(0, 0, 0, 0.07);
+                            transition: transform 0.28s ease, box-shadow 0.28s ease;
                         }
 
-                        .strip-card:hover {
+                        .strip-card--hot:hover {
                             transform: translateY(-8px);
-                            box-shadow: 0 22px 44px rgba(0,0,0,0.16);
+                            box-shadow: 0 22px 50px rgba(25, 135, 84, 0.14), 0 12px 32px rgba(0, 0, 0, 0.1);
                         }
 
-                        .strip-card-img {
-                            height: 140px;
-                            object-fit: cover;
+                        .strip-card--sale:hover {
+                            transform: translateY(-8px);
+                            box-shadow: 0 22px 50px rgba(220, 53, 69, 0.12), 0 12px 32px rgba(0, 0, 0, 0.1);
+                        }
+
+                        .strip-card-media {
+                            display: block;
+                            aspect-ratio: 1;
+                            overflow: hidden;
+                            background: linear-gradient(145deg, #f0f2f5, #e8eaee);
+                        }
+
+                        .strip-card-media img {
                             width: 100%;
-                            border-top-left-radius: 10px;
-                            border-top-right-radius: 10px;
+                            height: 100%;
+                            object-fit: cover;
+                            transition: transform 0.35s ease;
                         }
 
-                        .hot-sale-section-title,
-                        .featured-review-title {
-                            font-size: clamp(1.5rem, 3.2vw, 2.35rem);
-                            font-weight: 800;
-                            letter-spacing: 0.06em;
-                            text-transform: uppercase;
-                            color: #555555;
+                        .strip-card:hover .strip-card-media img {
+                            transform: scale(1.06);
                         }
 
-                        .hot-sale-section-sub,
-                        .review-text,
-                        .new-products-sub {
-                            text-align: center;
-                            color: #6c757d;
-                            font-size: clamp(1rem, 1.8vw, 1.15rem);
+                        .strip-card .card-body {
+                            padding: 0.85rem 1rem 1.05rem;
                         }
 
-                        .product-strip .card-body .h6 {
-                            font-size: 1rem;
+                        @media (min-width: 768px) {
+                            .strip-card .card-body {
+                                padding: 1rem 1.1rem 1.2rem;
+                            }
+                        }
+
+                        .strip-badge {
+                            font-size: 0.72rem;
                             font-weight: 700;
-                            letter-spacing: 0.03em;
-                            color: #111;
+                            letter-spacing: 0.04em;
+                            padding: 0.4em 0.85em;
+                            border: none;
+                        }
+
+                        .strip-badge--hot {
+                            background: linear-gradient(135deg, #20c997, #198754) !important;
+                            color: #fff !important;
+                        }
+
+                        .strip-badge--sale {
+                            background: linear-gradient(135deg, #ff6b6b, #dc3545) !important;
+                            color: #fff !important;
+                        }
+
+                        .strip-card-name {
                             display: -webkit-box;
                             -webkit-line-clamp: 2;
                             -webkit-box-orient: vertical;
                             overflow: hidden;
+                            font-size: clamp(0.9rem, 1.25vw, 1.02rem);
+                            font-weight: 700;
+                            line-height: 1.35;
+                            color: #212529;
+                            min-height: 2.65em;
                         }
 
-                        .strip-card-price {
-                            font-size: 0.95rem;
+                        .strip-price {
+                            font-weight: 800;
+                            letter-spacing: 0.02em;
+                            font-size: clamp(0.95rem, 1.35vw, 1.08rem);
                         }
 
-                        .strip-card-old-price {
-                            font-size: 0.85rem;
+                        .strip-price--hot {
+                            color: #198754;
+                        }
+
+                        .strip-price--sale {
+                            color: #dc3545;
+                        }
+
+                        .strip-price-old {
+                            font-size: 0.82rem;
+                            color: #8b949e;
+                        }
+
+                        .hot-sale-section-title {
+                            font-size: clamp(1.5rem, 3.2vw, 2.35rem);
+                            font-weight: 800;
+                            letter-spacing: 0.04em;
+                            text-transform: uppercase;
+                            color: #1a1a1a;
+                        }
+
+                        .hot-sale-section-sub {
+                            text-align: center;
+                            color: #5c636a;
+                            font-size: clamp(1rem, 1.8vw, 1.12rem);
+                            line-height: 1.5;
+                            max-width: 28rem;
+                            margin-left: auto;
+                            margin-right: auto;
                         }
                     </style>
-                    <div class="text-center mb-3">
-                        <h1 class="hot-sale-section-title">Sản phẩm hot</h1>
+                    <div class="text-center mb-3 mb-md-4">
+                        <h1 class="hot-sale-section-title mb-2">Sản phẩm hot</h1>
                         <p class="hot-sale-section-sub mb-0">Top sản phẩm được mua nhiều nhất trong 30 ngày gần đây.</p>
                     </div>
 
@@ -412,23 +532,22 @@
                             <div class="strip-track">
                                 @foreach($sanPhamsHot as $sp)
                                     <div class="strip-item">
-                                        <div class="card h-100 shadow-sm strip-card">
-                                            <a href="{{ route('sanpham.chitiet', $sp->slug) }}">
+                                        <div class="card h-100 border-0 strip-card strip-card--hot">
+                                            <a href="{{ route('sanpham.chitiet', $sp->slug) }}" class="strip-card-media text-decoration-none">
                                                 <img src="{{ $sp->hinh_anh_chinh ? asset('storage/' . $sp->hinh_anh_chinh) : asset('img/shop_01.jpg') }}"
-                                                    class="card-img-top img-fluid strip-card-img" alt="{{ $sp->ten_san_pham }}">
+                                                    class="img-fluid" alt="{{ $sp->ten_san_pham }}" loading="lazy" decoding="async">
                                             </a>
-                                            <div class="card-body p-2">
-                                                <span class="badge bg-success mb-2">Hot</span>
+                                            <div class="card-body d-flex flex-column">
+                                                <span class="badge strip-badge strip-badge--hot mb-2 align-self-start rounded-pill">Hot</span>
                                                 <a href="{{ route('sanpham.chitiet', $sp->slug) }}"
-                                                    class="h6 text-decoration-none text-dark d-block mb-1"
-                                                    style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
+                                                    class="strip-card-name text-decoration-none text-dark mb-2 flex-grow-1">
                                                     {{ $sp->ten_san_pham }}
                                                 </a>
-                                                <p class="mb-0">
+                                                <p class="mb-0 mt-auto">
                                                     @if($sp->variants_min_gia)
-                                                        <strong class="text-success" style="font-size: 0.95rem;">{{ number_format($sp->variants_min_gia, 0, ',', '.') }} ₫</strong>
+                                                        <span class="strip-price strip-price--hot">{{ number_format($sp->variants_min_gia, 0, ',', '.') }} ₫</span>
                                                     @else
-                                                        <span class="text-muted">Liên hệ</span>
+                                                        <span class="text-muted fw-semibold small">Liên hệ</span>
                                                     @endif
                                                 </p>
                                             </div>
@@ -439,23 +558,22 @@
                                 {{-- Lặp lại danh sách để reset index mượt hơn --}}
                                 @foreach($sanPhamsHot as $sp)
                                     <div class="strip-item">
-                                        <div class="card h-100 shadow-sm strip-card">
-                                            <a href="{{ route('sanpham.chitiet', $sp->slug) }}">
+                                        <div class="card h-100 border-0 strip-card strip-card--hot">
+                                            <a href="{{ route('sanpham.chitiet', $sp->slug) }}" class="strip-card-media text-decoration-none">
                                                 <img src="{{ $sp->hinh_anh_chinh ? asset('storage/' . $sp->hinh_anh_chinh) : asset('img/shop_01.jpg') }}"
-                                                    class="card-img-top img-fluid strip-card-img" alt="{{ $sp->ten_san_pham }}">
+                                                    class="img-fluid" alt="{{ $sp->ten_san_pham }}" loading="lazy" decoding="async">
                                             </a>
-                                            <div class="card-body p-2">
-                                                <span class="badge bg-success mb-2">Hot</span>
+                                            <div class="card-body d-flex flex-column">
+                                                <span class="badge strip-badge strip-badge--hot mb-2 align-self-start rounded-pill">Hot</span>
                                                 <a href="{{ route('sanpham.chitiet', $sp->slug) }}"
-                                                    class="h6 text-decoration-none text-dark d-block mb-1"
-                                                    style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
+                                                    class="strip-card-name text-decoration-none text-dark mb-2 flex-grow-1">
                                                     {{ $sp->ten_san_pham }}
                                                 </a>
-                                                <p class="mb-0">
+                                                <p class="mb-0 mt-auto">
                                                     @if($sp->variants_min_gia)
-                                                        <strong class="text-success" style="font-size: 0.95rem;">{{ number_format($sp->variants_min_gia, 0, ',', '.') }} ₫</strong>
+                                                        <span class="strip-price strip-price--hot">{{ number_format($sp->variants_min_gia, 0, ',', '.') }} ₫</span>
                                                     @else
-                                                        <span class="text-muted">Liên hệ</span>
+                                                        <span class="text-muted fw-semibold small">Liên hệ</span>
                                                     @endif
                                                 </p>
                                             </div>
@@ -475,9 +593,9 @@
 
             <!-- Cột phải: Sản phẩm đang giảm giá -->
             <div class="col-lg-6">
-                <div class="border border-2 rounded-5 p-3 h-100" style="background: #ececee; border-color: rgba(0,0,0,0.08); border-radius: 20px;">
-                    <div class="text-center mb-3">
-                        <h1 class="hot-sale-section-title">Đang giảm giá</h1>
+                <div class="hot-sale-panel h-100 p-3 p-md-4">
+                    <div class="text-center mb-3 mb-md-4">
+                        <h1 class="hot-sale-section-title mb-2">Đang giảm giá</h1>
                         <p class="hot-sale-section-sub mb-0">Các sản phẩm có giá khuyến mãi</p>
                     </div>
 
@@ -486,12 +604,12 @@
                             <div class="strip-track">
                                 @foreach($sanPhamsGiamGia as $sp)
                                     <div class="strip-item">
-                                        <div class="card h-100 shadow-sm strip-card">
-                                            <a href="{{ route('sanpham.chitiet', $sp->slug) }}">
+                                        <div class="card h-100 border-0 strip-card strip-card--sale">
+                                            <a href="{{ route('sanpham.chitiet', $sp->slug) }}" class="strip-card-media text-decoration-none">
                                                 <img src="{{ $sp->hinh_anh_chinh ? asset('storage/' . $sp->hinh_anh_chinh) : asset('img/shop_01.jpg') }}"
-                                                    class="card-img-top img-fluid strip-card-img" alt="{{ $sp->ten_san_pham }}">
+                                                    class="img-fluid" alt="{{ $sp->ten_san_pham }}" loading="lazy" decoding="async">
                                             </a>
-                                            <div class="card-body p-2">
+                                            <div class="card-body d-flex flex-column">
                                                 @php
                                                     $giaGoc = $sp->variants_min_gia ?? null;
                                                     $giaKm = $sp->variants_min_gia_khuyen_mai ?? null;
@@ -502,30 +620,28 @@
                                                 @endphp
 
                                                 @if($giaKm && $phanTramGiam !== null)
-                                                    <span class="badge bg-danger mb-2">-{{ $phanTramGiam }}%</span>
+                                                    <span class="badge strip-badge strip-badge--sale mb-2 align-self-start rounded-pill">-{{ $phanTramGiam }}%</span>
                                                 @else
-                                                    <span class="badge bg-success mb-2">Sale</span>
+                                                    <span class="badge strip-badge strip-badge--sale mb-2 align-self-start rounded-pill">Sale</span>
                                                 @endif
 
                                                 <a href="{{ route('sanpham.chitiet', $sp->slug) }}"
-                                                    class="h6 text-decoration-none text-dark d-block mb-1"
-                                                    style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
+                                                    class="strip-card-name text-decoration-none text-dark mb-2 flex-grow-1">
                                                     {{ $sp->ten_san_pham }}
                                                 </a>
 
-                                                <p class="mb-1">
-                                                    @if($giaKm)
-                                                        <strong class="text-danger" style="font-size: 0.95rem;">{{ number_format($giaKm, 0, ',', '.') }} ₫</strong>
-                                                    @else
-                                                        <span class="text-muted">Liên hệ</span>
-                                                    @endif
-                                                </p>
-
-                                                @if($giaGoc)
-                                                    <p class="mb-0">
-                                                        <s class="text-muted">{{ number_format($giaGoc, 0, ',', '.') }} ₫</s>
+                                                <div class="mt-auto">
+                                                    <p class="mb-1">
+                                                        @if($giaKm)
+                                                            <span class="strip-price strip-price--sale">{{ number_format($giaKm, 0, ',', '.') }} ₫</span>
+                                                        @else
+                                                            <span class="text-muted fw-semibold small">Liên hệ</span>
+                                                        @endif
                                                     </p>
-                                                @endif
+                                                    @if($giaGoc)
+                                                        <p class="mb-0 strip-price-old"><s>{{ number_format($giaGoc, 0, ',', '.') }} ₫</s></p>
+                                                    @endif
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -534,12 +650,12 @@
                                 {{-- Lặp lại danh sách để reset index mượt hơn --}}
                                 @foreach($sanPhamsGiamGia as $sp)
                                     <div class="strip-item">
-                                        <div class="card h-100 shadow-sm strip-card">
-                                            <a href="{{ route('sanpham.chitiet', $sp->slug) }}">
+                                        <div class="card h-100 border-0 strip-card strip-card--sale">
+                                            <a href="{{ route('sanpham.chitiet', $sp->slug) }}" class="strip-card-media text-decoration-none">
                                                 <img src="{{ $sp->hinh_anh_chinh ? asset('storage/' . $sp->hinh_anh_chinh) : asset('img/shop_01.jpg') }}"
-                                                    class="card-img-top img-fluid strip-card-img" alt="{{ $sp->ten_san_pham }}">
+                                                    class="img-fluid" alt="{{ $sp->ten_san_pham }}" loading="lazy" decoding="async">
                                             </a>
-                                            <div class="card-body p-2">
+                                            <div class="card-body d-flex flex-column">
                                                 @php
                                                     $giaGoc = $sp->variants_min_gia ?? null;
                                                     $giaKm = $sp->variants_min_gia_khuyen_mai ?? null;
@@ -550,30 +666,28 @@
                                                 @endphp
 
                                                 @if($giaKm && $phanTramGiam !== null)
-                                                    <span class="badge bg-danger mb-2">-{{ $phanTramGiam }}%</span>
+                                                    <span class="badge strip-badge strip-badge--sale mb-2 align-self-start rounded-pill">-{{ $phanTramGiam }}%</span>
                                                 @else
-                                                    <span class="badge bg-success mb-2">Sale</span>
+                                                    <span class="badge strip-badge strip-badge--sale mb-2 align-self-start rounded-pill">Sale</span>
                                                 @endif
 
                                                 <a href="{{ route('sanpham.chitiet', $sp->slug) }}"
-                                                    class="h6 text-decoration-none text-dark d-block mb-1"
-                                                    style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
+                                                    class="strip-card-name text-decoration-none text-dark mb-2 flex-grow-1">
                                                     {{ $sp->ten_san_pham }}
                                                 </a>
 
-                                                <p class="mb-1">
-                                                    @if($giaKm)
-                                                        <strong class="text-danger" style="font-size: 0.95rem;">{{ number_format($giaKm, 0, ',', '.') }} ₫</strong>
-                                                    @else
-                                                        <span class="text-muted">Liên hệ</span>
-                                                    @endif
-                                                </p>
-
-                                                @if($giaGoc)
-                                                    <p class="mb-0">
-                                                        <s class="text-muted">{{ number_format($giaGoc, 0, ',', '.') }} ₫</s>
+                                                <div class="mt-auto">
+                                                    <p class="mb-1">
+                                                        @if($giaKm)
+                                                            <span class="strip-price strip-price--sale">{{ number_format($giaKm, 0, ',', '.') }} ₫</span>
+                                                        @else
+                                                            <span class="text-muted fw-semibold small">Liên hệ</span>
+                                                        @endif
                                                     </p>
-                                                @endif
+                                                    @if($giaGoc)
+                                                        <p class="mb-0 strip-price-old"><s>{{ number_format($giaGoc, 0, ',', '.') }} ₫</s></p>
+                                                    @endif
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

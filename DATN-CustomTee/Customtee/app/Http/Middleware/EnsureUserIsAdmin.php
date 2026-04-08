@@ -20,7 +20,7 @@ class EnsureUserIsAdmin
                     return $next($request);
 
         }
-   abort(403, '  chỉnh thông tin bảng user cột role = admin');
+   abort(403);
 
     }
 }

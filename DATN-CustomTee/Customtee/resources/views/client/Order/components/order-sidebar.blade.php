@@ -14,8 +14,8 @@
                     <li class="d-flex justify-content-between mb-1"><span class="text-muted">Trạng thái</span><span
                             class="badge bg-primary-subtle text-primary border">
                             {{
-                                ($donHang->trang_thai === \App\Models\DonHang::TRANG_THAI_CHO_DUYET_HUY && (bool) $donHang->yeu_cau_huy)
-                                    ? \App\Models\DonHang::tenTrangThai(\App\Models\DonHang::TRANG_THAI_DANG_XU_LY)
+                                ((bool) $donHang->yeu_cau_huy && in_array($donHang->trang_thai, [\App\Models\DonHang::TRANG_THAI_DANG_XU_LY, \App\Models\DonHang::TRANG_THAI_CHO_DUYET_HUY], true))
+                                    ? 'Đang yêu cầu hủy'
                                     : \App\Models\DonHang::tenTrangThai($donHang->trang_thai)
                             }}
                         </span>

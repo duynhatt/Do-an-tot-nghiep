@@ -39,7 +39,7 @@ class DonHang extends Model
                 self::TRANG_THAI_DANG_XU_LY   => 'Đang xử lý',
             ],
             self::TRANG_THAI_DANG_GIAO => [
-                self::TRANG_THAI_DA_GIAO      => 'Đã giao',
+                self::TRANG_THAI_DA_GIAO      => 'Đã giao hàng',
             ],
             self::TRANG_THAI_DA_GIAO => [
                 self::TRANG_THAI_DA_HOAN_THANH => 'Đã hoàn thành',
@@ -58,7 +58,7 @@ class DonHang extends Model
             self::TRANG_THAI_DANG_XU_LY     => 'Đang xử lý',
             self::TRANG_THAI_CHO_DUYET_HUY  => 'Chờ duyệt hủy',
             self::TRANG_THAI_DANG_GIAO      => 'Đang giao',
-            self::TRANG_THAI_DA_GIAO        => 'Đã giao',
+            self::TRANG_THAI_DA_GIAO        => 'Đã giao hàng',
             self::TRANG_THAI_DA_HOAN_THANH  => 'Đã hoàn thành',
             self::TRANG_THAI_DA_HUY         => 'Đã hủy',
         ];
@@ -100,6 +100,7 @@ class DonHang extends Model
         'ly_do_tu_choi_huy',
         'ly_do_huy_boi_admin',
         'ngay_yeu_cau_huy',
+        'so_lan_yeu_cau_huy',
         'da_giao_at',
     ];
 
@@ -111,6 +112,7 @@ class DonHang extends Model
         'yeu_cau_tra' => 'boolean',
         'ngay_yeu_cau_tra' => 'datetime',
         'ngay_yeu_cau_huy' => 'datetime',
+        'so_lan_yeu_cau_huy' => 'integer',
         'da_giao_at' => 'datetime',
     ];
 

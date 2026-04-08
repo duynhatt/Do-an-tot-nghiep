@@ -19,17 +19,28 @@ class HomeController extends Controller
         $startDate = Carbon::now()->subDays(30);
         $endDate = Carbon::now();
 
-        // Danh mục nổi bật: số lượng sản phẩm đang hiển thị trong danh mục, nhiều → ít
-        $productCountByCategory = SanPham::query()
-            ->select('danh_muc_id', DB::raw('COUNT(*) as product_count'))
-            ->where('trang_thai', true)
-            ->groupBy('danh_muc_id');
+        // Danh mục hiển thị trang chủ: xếp theo tổng số lượng bán (sản phẩm bán chạy theo danh mục),
+        // cùng cửa sổ thời gian & trạng thái đơn với block "sản phẩm hot".
+        $salesByCategory = ChiTietDonHang::query()
+            ->join('don_hangs', 'don_hang_chi_tiets.don_hang_id', '=', 'don_hangs.id')
+            ->join('san_phams', 'don_hang_chi_tiets.san_pham_id', '=', 'san_phams.id')
+            ->whereBetween('don_hangs.created_at', [$startDate, $endDate])
+            ->whereIn('don_hangs.trang_thai', [
+                DonHang::TRANG_THAI_DA_GIAO,
+                DonHang::TRANG_THAI_DA_HOAN_THANH,
+            ])
+            ->where('san_phams.trang_thai', true)
+            ->select(
+                'san_phams.danh_muc_id',
+                DB::raw('SUM(don_hang_chi_tiets.so_luong) as sold_quantity')
+            )
+            ->groupBy('san_phams.danh_muc_id');
 
         $danhMucs = Category::hienThi()
-            ->leftJoinSub($productCountByCategory, 'pc', function ($join) {
-                $join->on('pc.danh_muc_id', '=', 'danh_mucs.id');
+            ->leftJoinSub($salesByCategory, 'sc', function ($join) {
+                $join->on('sc.danh_muc_id', '=', 'danh_mucs.id');
             })
-            ->orderByDesc(DB::raw('COALESCE(pc.product_count, 0)'))
+            ->orderByDesc(DB::raw('COALESCE(sc.sold_quantity, 0)'))
             ->orderByDesc('danh_mucs.id')
             ->select('danh_mucs.*')
             ->take(4)
@@ -42,7 +53,7 @@ class HomeController extends Controller
                 $q->where('trang_thai', 1);
             }], 'gia')
             ->orderBy('id', 'desc')
-            ->take(6)
+            ->take(10)
             ->get();
 
         // -----------------------------
