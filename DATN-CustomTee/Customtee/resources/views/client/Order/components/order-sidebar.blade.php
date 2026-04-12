@@ -113,13 +113,27 @@
                             $daDanhGia = \App\Models\BinhLuan::where('user_id', auth()->id())
                                 ->where('san_pham_id', $chiTiet->sanPham->id)
                                 ->where('don_hang_id', $donHang->id)
+                                ->where('bien_the_id', $chiTiet->bien_the_id)
                                 ->exists();
                         @endphp
                         <div class="border rounded p-3 mb-3">
                             <div class="d-flex align-items-center mb-2">
                                 <img src="{{ $chiTiet->sanPham->hinh_anh_chinh ? asset('storage/' . $chiTiet->sanPham->hinh_anh_chinh) : 'https://via.placeholder.com/60' }}"
                                     width="60" height="60" class="rounded me-3" style="object-fit:cover">
-                                <div><strong>{{ $chiTiet->sanPham->ten_san_pham }}</strong></div>
+                                <div>
+                                    <strong>{{ $chiTiet->sanPham->ten_san_pham }}</strong>
+                                    @if ($chiTiet->bienThe)
+                                        <div class="small text-muted d-flex align-items-center gap-1">
+                                            @if ($chiTiet->bienThe->color)
+                                                <span class="border rounded" style="width:12px;height:12px;background-color:{{ $chiTiet->bienThe->color->ma_mau ?? '#ccc' }};"></span>
+                                                <span>{{ $chiTiet->bienThe->color->ten_mau ?? '—' }}</span>
+                                            @endif
+                                            @if ($chiTiet->bienThe->size)
+                                                <span>/ {{ $chiTiet->bienThe->size->ten_kich_thuoc }}</span>
+                                            @endif
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                             @if ($daDanhGia)
                                 <div class="alert alert-success mb-0"><i class="bi bi-check-circle"></i> Bạn đã đánh giá
@@ -128,6 +142,7 @@
                                 <form action="{{ route('binh-luan.store') }}" method="POST">
                                     @csrf
                                     <input type="hidden" name="san_pham_id" value="{{ $chiTiet->sanPham->id }}">
+                                    <input type="hidden" name="bien_the_id" value="{{ $chiTiet->bien_the_id }}">
                                     <input type="hidden" name="don_hang_id" value="{{ $donHang->id }}">
                                     <div class="mb-2">
                                         <label class="form-label fw-semibold">Số sao</label>

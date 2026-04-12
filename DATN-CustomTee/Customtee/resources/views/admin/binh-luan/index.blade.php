@@ -19,6 +19,7 @@
                 <th>ID</th>
                 <th>Người dùng</th>
                 <th>Sản phẩm</th>
+                <th>Biến thể</th>
                 <th>Nội dung</th>
                 <th>Số sao</th>
                 <th>Trạng thái</th>
@@ -38,6 +39,22 @@
                 <td>{{ $bl->user->name ?? 'N/A' }}</td>
 
                 <td>{{ $bl->sanPham->ten_san_pham ?? 'N/A' }}</td>
+
+                <td>
+                    @if($bl->bienThe)
+                        @if($bl->bienThe->color)
+                            <span class="d-inline-flex align-items-center gap-1">
+                                <span class="border rounded" style="width:16px;height:16px;background-color:{{ $bl->bienThe->color->ma_mau ?? '#ccc' }};"></span>
+                                {{ $bl->bienThe->color->ten_mau ?? '—' }}
+                            </span>
+                        @endif
+                        @if($bl->bienThe->size)
+                            <span class="ms-2 text-muted">/ {{ $bl->bienThe->size->ten_kich_thuoc ?? '—' }}</span>
+                        @endif
+                    @else
+                        <span class="text-muted">-</span>
+                    @endif
+                </td>
 
                 <td>{{ $bl->noi_dung }}</td>
 
