@@ -44,6 +44,14 @@ class DonHangController extends Controller
                         $q->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
                     });
             }
+            // Lọc "Đã nhận hàng": trạng thái vẫn là da_giao nhưng đã có mốc khách nhận hàng.
+            elseif ($trangThai === 'da_nhan_hang') {
+                $query->where('trang_thai', DonHang::TRANG_THAI_DA_GIAO)
+                    ->whereNotNull('da_nhan_hang_at')
+                    ->where(function ($q) {
+                        $q->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
+                    });
+            }
             // Lọc "Yêu cầu hủy": các đơn khách đã gửi yêu cầu hủy, đang chờ admin xử lý.
             elseif ($trangThai === 'dang_yeu_cau_huy') {
                 $query->where('yeu_cau_huy', true)

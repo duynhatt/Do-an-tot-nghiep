@@ -85,6 +85,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/order', [OrderController::class, 'list'])->name('order');
     Route::get('/order/{id}', [OrderController::class, 'show'])->name('order.show');
     Route::post('/order/{id}/cancel', [OrderController::class, 'cancel'])->name('order.cancel');
+    Route::post('/order/{id}/received', [OrderController::class, 'received'])->name('order.received');
     Route::post('/order/{id}/confirm', [OrderController::class, 'confirm'])->name('order.confirm');
     Route::post('/order/{donHang}/return-request', [OrderController::class, 'requestReturn'])
         ->name('order.return.request');

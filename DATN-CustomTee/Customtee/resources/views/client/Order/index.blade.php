@@ -20,9 +20,9 @@
                     'cho_xac_nhan' => ['Chờ xác nhận', 'warning'],
                     'dang_xu_ly' => ['Đang xử lý', 'info'],
                     'dang_giao' => ['Đang giao', 'primary'],
-                    'da_giao' => ['Đã giao hàng', 'success'],
+                    'da_giao' => ['Đã giao', 'success'],
+                    'da_nhan_hang' => ['Đã nhận hàng', 'success'],
                     'da_hoan_thanh' => ['Đã hoàn thành', 'success'],
-                    'dang_yeu_cau_huy' => ['Đang yêu cầu hủy', 'warning'],
                     'da_huy' => ['Đã hủy', 'danger'],
                     'tra_hang' => ['Trả hàng', 'secondary'],
                 ];
@@ -87,9 +87,9 @@
                                                 $showReturnCountdown =
                                                     $donHang->trang_thai === 'da_giao'
                                                     && !$donHang->yeu_cau_tra
-                                                    && !empty($donHang->da_giao_at);
+                                                    && !empty($donHang->da_nhan_hang_at);
                                                 $returnDeadlineTs = $showReturnCountdown
-                                                    ? $donHang->da_giao_at->copy()->addDays(3)->getTimestampMs()
+                                                    ? $donHang->da_nhan_hang_at->copy()->addDays(3)->getTimestampMs()
                                                     : null;
                                             @endphp
                                             @if ($showReturnCountdown)
@@ -103,18 +103,34 @@
                                         </div>
                                         <div class="d-flex flex-column align-items-end gap-2">
                                             <div class="d-flex flex-wrap justify-content-end gap-2">
-                                                @if ($donHang->trang_thai === 'da_giao' && !$donHang->yeu_cau_tra)
+                                                @if ($donHang->trang_thai === 'da_giao' && !$donHang->yeu_cau_tra && empty($donHang->da_nhan_hang_at))
+                                                    <form action="{{ route('order.received', $donHang->id) }}"
+                                                        method="post"
+                                                        class="js-client-confirm-submit"
+                                                        data-confirm-message="Xác nhận bạn đã nhận được hàng?"
+                                                        data-confirm-action="receive">
+                                                        @csrf
+                                                        <button type="submit"
+                                                            class="btn btn-primary btn-sm px-3 rounded-pill order-action-btn">
+                                                            <i class="bi bi-box-seam me-1"></i>
+                                                            Xác nhận nhận hàng
+                                                        </button>
+                                                    </form>
+                                                @elseif ($donHang->trang_thai === 'da_giao' && !$donHang->yeu_cau_tra && !empty($donHang->da_nhan_hang_at))
                                                     @php
-                                                        $confirmDeadlineTs = !empty($donHang->da_giao_at)
-                                                            ? $donHang->da_giao_at->copy()->addDays(3)->getTimestampMs()
+                                                        $confirmDeadlineTs = !empty($donHang->da_nhan_hang_at)
+                                                            ? $donHang->da_nhan_hang_at->copy()->addDays(3)->getTimestampMs()
                                                             : null;
                                                     @endphp
                                                     <form action="{{ route('order.confirm', $donHang->id) }}"
                                                         method="post"
                                                         class="js-client-confirm-submit"
                                                         data-return-deadline-ts="{{ $confirmDeadlineTs }}"
-                                                        data-confirm-message="Xác nhận hoàn thành đơn này?">
+                                                        data-confirm-message="Xác nhận hoàn thành đơn này?"
+                                                        data-confirm-action="complete">
                                                         @csrf
+                                                        <input type="hidden" name="client_confirm_complete" value="0"
+                                                            class="js-client-confirm-complete-flag">
                                                         <button type="submit"
                                                             class="btn btn-success btn-sm px-3 rounded-pill order-action-btn">
                                                             <i class="bi bi-check2-circle me-1"></i>
@@ -169,7 +185,9 @@
                                                         ((bool) $donHang->yeu_cau_huy
                                                             && in_array($donHang->trang_thai, ['dang_xu_ly', 'cho_duyet_huy'], true))
                                                         ? 'dang_yeu_cau_huy'
-                                                        : $donHang->trang_thai;
+                                                        : ($donHang->trang_thai === 'da_giao' && !empty($donHang->da_nhan_hang_at)
+                                                            ? 'da_nhan_hang'
+                                                            : $donHang->trang_thai);
                                                     $statusMap = [
                                                         'cho_xac_nhan' => [
                                                             'Chờ xác nhận',
@@ -185,7 +203,8 @@
                                                         // Dữ liệu cũ có thể đang nằm ở 'cho_duyet_huy' nhưng hiển thị chung như 'đang xử lý'.
                                                         'cho_duyet_huy' => ['Đang xử lý', 'info', 'bi bi-gear'],
                                                         'dang_giao' => ['Đang giao', 'primary', 'bi bi-truck'],
-                                                        'da_giao' => ['Đã giao hàng', 'success', 'bi bi-check2-circle'],
+                                                        'da_giao' => ['Đã giao', 'success', 'bi bi-check2-circle'],
+                                                        'da_nhan_hang' => ['Đã nhận hàng', 'success', 'bi bi-check2-circle'],
                                                         'da_hoan_thanh' => [
                                                             'Đã hoàn thành',
                                                             'success',
@@ -333,11 +352,12 @@
 
     .nav-pills .nav-link {
         color: #6c757d;
-        font-weight: 500;
+        font-weight: 600;
         white-space: nowrap;
         min-width: max-content;
-        padding: 0.45rem 0.85rem !important;
-        font-size: 0.96rem;
+        padding: 0.62rem 1.15rem !important;
+        font-size: 1.03rem;
+        border-radius: 999px !important;
     }
 
     .nav-pills .nav-link.active {
@@ -354,7 +374,7 @@
     .order-status-tabs {
         flex-wrap: wrap;
         justify-content: center;
-        gap: 6px;
+        gap: 10px;
         overflow: visible;
     }
 
@@ -507,6 +527,15 @@
 
             document.querySelectorAll('form.js-client-confirm-submit').forEach(function(form) {
                 form.addEventListener('submit', function(e) {
+                    const actionType = form.getAttribute('data-confirm-action') || 'complete';
+                    const completeFlagInput = form.querySelector('.js-client-confirm-complete-flag');
+
+                    // Với hành động "xác nhận hoàn thành", backend yêu cầu cờ xác nhận
+                    // để tránh submit quá nhanh trước khi modal cảnh báo kịp mở.
+                    if (actionType === 'complete' && completeFlagInput && completeFlagInput.value !== '1') {
+                        e.preventDefault();
+                    }
+
                     if (form.getAttribute('data-confirmed') === '1') {
                         form.removeAttribute('data-confirmed');
                         return;
@@ -518,14 +547,18 @@
                     const countdownText = deadlineTs
                         ? `Bạn còn <strong>${formatCountdown(deadlineTs)}</strong> để gửi yêu cầu hoàn tiền/trả hàng.`
                         : '';
-                    const warningText =
-                        '<i class="bi bi-exclamation-triangle-fill mt-1"></i><span><strong>Lưu ý:</strong> Sau khi xác nhận không thể gửi yêu cầu hoàn tiền/trả hàng.</span>';
+                    const warningText = actionType === 'receive'
+                        ? '<i class="bi bi-info-circle-fill mt-1"></i><span><strong>Lưu ý:</strong> Sau khi xác nhận nhận hàng, hệ thống sẽ bắt đầu tính 3 ngày hoàn tiền/trả hàng.</span>'
+                        : '<i class="bi bi-exclamation-triangle-fill mt-1"></i><span><strong>Lưu ý:</strong> Sau khi xác nhận hoàn thành không thể gửi yêu cầu hoàn tiền/trả hàng.</span>';
                     const msg = `
                         <div class="confirm-title">${defaultMsg}</div>
                         ${countdownText ? `<div class="confirm-countdown">${countdownText}</div>` : ''}
                         <div class="confirm-warning">${warningText}</div>
                     `;
                     openClientOrderConfirm(msg, function() {
+                        if (actionType === 'complete' && completeFlagInput) {
+                            completeFlagInput.value = '1';
+                        }
                         form.setAttribute('data-confirmed', '1');
                         if (typeof form.requestSubmit === 'function') {
                             form.requestSubmit();

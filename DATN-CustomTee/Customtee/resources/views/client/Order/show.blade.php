@@ -124,6 +124,11 @@
         const form = document.getElementById('formYeuCauHoanTra');
         if (form) {
             form.addEventListener('submit', function(e) {
+                if (form.dataset.submitting === '1') {
+                    e.preventDefault();
+                    return;
+                }
+
                 const hasReturnItemSelection = document.querySelectorAll('input[name="chi_tiet_ids[]"]').length > 0;
                 const checkedCount = document.querySelectorAll('input[name="chi_tiet_ids[]"]:checked').length;
                 if (hasReturnItemSelection && checkedCount === 0) {
@@ -131,6 +136,11 @@
                     alert('Vui lòng chọn ít nhất một sản phẩm để hoàn trả.');
                     return;
                 }
+
+                form.dataset.submitting = '1';
+                form.querySelectorAll('button[type="submit"]').forEach((btn) => {
+                    btn.disabled = true;
+                });
             });
         }
 

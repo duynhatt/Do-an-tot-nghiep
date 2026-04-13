@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Voucher;
+use App\Models\VoucherUsage;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class VoucherController extends Controller
 {
@@ -31,10 +33,12 @@ class VoucherController extends Controller
             'bat_dau' => 'required|date',
             'ket_thuc' => 'required|date|after_or_equal:bat_dau',
             'so_luong' => 'required|integer|min:1',
+            'max_per_user' => 'nullable|integer|min:1',
         ], [
             'ma.unique' => 'Mã voucher này đã tồn tại!',
             'ket_thuc.after_or_equal' => 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu!',
             'giam_toi_da.required_if' => 'Voucher giảm theo % bắt buộc nhập số tiền giảm tối đa.',
+            'max_per_user.min' => 'Giới hạn mỗi khách phải lớn hơn hoặc bằng 1.',
         ]);
 
         $data = $request->all();
@@ -65,9 +69,11 @@ class VoucherController extends Controller
             'bat_dau' => 'required|date',
             'ket_thuc' => 'required|date|after_or_equal:bat_dau',
             'so_luong' => 'required|integer|min:1',
+            'max_per_user' => 'nullable|integer|min:1',
         ], [
             'ket_thuc.after_or_equal' => 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu!',
             'giam_toi_da.required_if' => 'Voucher giảm theo % bắt buộc nhập số tiền giảm tối đa.',
+            'max_per_user.min' => 'Giới hạn mỗi khách phải lớn hơn hoặc bằng 1.',
         ]);
 
         $data = $request->all();
@@ -106,11 +112,24 @@ class VoucherController extends Controller
             ]);
         }
 
-        if ($voucher->da_su_dung >= $voucher->so_luong) {
+        if ($voucher->so_luong !== null && (int) $voucher->da_su_dung >= (int) $voucher->so_luong) {
             return response()->json([
                 'success' => false,
                 'message' => 'Mã giảm giá này đã hết lượt sử dụng.'
             ]);
+        }
+
+        $maxPerUser = $voucher->max_per_user;
+        if ($maxPerUser !== null && Auth::check()) {
+            $usageCount = VoucherUsage::where('voucher_id', $voucher->id)
+                ->where('user_id', Auth::id())
+                ->count();
+            if ($usageCount >= (int) $maxPerUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn đã dùng hết số lượt của mã này.'
+                ]);
+            }
         }
 
         // 2. Kiểm tra điều kiện đơn hàng tối thiểu (nếu có)

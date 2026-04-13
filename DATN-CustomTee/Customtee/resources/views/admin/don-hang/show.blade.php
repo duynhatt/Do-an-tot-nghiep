@@ -19,6 +19,7 @@
                 'dang_xu_ly' => 'info',
                 'dang_giao' => 'primary',
                 'da_giao' => 'success',
+                'da_nhan_hang' => 'primary',
                 'da_hoan_thanh' => 'success',
                 'da_huy' => 'danger',
                 'cho_duyet_huy' => 'warning',
@@ -42,6 +43,10 @@
         }
 
         $tenTrangThaiHienTai = \App\Models\DonHang::tenTrangThai($donHang->trang_thai);
+        if ($donHang->trang_thai === \App\Models\DonHang::TRANG_THAI_DA_GIAO && !empty($donHang->da_nhan_hang_at)) {
+            $tenTrangThaiHienTai = 'Đã nhận hàng';
+            $badge = 'primary';
+        }
         $latestRefund = $donHang->refunds->first();
         $returnRequestedAt = $latestRefund?->created_at ?? $donHang->ngay_yeu_cau_tra;
         $returnReason = $latestRefund?->ly_do ?? $donHang->ly_do_tra;

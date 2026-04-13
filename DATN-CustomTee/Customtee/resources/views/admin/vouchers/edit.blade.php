@@ -51,6 +51,18 @@
                     <label>Số lượng</label>
                     <input type="number" name="so_luong" class="form-control" value="{{ $voucher->so_luong }}" required>
                 </div>
+                <div class="form-group">
+                    <label>Giới hạn mỗi khách (lần)</label>
+                    <input
+                        type="number"
+                        name="max_per_user"
+                        class="form-control"
+                        min="1"
+                        value="{{ old('max_per_user', $voucher->max_per_user ?? 2) }}"
+                        placeholder="VD: 2"
+                    >
+                    <small class="text-muted">Để trống nếu không giới hạn theo tài khoản.</small>
+                </div>
                 <button type="submit" class="btn btn-info">Cập nhật thay đổi</button>
                 <a href="{{ route('admin.vouchers.index') }}" class="btn btn-default">Quay lại</a>
             </form>
