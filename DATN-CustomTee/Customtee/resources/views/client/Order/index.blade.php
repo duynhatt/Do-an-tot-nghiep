@@ -129,6 +129,8 @@
                                                         data-confirm-message="Xác nhận hoàn thành đơn này?"
                                                         data-confirm-action="complete">
                                                         @csrf
+                                                        <input type="hidden" name="client_confirm_complete" value="0"
+                                                            class="js-client-confirm-complete-flag">
                                                         <button type="submit"
                                                             class="btn btn-success btn-sm px-3 rounded-pill order-action-btn">
                                                             <i class="bi bi-check2-circle me-1"></i>
@@ -525,6 +527,15 @@
 
             document.querySelectorAll('form.js-client-confirm-submit').forEach(function(form) {
                 form.addEventListener('submit', function(e) {
+                    const actionType = form.getAttribute('data-confirm-action') || 'complete';
+                    const completeFlagInput = form.querySelector('.js-client-confirm-complete-flag');
+
+                    // Với hành động "xác nhận hoàn thành", backend yêu cầu cờ xác nhận
+                    // để tránh submit quá nhanh trước khi modal cảnh báo kịp mở.
+                    if (actionType === 'complete' && completeFlagInput && completeFlagInput.value !== '1') {
+                        e.preventDefault();
+                    }
+
                     if (form.getAttribute('data-confirmed') === '1') {
                         form.removeAttribute('data-confirmed');
                         return;
@@ -533,7 +544,6 @@
                     const defaultMsg = form.getAttribute('data-confirm-message') ||
                         'Bạn có chắc chắn muốn thực hiện thao tác này?';
                     const deadlineTs = Number(form.getAttribute('data-return-deadline-ts') || 0);
-                    const actionType = form.getAttribute('data-confirm-action') || 'complete';
                     const countdownText = deadlineTs
                         ? `Bạn còn <strong>${formatCountdown(deadlineTs)}</strong> để gửi yêu cầu hoàn tiền/trả hàng.`
                         : '';
@@ -546,6 +556,9 @@
                         <div class="confirm-warning">${warningText}</div>
                     `;
                     openClientOrderConfirm(msg, function() {
+                        if (actionType === 'complete' && completeFlagInput) {
+                            completeFlagInput.value = '1';
+                        }
                         form.setAttribute('data-confirmed', '1');
                         if (typeof form.requestSubmit === 'function') {
                             form.requestSubmit();

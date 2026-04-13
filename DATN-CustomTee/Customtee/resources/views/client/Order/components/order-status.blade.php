@@ -92,6 +92,10 @@
                     <div class="step-icon"><i class="bi bi-truck"></i></div>
                     <small>Giao hàng</small>
                 </div>
+                <div class="timeline-step {{ in_array($effectiveTrangThai, ['da_nhan_hang', 'da_hoan_thanh']) ? 'active' : '' }}">
+                    <div class="step-icon"><i class="bi bi-box-seam"></i></div>
+                    <small>Đã nhận hàng</small>
+                </div>
                 <div class="timeline-step {{ $effectiveTrangThai === 'da_hoan_thanh' ? 'active' : '' }}">
                     <div class="step-icon"><i class="bi bi-check2-all"></i></div>
                     <small>Hoàn tất</small>
@@ -146,7 +150,7 @@
                     'Đã hoàn tiền',
                     'primary',
                     'bi bi-check-circle',
-                    'Hoàn tiền thành công cho khách hàng.',
+                    'Hoàn tiền thành công.',
                 ],
             ];
 

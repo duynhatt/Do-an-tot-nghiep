@@ -231,6 +231,13 @@ class OrderController extends Controller
 
     public function confirm(Request $request, $id)
     {
+        if ((string) $request->input('client_confirm_complete', '0') !== '1') {
+            return back()->with(
+                'error',
+                'Vui lòng xác nhận hoàn thành'
+            );
+        }
+
         $donHang = DonHang::where('id', $id)
             ->where('nguoi_dung_id', Auth::id())
             ->firstOrFail();
@@ -404,6 +411,21 @@ class OrderController extends Controller
 
         DB::beginTransaction();
         try {
+            // Khóa đơn hàng để chặn 2 request đồng thời từ nhiều tab tạo trùng yêu cầu.
+            $lockedDonHang = DonHang::where('id', $donHang->id)->lockForUpdate()->firstOrFail();
+
+            // Nếu đã có yêu cầu active thì không cho tạo thêm.
+            $activeRefund = Refund::where('don_hang_id', $lockedDonHang->id)
+                ->where('user_id', Auth::id())
+                ->whereIn('trang_thai', ['cho_xu_ly', 'da_chap_nhan', 'da_hoan_tien'])
+                ->latest()
+                ->first();
+            if ($activeRefund) {
+                DB::rollBack();
+                return redirect()->route('order.show', $lockedDonHang->id)
+                    ->with('error', 'Yêu cầu hoàn tiền/trả hàng của bạn đang được xử lý.');
+            }
+
             $refund = Refund::where('don_hang_id', $donHang->id)
                 ->where('user_id', Auth::id())
                 ->where('trang_thai', 'da_tu_choi')
@@ -512,7 +534,7 @@ class OrderController extends Controller
                 }
             }
 
-            $donHang->update([
+            $lockedDonHang->update([
                 'yeu_cau_tra' => 1,
                 'ly_do_tra' => $refund->ly_do,
                 'ngay_yeu_cau_tra' => $refund->created_at,

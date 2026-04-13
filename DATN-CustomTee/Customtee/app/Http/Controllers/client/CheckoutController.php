@@ -8,6 +8,7 @@ use App\Models\DonHang;
 use App\Models\GioHang;
 use App\Models\BienThe;
 use App\Models\Voucher; // Thêm Model Voucher
+use App\Models\VoucherUsage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -289,18 +290,14 @@ class CheckoutController extends Controller
                 ->where('trang_thai', 1)
                 ->first();
 
-            if ($voucher && $voucher->da_su_dung < $voucher->so_luong) {
+            if ($voucher && $this->hasRemainingVoucherQuantity($voucher)) {
+                if ($this->isUserVoucherLimitReached($voucher, (int) $user->id)) {
+                    return back()->with('error', 'Bạn đã dùng hết số lượt của mã này.');
+                }
                 if ($voucher->don_hang_toi_thieu && $subtotal < $voucher->don_hang_toi_thieu) {
                     return back()->with('error', 'Đơn hàng chưa đủ điều kiện tối thiểu ' . number_format($voucher->don_hang_toi_thieu) . 'đ để áp dụng voucher.');
                 }
-                if ($voucher->loai == 'phan_tram') {
-                    $voucherDiscount = ($subtotal * $voucher->gia_tri) / 100;
-                    if ($voucher->giam_toi_da > 0 && $voucherDiscount > $voucher->giam_toi_da) {
-                        $voucherDiscount = $voucher->giam_toi_da;
-                    }
-                } else {
-                    $voucherDiscount = $voucher->gia_tri;
-                }
+                $voucherDiscount = $this->calculateVoucherDiscount($voucher, $subtotal);
                 $voucherId = $voucher->id;
             }
         }
@@ -310,6 +307,41 @@ class CheckoutController extends Controller
 
         DB::beginTransaction();
         try {
+            $lockedVoucher = null;
+            $voucherDiscount = 0;
+            $voucherId = null;
+            if ($request->voucher_code_applied) {
+                $lockedVoucher = Voucher::whereRaw('BINARY ma = ?', [$request->voucher_code_applied])
+                    ->where('bat_dau', '<=', now())
+                    ->where('ket_thuc', '>=', now())
+                    ->where('trang_thai', 1)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$lockedVoucher) {
+                    DB::rollBack();
+                    return back()->with('error', 'Mã giảm giá không tồn tại (lưu ý chữ hoa/thường) hoặc đã hết hạn.');
+                }
+                if (!$this->hasRemainingVoucherQuantity($lockedVoucher)) {
+                    DB::rollBack();
+                    return back()->with('error', 'Mã giảm giá này đã hết lượt sử dụng.');
+                }
+                if ($this->isUserVoucherLimitReached($lockedVoucher, (int) $user->id)) {
+                    DB::rollBack();
+                    return back()->with('error', 'Bạn đã dùng hết số lượt của mã này.');
+                }
+                if ($lockedVoucher->don_hang_toi_thieu && $subtotal < $lockedVoucher->don_hang_toi_thieu) {
+                    DB::rollBack();
+                    return back()->with('error', 'Đơn hàng chưa đủ điều kiện tối thiểu ' . number_format($lockedVoucher->don_hang_toi_thieu) . 'đ để áp dụng voucher.');
+                }
+
+                $voucherDiscount = $this->calculateVoucherDiscount($lockedVoucher, $subtotal);
+                $voucherId = $lockedVoucher->id;
+            }
+
+            $totalDiscount = $voucherDiscount;
+            $total = max(0, $subtotal + $shippingFee - $totalDiscount);
+
             $fullAddress = "{$request->address}, {$request->ward}, {$request->district}, {$request->province}";
             $maDonHang = 'DH' . date('ymd') . strtoupper(\Illuminate\Support\Str::random(6));
             $donHang = DonHang::create([
@@ -341,8 +373,13 @@ class CheckoutController extends Controller
             }
 
             // Cập nhật số lần dùng Voucher
-            if ($voucherId) {
-                Voucher::find($voucherId)->increment('da_su_dung');
+            if ($lockedVoucher) {
+                $lockedVoucher->increment('da_su_dung');
+                VoucherUsage::create([
+                    'voucher_id' => $lockedVoucher->id,
+                    'user_id' => $user->id,
+                    'don_hang_id' => $donHang->id,
+                ]);
             }
 
             if ($request->payment_method === 'cod') {
@@ -456,18 +493,14 @@ class CheckoutController extends Controller
                 ->where('trang_thai', 1)
                 ->first();
 
-            if ($voucher && $voucher->da_su_dung < $voucher->so_luong) {
+            if ($voucher && $this->hasRemainingVoucherQuantity($voucher)) {
+                if ($this->isUserVoucherLimitReached($voucher, (int) $user->id)) {
+                    return redirect()->route('checkout.buy-now')->with('error', 'Bạn đã dùng hết số lượt của mã này.');
+                }
                 if ($voucher->don_hang_toi_thieu && $subtotal < $voucher->don_hang_toi_thieu) {
                     return redirect()->route('checkout.buy-now')->with('error', 'Đơn hàng chưa đủ điều kiện tối thiểu ' . number_format($voucher->don_hang_toi_thieu) . 'đ để áp dụng voucher.');
                 }
-                if ($voucher->loai == 'phan_tram') {
-                    $voucherDiscount = ($subtotal * $voucher->gia_tri) / 100;
-                    if ($voucher->giam_toi_da > 0 && $voucherDiscount > $voucher->giam_toi_da) {
-                        $voucherDiscount = $voucher->giam_toi_da;
-                    }
-                } else {
-                    $voucherDiscount = $voucher->gia_tri;
-                }
+                $voucherDiscount = $this->calculateVoucherDiscount($voucher, $subtotal);
                 $voucherId = $voucher->id;
             }
         }
@@ -477,6 +510,41 @@ class CheckoutController extends Controller
 
         DB::beginTransaction();
         try {
+            $lockedVoucher = null;
+            $voucherDiscount = 0;
+            $voucherId = null;
+            if ($request->voucher_code_applied) {
+                $lockedVoucher = Voucher::whereRaw('BINARY ma = ?', [$request->voucher_code_applied])
+                    ->where('bat_dau', '<=', now())
+                    ->where('ket_thuc', '>=', now())
+                    ->where('trang_thai', 1)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$lockedVoucher) {
+                    DB::rollBack();
+                    return redirect()->route('checkout.buy-now')->with('error', 'Mã giảm giá không tồn tại (lưu ý chữ hoa/thường) hoặc đã hết hạn.');
+                }
+                if (!$this->hasRemainingVoucherQuantity($lockedVoucher)) {
+                    DB::rollBack();
+                    return redirect()->route('checkout.buy-now')->with('error', 'Mã giảm giá này đã hết lượt sử dụng.');
+                }
+                if ($this->isUserVoucherLimitReached($lockedVoucher, (int) $user->id)) {
+                    DB::rollBack();
+                    return redirect()->route('checkout.buy-now')->with('error', 'Bạn đã dùng hết số lượt của mã này.');
+                }
+                if ($lockedVoucher->don_hang_toi_thieu && $subtotal < $lockedVoucher->don_hang_toi_thieu) {
+                    DB::rollBack();
+                    return redirect()->route('checkout.buy-now')->with('error', 'Đơn hàng chưa đủ điều kiện tối thiểu ' . number_format($lockedVoucher->don_hang_toi_thieu) . 'đ để áp dụng voucher.');
+                }
+
+                $voucherDiscount = $this->calculateVoucherDiscount($lockedVoucher, $subtotal);
+                $voucherId = $lockedVoucher->id;
+            }
+
+            $totalDiscount = $voucherDiscount;
+            $total = max(0, $subtotal + $shippingFee - $totalDiscount);
+
             $fullAddress = "{$request->address}, {$request->ward}, {$request->district}, {$request->province}";
             $maDonHang = 'DH' . date('ymd') . strtoupper(\Illuminate\Support\Str::random(6));
 
@@ -506,8 +574,13 @@ class CheckoutController extends Controller
                 'thanh_tien'  => $subtotal,
             ]);
 
-            if ($voucherId) {
-                Voucher::find($voucherId)->increment('da_su_dung');
+            if ($lockedVoucher) {
+                $lockedVoucher->increment('da_su_dung');
+                VoucherUsage::create([
+                    'voucher_id' => $lockedVoucher->id,
+                    'user_id' => $user->id,
+                    'don_hang_id' => $donHang->id,
+                ]);
             }
 
             // Xóa session buy_now sau khi tạo đơn
@@ -579,6 +652,42 @@ class CheckoutController extends Controller
     private function calculateShippingFee($subtotal)
     {
         return $subtotal >= 1000000 ? 0 : 35000;
+    }
+
+    private function hasRemainingVoucherQuantity(Voucher $voucher): bool
+    {
+        if ($voucher->so_luong === null) {
+            return true;
+        }
+
+        return (int) $voucher->da_su_dung < (int) $voucher->so_luong;
+    }
+
+    private function isUserVoucherLimitReached(Voucher $voucher, int $userId): bool
+    {
+        if ($voucher->max_per_user === null) {
+            return false;
+        }
+
+        $usageCount = VoucherUsage::where('voucher_id', $voucher->id)
+            ->where('user_id', $userId)
+            ->count();
+
+        return $usageCount >= (int) $voucher->max_per_user;
+    }
+
+    private function calculateVoucherDiscount(Voucher $voucher, float|int $subtotal): float
+    {
+        if ($voucher->loai === 'phan_tram') {
+            $discount = ($subtotal * $voucher->gia_tri) / 100;
+            if ($voucher->giam_toi_da && $discount > $voucher->giam_toi_da) {
+                $discount = (float) $voucher->giam_toi_da;
+            }
+
+            return (float) $discount;
+        }
+
+        return (float) $voucher->gia_tri;
     }
 
     private function parseItemsQuantities(string $itemsParam): array
