@@ -47,7 +47,6 @@
                             'cho_xac_nhan' => 'Chờ xác nhận',
                             'dang_xu_ly' => 'Đang xử lý',
                             'dang_yeu_cau_huy' => 'Yêu cầu hủy',
-                            'cho_duyet_huy' => 'Chờ duyệt hủy',
                             'dang_giao' => 'Đang giao',
                             'da_giao' => 'Đã giao',
                             'da_nhan_hang' => 'Đã nhận hàng',

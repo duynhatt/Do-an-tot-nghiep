@@ -17,9 +17,19 @@
                         $isOnlineCancelRefund = $donHang->phuong_thuc_thanh_toan === 'vnpay'
                             && $donHang->trang_thai === 'da_huy'
                             && $donHang->trang_thai_thanh_toan === 'da_thanh_toan';
-                        $isDeliveredReturn = $donHang->trang_thai === 'da_giao';
+                        $isDeliveredReturn = $donHang->trang_thai === 'da_giao' && !empty($donHang->da_nhan_hang_at);
                         $requiresFullReturn = $isOnlineCancelRefund || $isDeliveredReturn;
                     @endphp
+
+                    @if ($isOnlineCancelRefund)
+                        <div class="alert alert-info small mb-4">
+                            Đơn hàng chưa giao: hệ thống hoàn theo tổng tiền khách đã thanh toán (bao gồm phí vận chuyển nếu có).
+                        </div>
+                    @elseif ($isDeliveredReturn)
+                        <div class="alert alert-info small mb-4">
+                            Đơn đã nhận hàng: không hoàn phí vận chuyển, tiền hoàn được tính theo giá trị hàng hóa thực trả sau giảm giá.
+                        </div>
+                    @endif
 
                     @if (!$requiresFullReturn)
                         <div class="mb-5">

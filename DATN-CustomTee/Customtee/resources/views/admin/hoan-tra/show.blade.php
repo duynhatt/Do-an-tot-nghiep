@@ -215,6 +215,18 @@
                             <dd class="col-sm-7 fw-bold text-end">
                                 {{ number_format($refund->donHang?->tong_tien ?? 0, 0, ',', '.') }} ₫</dd>
 
+                            <dt class="col-sm-5 text-muted">Tạm tính hàng</dt>
+                            <dd class="col-sm-7 text-end">
+                                {{ number_format($refund->donHang?->tam_tinh ?? 0, 0, ',', '.') }} ₫</dd>
+
+                            <dt class="col-sm-5 text-muted">Giảm giá</dt>
+                            <dd class="col-sm-7 text-end">
+                                -{{ number_format($refund->donHang?->tien_giam ?? 0, 0, ',', '.') }} ₫</dd>
+
+                            <dt class="col-sm-5 text-muted">Phí vận chuyển</dt>
+                            <dd class="col-sm-7 text-end">
+                                {{ number_format($refund->donHang?->phi_van_chuyen ?? 0, 0, ',', '.') }} ₫</dd>
+
                             <dt class="col-sm-5 text-muted">Phương thức TT</dt>
                             <dd class="col-sm-7 text-end">{{ $refund->donHang?->phuong_thuc_thanh_toan ?? 'N/A' }}</dd>
 
@@ -222,6 +234,13 @@
                             <dd class="col-sm-7 text-end">
                                 {{ $refund->donHang?->created_at?->format('d/m/Y H:i') ?? 'N/A' }}</dd>
                         </dl>
+                        <div class="alert alert-light border small mt-3 mb-0">
+                            @if ($refund->donHang?->trang_thai === \App\Models\DonHang::TRANG_THAI_DA_GIAO)
+                                Quy tắc áp dụng: đơn đã giao chỉ hoàn phần tiền hàng thực trả sau giảm giá, không hoàn phí vận chuyển.
+                            @else
+                                Quy tắc áp dụng: đơn chưa giao hoàn theo tổng tiền khách đã thanh toán.
+                            @endif
+                        </div>
                     </div>
                 </div>
 
