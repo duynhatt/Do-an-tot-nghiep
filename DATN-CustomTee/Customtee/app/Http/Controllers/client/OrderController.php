@@ -270,6 +270,13 @@ class OrderController extends Controller
 
     public function received(Request $request, $id)
     {
+        if ((string) $request->input('client_confirm_receive', '0') !== '1') {
+            return back()->with(
+                'error',
+                'Vui lòng xác nhận đã nhận hàng.'
+            );
+        }
+
         $donHang = DonHang::where('id', $id)
             ->where('nguoi_dung_id', Auth::id())
             ->firstOrFail();
@@ -287,7 +294,7 @@ class OrderController extends Controller
             'updated_at' => now(),
         ]);
 
-        return back()->with('success', 'Đã xác nhận nhận hàng. Thời gian hoàn/trả được tính từ bây giờ.');
+        return back()->with('success', 'Đã xác nhận nhận hàng. Chính sách hoàn/trả vẫn được tính từ thời điểm đã giao.');
     }
 
     public function requestReturn(Request $request, DonHang $donHang)
@@ -301,30 +308,27 @@ class OrderController extends Controller
 
         // VNPAY: cho phép hoàn tiền/trả hàng khi:
         // - đơn đã hủy và đã thanh toán (bao gồm cả admin tự hủy)
-        // - hoặc đơn đã giao (trả hàng thông thường).
+        // - hoặc đơn đã nhận hàng (trả hàng thông thường).
         if ($donHang->phuong_thuc_thanh_toan === 'vnpay') {
             $laHoanTienSauHuy =
                 $donHang->trang_thai === DonHang::TRANG_THAI_DA_HUY
                 && $donHang->trang_thai_thanh_toan === 'da_thanh_toan';
-            $laTraHangSauGiao = $donHang->trang_thai === DonHang::TRANG_THAI_DA_GIAO;
+            $laTraHangSauNhan = $donHang->trang_thai === DonHang::TRANG_THAI_DA_GIAO
+                && !empty($donHang->da_nhan_hang_at);
 
-            if (!$laHoanTienSauHuy && !$laTraHangSauGiao) {
+            if (!$laHoanTienSauHuy && !$laTraHangSauNhan) {
                 return back()->with('error', 'Đơn hàng không ở trạng thái cho phép yêu cầu hoàn tiền.');
             }
         }
 
-        // COD: chỉ cho phép yêu cầu hoàn tiền khi đã giao hàng.
+        // COD: chỉ cho phép yêu cầu hoàn tiền khi đã nhận hàng.
         if ($donHang->phuong_thuc_thanh_toan === 'cod') {
-            if ($donHang->trang_thai !== DonHang::TRANG_THAI_DA_GIAO) {
+            if (
+                $donHang->trang_thai !== DonHang::TRANG_THAI_DA_GIAO
+                || empty($donHang->da_nhan_hang_at)
+            ) {
                 return back()->with('error', 'Đơn hàng không ở trạng thái cho phép yêu cầu hoàn tiền.');
             }
-        }
-
-        if (
-            $donHang->trang_thai === DonHang::TRANG_THAI_DA_GIAO
-            && empty($donHang->da_nhan_hang_at)
-        ) {
-            return back()->with('error', 'Vui lòng xác nhận đã nhận hàng trước khi gửi yêu cầu hoàn tiền/trả hàng.');
         }
 
         $isOnlineCancelRefund = $donHang->phuong_thuc_thanh_toan === 'vnpay'
@@ -333,12 +337,16 @@ class OrderController extends Controller
 
         // Hoàn tiền do hủy đơn online đã thanh toán được phép gửi ngay sau khi hủy.
         if (!$isOnlineCancelRefund) {
-            $hoanThanhTime = $donHang->da_nhan_hang_at ?? $donHang->da_giao_at;
-            if (!$hoanThanhTime) {
-                return back()->with('error', 'Đơn hàng chưa có mốc nhận hàng để xử lý thời hạn hoàn tiền.');
+            if (empty($donHang->da_nhan_hang_at)) {
+                return back()->with('error', 'Vui lòng xác nhận đã nhận hàng trước khi gửi yêu cầu hoàn tiền/trả hàng.');
             }
-            if (!Carbon::parse($hoanThanhTime)->addDays(3)->isFuture()) {
-                return back()->with('error', 'Đã hết thời hạn yêu cầu hoàn tiền (3 ngày sau khi nhận hàng).');
+
+            $mocDaGiao = $donHang->da_giao_at;
+            if (!$mocDaGiao) {
+                return back()->with('error', 'Đơn hàng chưa có mốc đã giao để xử lý thời hạn hoàn tiền.');
+            }
+            if (!Carbon::parse($mocDaGiao)->addDays(3)->isFuture()) {
+                return back()->with('error', 'Đã hết thời hạn yêu cầu hoàn tiền (3 ngày kể từ khi đã giao).');
             }
         }
 
@@ -384,27 +392,40 @@ class OrderController extends Controller
             $lyDoHoanTra = 'Khách hàng yêu cầu hoàn tiền.';
         }
 
-        $chiTietIds = [];
-        if (!$requiresFullReturn) {
-            foreach ($request->chi_tiet_ids as $chiTietId) {
-                $chiTiet = $donHang->chiTietDonHangs->firstWhere('id', $chiTietId);
+        $chiTietIds = $requiresFullReturn
+            ? $donHang->chiTietDonHangs->pluck('id')->all()
+            : (array) $request->chi_tiet_ids;
 
-                if (!$chiTiet) {
-                    throw ValidationException::withMessages(['chi_tiet_ids' => 'Sản phẩm không hợp lệ.']);
-                }
-
-                $soLuongYeuCau = $request->so_luong[$chiTietId] ?? 0;
-
-                if ($soLuongYeuCau < 1 || $soLuongYeuCau > $chiTiet->so_luong) {
-                    throw ValidationException::withMessages([
-                        "so_luong.$chiTietId" => "Số lượng hoàn trả phải từ 1 đến {$chiTiet->so_luong}."
-                    ]);
-                }
+        $requestedItems = [];
+        foreach ($chiTietIds as $chiTietId) {
+            $chiTiet = $donHang->chiTietDonHangs->firstWhere('id', $chiTietId);
+            if (!$chiTiet) {
+                throw ValidationException::withMessages(['chi_tiet_ids' => 'Sản phẩm không hợp lệ.']);
             }
-            $chiTietIds = $request->chi_tiet_ids;
-        } else {
-            $chiTietIds = $donHang->chiTietDonHangs->pluck('id')->all();
+
+            $soLuongYeuCau = $requiresFullReturn
+                ? (int) $chiTiet->so_luong
+                : (int) ($request->so_luong[$chiTietId] ?? 0);
+
+            if ($soLuongYeuCau < 1 || $soLuongYeuCau > (int) $chiTiet->so_luong) {
+                throw ValidationException::withMessages([
+                    "so_luong.$chiTietId" => "Số lượng hoàn trả phải từ 1 đến {$chiTiet->so_luong}."
+                ]);
+            }
+
+            $requestedItems[] = [
+                'chi_tiet' => $chiTiet,
+                'so_luong' => $soLuongYeuCau,
+                'gross_amount' => (int) round($soLuongYeuCau * (float) $chiTiet->don_gia),
+            ];
         }
+
+        $refundBreakdown = $this->calculateRefundBreakdown(
+            $donHang,
+            $requestedItems,
+            $isOnlineCancelRefund,
+            $isDeliveredReturn
+        );
 
         $storedNewImagePaths = [];
         $oldImagePaths = [];
@@ -473,12 +494,10 @@ class OrderController extends Controller
 
             $tongTienYeuCau = 0;
 
-            foreach ($chiTietIds as $chiTietId) {
-                $chiTiet = $donHang->chiTietDonHangs->firstWhere('id', $chiTietId);
-                $soLuong = $requiresFullReturn
-                    ? (int) $chiTiet->so_luong
-                    : (int) ($request->so_luong[$chiTietId] ?? 0);
-                $thanhTien = $soLuong * $chiTiet->don_gia;
+            foreach ($requestedItems as $requestedItem) {
+                $chiTiet = $requestedItem['chi_tiet'];
+                $soLuong = (int) $requestedItem['so_luong'];
+                $thanhTien = (int) ($refundBreakdown['item_refund_amounts'][$chiTiet->id] ?? 0);
 
                 RefundItem::create([
                     'refund_request_id'    => $refund->id,
@@ -490,6 +509,8 @@ class OrderController extends Controller
                 $tongTienYeuCau += $thanhTien;
             }
 
+            $tongTienYeuCau += (int) ($refundBreakdown['shipping_refund'] ?? 0);
+            $tongTienYeuCau = (int) ($refundBreakdown['refund_total'] ?? $tongTienYeuCau);
             $refund->update(['so_tien_yeu_cau' => $tongTienYeuCau]);
 
             if (!$isOnlineCancelRefund && $request->hasFile('hinh_anh')) {
@@ -555,5 +576,157 @@ class OrderController extends Controller
             }
             throw $e;
         }
+    }
+
+    private function calculateRefundBreakdown(
+        DonHang $donHang,
+        array $requestedItems,
+        bool $isOnlineCancelRefund,
+        bool $isDeliveredReturn
+    ): array {
+        $orderSubtotal = max(0, (int) round((float) ($donHang->tam_tinh ?? 0)));
+        $orderDiscount = max(0, (int) round((float) ($donHang->tien_giam ?? 0)));
+        $orderDiscount = min($orderDiscount, $orderSubtotal);
+        $orderShipping = max(0, (int) round((float) ($donHang->phi_van_chuyen ?? 0)));
+        $orderTotal = max(0, (int) round((float) ($donHang->tong_tien ?? 0)));
+
+        $requestedGross = 0;
+        foreach ($requestedItems as $requestedItem) {
+            $requestedGross += max(0, (int) ($requestedItem['gross_amount'] ?? 0));
+        }
+
+        if ($requestedGross <= 0) {
+            return [
+                'item_refund_amounts' => [],
+                'shipping_refund' => 0,
+                'refund_total' => 0,
+            ];
+        }
+
+        $targetDiscount = 0;
+        if ($orderSubtotal > 0 && $orderDiscount > 0) {
+            $targetDiscount = (int) round(($orderDiscount * $requestedGross) / $orderSubtotal);
+            $targetDiscount = min($targetDiscount, $orderDiscount, $requestedGross);
+        }
+        $targetDiscount = max(0, $targetDiscount);
+
+        $itemDiscounts = $this->allocateDiscountByRatio($requestedItems, $targetDiscount, $requestedGross);
+        $itemRefundAmounts = [];
+        foreach ($requestedItems as $requestedItem) {
+            $chiTietId = (int) $requestedItem['chi_tiet']->id;
+            $grossAmount = max(0, (int) $requestedItem['gross_amount']);
+            $itemDiscount = max(0, (int) ($itemDiscounts[$chiTietId] ?? 0));
+            $itemRefundAmounts[$chiTietId] = max(0, $grossAmount - min($itemDiscount, $grossAmount));
+        }
+
+        $shippingRefund = 0;
+        if ($isOnlineCancelRefund && !$isDeliveredReturn) {
+            $shippingRefund = $orderShipping;
+        }
+
+        $itemRefundTarget = max(0, $requestedGross - $targetDiscount);
+        $itemRefundTarget = min($itemRefundTarget, max(0, $orderTotal - $shippingRefund));
+        $itemRefundAmounts = $this->rebalanceItemRefundAmounts($itemRefundAmounts, $itemRefundTarget);
+
+        $refundTotal = array_sum($itemRefundAmounts) + $shippingRefund;
+        $refundTotal = min($refundTotal, $orderTotal);
+
+        return [
+            'item_refund_amounts' => $itemRefundAmounts,
+            'shipping_refund' => $shippingRefund,
+            'refund_total' => $refundTotal,
+        ];
+    }
+
+    private function allocateDiscountByRatio(array $requestedItems, int $targetDiscount, int $requestedGross): array
+    {
+        $result = [];
+        if ($targetDiscount <= 0 || $requestedGross <= 0) {
+            foreach ($requestedItems as $requestedItem) {
+                $result[(int) $requestedItem['chi_tiet']->id] = 0;
+            }
+            return $result;
+        }
+
+        $remainderRows = [];
+        $allocated = 0;
+        foreach ($requestedItems as $requestedItem) {
+            $chiTietId = (int) $requestedItem['chi_tiet']->id;
+            $grossAmount = max(0, (int) $requestedItem['gross_amount']);
+            if ($grossAmount === 0) {
+                $result[$chiTietId] = 0;
+                continue;
+            }
+
+            $rawShare = ($targetDiscount * $grossAmount) / $requestedGross;
+            $baseShare = (int) floor($rawShare);
+            $baseShare = min($baseShare, $grossAmount);
+            $result[$chiTietId] = $baseShare;
+            $allocated += $baseShare;
+
+            $remainderRows[] = [
+                'id' => $chiTietId,
+                'remainder' => $rawShare - $baseShare,
+                'room' => $grossAmount - $baseShare,
+            ];
+        }
+
+        $remaining = max(0, $targetDiscount - $allocated);
+        usort($remainderRows, function ($left, $right) {
+            return $right['remainder'] <=> $left['remainder'];
+        });
+
+        while ($remaining > 0) {
+            $isDistributed = false;
+            foreach ($remainderRows as &$row) {
+                if ($remaining === 0) {
+                    break;
+                }
+                if ($row['room'] <= 0) {
+                    continue;
+                }
+                $result[$row['id']]++;
+                $row['room']--;
+                $remaining--;
+                $isDistributed = true;
+            }
+            unset($row);
+
+            if (!$isDistributed) {
+                break;
+            }
+        }
+
+        return $result;
+    }
+
+    private function rebalanceItemRefundAmounts(array $itemRefundAmounts, int $targetTotal): array
+    {
+        $targetTotal = max(0, $targetTotal);
+        $currentTotal = array_sum($itemRefundAmounts);
+        if ($currentTotal === $targetTotal || empty($itemRefundAmounts)) {
+            return $itemRefundAmounts;
+        }
+
+        if ($currentTotal < $targetTotal) {
+            $firstId = array_key_first($itemRefundAmounts);
+            if ($firstId !== null) {
+                $itemRefundAmounts[$firstId] += ($targetTotal - $currentTotal);
+            }
+            return $itemRefundAmounts;
+        }
+
+        $remainingToSubtract = $currentTotal - $targetTotal;
+        arsort($itemRefundAmounts);
+        foreach ($itemRefundAmounts as $chiTietId => $amount) {
+            if ($remainingToSubtract <= 0) {
+                break;
+            }
+            $subtract = min($amount, $remainingToSubtract);
+            $itemRefundAmounts[$chiTietId] -= $subtract;
+            $remainingToSubtract -= $subtract;
+        }
+
+        return $itemRefundAmounts;
     }
 }

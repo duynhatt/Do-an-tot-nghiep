@@ -87,9 +87,9 @@
                                                 $showReturnCountdown =
                                                     $donHang->trang_thai === 'da_giao'
                                                     && !$donHang->yeu_cau_tra
-                                                    && !empty($donHang->da_nhan_hang_at);
+                                                    && !empty($donHang->da_giao_at);
                                                 $returnDeadlineTs = $showReturnCountdown
-                                                    ? $donHang->da_nhan_hang_at->copy()->addDays(3)->getTimestampMs()
+                                                    ? $donHang->da_giao_at->copy()->addDays(3)->getTimestampMs()
                                                     : null;
                                             @endphp
                                             @if ($showReturnCountdown)
@@ -110,6 +110,8 @@
                                                         data-confirm-message="Xác nhận bạn đã nhận được hàng?"
                                                         data-confirm-action="receive">
                                                         @csrf
+                                                        <input type="hidden" name="client_confirm_receive" value="0"
+                                                            class="js-client-confirm-receive-flag">
                                                         <button type="submit"
                                                             class="btn btn-primary btn-sm px-3 rounded-pill order-action-btn">
                                                             <i class="bi bi-box-seam me-1"></i>
@@ -118,8 +120,8 @@
                                                     </form>
                                                 @elseif ($donHang->trang_thai === 'da_giao' && !$donHang->yeu_cau_tra && !empty($donHang->da_nhan_hang_at))
                                                     @php
-                                                        $confirmDeadlineTs = !empty($donHang->da_nhan_hang_at)
-                                                            ? $donHang->da_nhan_hang_at->copy()->addDays(3)->getTimestampMs()
+                                                        $confirmDeadlineTs = !empty($donHang->da_giao_at)
+                                                            ? $donHang->da_giao_at->copy()->addDays(3)->getTimestampMs()
                                                             : null;
                                                     @endphp
                                                     <form action="{{ route('order.confirm', $donHang->id) }}"
@@ -529,10 +531,16 @@
                 form.addEventListener('submit', function(e) {
                     const actionType = form.getAttribute('data-confirm-action') || 'complete';
                     const completeFlagInput = form.querySelector('.js-client-confirm-complete-flag');
+                    const receiveFlagInput = form.querySelector('.js-client-confirm-receive-flag');
 
                     // Với hành động "xác nhận hoàn thành", backend yêu cầu cờ xác nhận
                     // để tránh submit quá nhanh trước khi modal cảnh báo kịp mở.
                     if (actionType === 'complete' && completeFlagInput && completeFlagInput.value !== '1') {
+                        e.preventDefault();
+                    }
+                    // Với hành động "xác nhận nhận hàng", backend cũng yêu cầu cờ xác nhận
+                    // để tránh tình huống click quá nhanh sau khi reload trang.
+                    if (actionType === 'receive' && receiveFlagInput && receiveFlagInput.value !== '1') {
                         e.preventDefault();
                     }
 
@@ -548,7 +556,7 @@
                         ? `Bạn còn <strong>${formatCountdown(deadlineTs)}</strong> để gửi yêu cầu hoàn tiền/trả hàng.`
                         : '';
                     const warningText = actionType === 'receive'
-                        ? '<i class="bi bi-info-circle-fill mt-1"></i><span><strong>Lưu ý:</strong> Sau khi xác nhận nhận hàng, hệ thống sẽ bắt đầu tính 3 ngày hoàn tiền/trả hàng.</span>'
+                        ? '<i class="bi bi-info-circle-fill mt-1"></i><span><strong>Lưu ý:</strong> Chính sách 3 ngày hoàn tiền/trả hàng được tính từ thời điểm đơn đã giao.</span>'
                         : '<i class="bi bi-exclamation-triangle-fill mt-1"></i><span><strong>Lưu ý:</strong> Sau khi xác nhận hoàn thành không thể gửi yêu cầu hoàn tiền/trả hàng.</span>';
                     const msg = `
                         <div class="confirm-title">${defaultMsg}</div>
@@ -558,6 +566,9 @@
                     openClientOrderConfirm(msg, function() {
                         if (actionType === 'complete' && completeFlagInput) {
                             completeFlagInput.value = '1';
+                        }
+                        if (actionType === 'receive' && receiveFlagInput) {
+                            receiveFlagInput.value = '1';
                         }
                         form.setAttribute('data-confirmed', '1');
                         if (typeof form.requestSubmit === 'function') {
