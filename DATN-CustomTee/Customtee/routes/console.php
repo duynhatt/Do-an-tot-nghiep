@@ -41,9 +41,9 @@ Artisan::command('orders:auto-complete-delivered', function () {
         ->where(function ($query) {
             $query->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
         })
-        // Chỉ auto hoàn thành sau 3 ngày kể từ lúc khách xác nhận đã nhận hàng.
-        ->whereNotNull('da_nhan_hang_at')
-        ->where('da_nhan_hang_at', '<=', now()->subDays(3))
+        // Auto hoàn thành sau 3 ngày kể từ mốc đã giao để đồng bộ chính sách hoàn/trả.
+        ->whereNotNull('da_giao_at')
+        ->where('da_giao_at', '<=', now()->subDays(3))
         ->chunkById(100, function ($orders) use (&$autoCompletedCount) {
             foreach ($orders as $order) {
                 // Đảm bảo tuân thủ state machine
@@ -64,7 +64,7 @@ Artisan::command('orders:auto-complete-delivered', function () {
         });
 
     $this->info("Đã tự xác nhận nhận hàng {$autoReceivedCount} đơn (sau 1 ngày).");
-    $this->info("Đã tự động hoàn thành {$autoCompletedCount} đơn (sau 3 ngày từ lúc nhận hàng).");
-})->purpose('Tự động nhận hàng sau 1 ngày và hoàn thành sau 3 ngày từ lúc nhận hàng');
+    $this->info("Đã tự động hoàn thành {$autoCompletedCount} đơn (sau 3 ngày kể từ lúc đã giao).");
+})->purpose('Tự động nhận hàng sau 1 ngày và hoàn thành sau 3 ngày kể từ lúc đã giao');
 //php artisan schedule:work
 Schedule::command('orders:auto-complete-delivered')->everyMinute();

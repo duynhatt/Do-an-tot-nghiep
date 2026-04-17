@@ -26,7 +26,7 @@
                     'Đã nhận hàng',
                     'success',
                     'bi bi-box-seam',
-                    'Bạn đã xác nhận nhận hàng. Có thể gửi yêu cầu hoàn tiền/trả hàng trong 3 ngày.',
+                    '',
                 ],
                 'da_hoan_thanh' => [
                     'Đã hoàn thành',
@@ -168,23 +168,25 @@
                 !$yeuCauHoanTien
                 || ($yeuCauHoanTien->trang_thai === 'da_tu_choi' && $refundAttempts < 2);
 
-            // Logic mới theo yêu cầu của bạn
-            if ($donHang->phuong_thuc_thanh_toan === 'vnpay') {
-                $showRefundButton = (
-                    ($donHang->trang_thai === 'da_huy' && $donHang->trang_thai_thanh_toan === 'da_thanh_toan')
-                    || ($donHang->trang_thai === 'da_giao' && !empty($donHang->da_nhan_hang_at))
-                ) && $canCreateNewRefund;
-            } elseif ($donHang->phuong_thuc_thanh_toan === 'cod') {
-                $showRefundButton = $donHang->trang_thai === 'da_giao'
-                    && !empty($donHang->da_nhan_hang_at)
-                    && $canCreateNewRefund;
-            } else {
-                $showRefundButton = false;
-            }
+            $isOnlineCancelRefund =
+                $donHang->phuong_thuc_thanh_toan === 'vnpay'
+                && $donHang->trang_thai === 'da_huy'
+                && $donHang->trang_thai_thanh_toan === 'da_thanh_toan';
+            $isDeliveredReturn =
+                in_array($donHang->phuong_thuc_thanh_toan, ['cod', 'vnpay'], true)
+                && $donHang->trang_thai === 'da_giao'
+                && !empty($donHang->da_giao_at)
+                && !empty($donHang->da_nhan_hang_at);
 
-            // Kiểm tra thời hạn hoàn tiền (3 ngày)
-            $hoanThanhTime = $donHang->da_nhan_hang_at ?? $donHang->da_giao_at;
-            $conTrongThoiHan = $hoanThanhTime && \Carbon\Carbon::parse($hoanThanhTime)->addDays(3)->isFuture();
+            // Kiểm tra thời hạn hoàn tiền (3 ngày) chỉ áp dụng cho case đã giao.
+            $mocDaGiao = $donHang->da_giao_at;
+            $conTrongThoiHanDaGiao =
+                $isDeliveredReturn
+                && $mocDaGiao
+                && \Carbon\Carbon::parse($mocDaGiao)->addDays(3)->isFuture();
+
+            $showRefundButton = ($isOnlineCancelRefund || $isDeliveredReturn) && $canCreateNewRefund;
+            $coTheGuiYeuCauNgay = $isOnlineCancelRefund || $conTrongThoiHanDaGiao;
             $refundButtonLabel = $donHang->trang_thai === 'da_giao' ? 'Hoàn tiền/Trả hàng' : 'Hoàn tiền';
         @endphp
 
@@ -254,7 +256,7 @@
         @endif
 
         @if ($showRefundButton)
-            @if ($conTrongThoiHan)
+            @if ($coTheGuiYeuCauNgay)
                 @if (!$yeuCauHoanTien || $canCreateNewRefund)
                     <div class="mt-4">
                         <button type="button"
@@ -267,14 +269,16 @@
 
                         <p class="text-small text-muted text-center mt-2 mb-0">
                             <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
-                            {{ $donHang->trang_thai === 'da_huy' ? 'Đơn hàng đã bị hủy.' : 'Cửa hàng sẽ xử lý yêu cầu của bạn sớm nhất.' }}
+                            {{ $donHang->trang_thai === 'da_huy'
+                                ? 'Đơn đã hủy: hoàn theo tổng tiền bạn đã thanh toán.'
+                                : 'Đơn đã nhận hàng: không hoàn phí vận chuyển, tiền hoàn dựa trên giá trị hàng hóa thực trả.' }}
                         </p>
                     </div>
                 @endif
             @else
                 <div class="alert alert-info mt-4 text-center">
                     <i class="bi bi-info-circle me-2"></i>
-                    Hết thời gian hoàn tiền/trả hàng (quá 3 ngày kể từ khi nhận hàng)
+                    Hết thời gian hoàn tiền/trả hàng (quá 3 ngày kể từ khi đã giao)
                 </div>
             @endif
         @endif
