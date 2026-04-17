@@ -158,12 +158,13 @@
                             <div>
                                 <strong>{{ $dg->user->name ?? 'Khách hàng' }}</strong>
                                 @if($dg->bienThe)
-                                    <div class="small text-muted">
+                                    <div class="small text-muted d-flex align-items-center gap-1">
                                         @if($dg->bienThe->color)
-                                            <span>Màu: {{ $dg->bienThe->color->ten_mau_sac }}</span>
+                                            <span class="border rounded" style="width:14px;height:14px;background-color:{{ $dg->bienThe->color->ma_mau ?? '#ccc' }};"></span>
+                                            <span>{{ $dg->bienThe->color->ten_mau ?? '—' }}</span>
                                         @endif
                                         @if($dg->bienThe->size)
-                                            <span class="ms-2">Size: {{ $dg->bienThe->size->ten_kich_thuoc }}</span>
+                                            <span>/ {{ $dg->bienThe->size->ten_kich_thuoc }}</span>
                                         @endif
                                     </div>
                                 @endif

@@ -35,6 +35,12 @@ class BinhLuanController extends Controller
         $daDanhGia = $query->exists();
 
         if ($daDanhGia) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Bạn đã đánh giá sản phẩm này rồi.'
+                ]);
+            }
             return back()->with('error', 'Bạn đã đánh giá sản phẩm này rồi.');
         }
 
@@ -48,6 +54,13 @@ class BinhLuanController extends Controller
             'trang_thai' => 1,
             'hien_thi_trang_chu' => 0,
         ]);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Đánh giá thành công'
+            ]);
+        }
 
         return back()->with('success', 'Đánh giá thành công');
     }

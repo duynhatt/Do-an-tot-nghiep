@@ -52,7 +52,7 @@ class SanPhamController extends Controller
         }
 
         // LẤY ĐÁNH GIÁ
-        $danhGias = BinhLuan::with('bienThe')
+        $danhGias = BinhLuan::with(['bienThe.color', 'bienThe.size'])
             ->where('san_pham_id',$sanPham->id)
             ->where('trang_thai',1)
             ->latest()
