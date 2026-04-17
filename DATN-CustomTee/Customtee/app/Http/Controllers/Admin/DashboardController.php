@@ -336,6 +336,7 @@ class DashboardController extends Controller
             DonHang::TRANG_THAI_DANG_XU_LY,
             DonHang::TRANG_THAI_DANG_GIAO,
             DonHang::TRANG_THAI_DA_GIAO,
+            'da_nhan_hang',
             DonHang::TRANG_THAI_DA_HOAN_THANH,
             DonHang::TRANG_THAI_DA_HUY,
             'tra_hang',
@@ -355,6 +356,23 @@ class DashboardController extends Controller
         foreach ($statuses as $status) {
             $result[$status] = (int) ($counts[$status] ?? 0);
         }
+        // Tách "Đã giao" (chưa nhận) và "Đã nhận hàng" (đã có mốc nhận).
+        $result[DonHang::TRANG_THAI_DA_GIAO] = DonHang::query()
+            ->whereBetween('created_at', [$start, $end])
+            ->where('trang_thai', DonHang::TRANG_THAI_DA_GIAO)
+            ->whereNull('da_nhan_hang_at')
+            ->where(function ($query) {
+                $query->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
+            })
+            ->count();
+        $result['da_nhan_hang'] = DonHang::query()
+            ->whereBetween('created_at', [$start, $end])
+            ->where('trang_thai', DonHang::TRANG_THAI_DA_GIAO)
+            ->whereNotNull('da_nhan_hang_at')
+            ->where(function ($query) {
+                $query->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
+            })
+            ->count();
         $result['tra_hang'] = DonHang::query()
             ->whereBetween('created_at', [$start, $end])
             ->where('yeu_cau_tra', true)
@@ -430,6 +448,18 @@ class DashboardController extends Controller
 
         if ($status === 'tra_hang') {
             $query->where('yeu_cau_tra', true);
+        } elseif ($status === 'da_nhan_hang') {
+            $query->where('trang_thai', DonHang::TRANG_THAI_DA_GIAO)
+                ->whereNotNull('da_nhan_hang_at')
+                ->where(function ($q) {
+                    $q->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
+                });
+        } elseif ($status === DonHang::TRANG_THAI_DA_GIAO) {
+            $query->where('trang_thai', DonHang::TRANG_THAI_DA_GIAO)
+                ->whereNull('da_nhan_hang_at')
+                ->where(function ($q) {
+                    $q->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
+                });
         } else {
             $query->where('trang_thai', $status)
                 ->where(function ($q) {
@@ -448,6 +478,7 @@ class DashboardController extends Controller
                 'trang_thai_thanh_toan',
                 'created_at',
                 'yeu_cau_tra',
+                'da_nhan_hang_at',
             ]);
 
         return response()->json($donHangs);

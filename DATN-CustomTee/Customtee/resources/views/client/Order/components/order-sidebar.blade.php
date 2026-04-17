@@ -16,7 +16,9 @@
                             {{
                                 ((bool) $donHang->yeu_cau_huy && in_array($donHang->trang_thai, [\App\Models\DonHang::TRANG_THAI_DANG_XU_LY, \App\Models\DonHang::TRANG_THAI_CHO_DUYET_HUY], true))
                                     ? 'Đang yêu cầu hủy'
-                                    : \App\Models\DonHang::tenTrangThai($donHang->trang_thai)
+                                    : (($donHang->trang_thai === \App\Models\DonHang::TRANG_THAI_DA_GIAO && !empty($donHang->da_nhan_hang_at))
+                                        ? 'Đã nhận hàng'
+                                        : \App\Models\DonHang::tenTrangThai($donHang->trang_thai))
                             }}
                         </span>
                     </li>

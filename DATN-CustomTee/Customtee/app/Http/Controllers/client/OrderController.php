@@ -32,6 +32,10 @@ class OrderController extends Controller
             ->orderBy('created_at', 'desc');
 
         $trangThai = $request->query('trang_thai');
+        if ($trangThai === 'dang_yeu_cau_huy') {
+            // Tab riêng đã được gộp vào "đang xử lý", giữ tương thích URL cũ.
+            $trangThai = DonHang::TRANG_THAI_DANG_XU_LY;
+        }
 
         if ($trangThai) {
             // Lọc theo các trạng thái chuẩn (bao gồm "đã hoàn thành")
@@ -46,12 +50,15 @@ class OrderController extends Controller
             ], true)) {
                 $query->where(function ($q) use ($trangThai) {
                     if ($trangThai === DonHang::TRANG_THAI_DANG_XU_LY) {
-                        // Tab "đang xử lý" chỉ hiển thị đơn xử lý bình thường.
-                        // Đơn đã gửi yêu cầu hủy sẽ nằm ở tab "đang yêu cầu hủy".
-                        $q->where('trang_thai', DonHang::TRANG_THAI_DANG_XU_LY)
-                            ->where(function ($q2) {
-                                $q2->where('yeu_cau_huy', false)->orWhereNull('yeu_cau_huy');
-                            });
+                        // Gộp luôn đơn đang yêu cầu hủy/chờ duyệt hủy vào tab "đang xử lý".
+                        $q->whereIn('trang_thai', [
+                            DonHang::TRANG_THAI_DANG_XU_LY,
+                            DonHang::TRANG_THAI_CHO_DUYET_HUY,
+                        ]);
+                    } elseif ($trangThai === DonHang::TRANG_THAI_DA_GIAO) {
+                        // Tab "đã giao": hàng đã được shop giao, khách chưa xác nhận nhận hàng.
+                        $q->where('trang_thai', DonHang::TRANG_THAI_DA_GIAO)
+                            ->whereNull('da_nhan_hang_at');
                     } else {
                         $q->where('trang_thai', $trangThai);
                     }
@@ -60,21 +67,17 @@ class OrderController extends Controller
                     $q->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
                 });
             }
-            // Lọc "Đang yêu cầu hủy": đơn khách đã gửi yêu cầu hủy, đang chờ admin xử lý.
-            elseif ($trangThai === 'dang_yeu_cau_huy') {
-                $query
-                    ->where('yeu_cau_huy', true)
-                    ->whereIn('trang_thai', [
-                        DonHang::TRANG_THAI_DANG_XU_LY,
-                        DonHang::TRANG_THAI_CHO_DUYET_HUY,
-                    ])
-                    ->where(function ($q) {
-                        $q->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
-                    });
-            }
             // Lọc "Trả hàng": các đơn có yêu cầu trả
             elseif ($trangThai === 'tra_hang') {
                 $query->where('yeu_cau_tra', true);
+            }
+            // Lọc "Đã nhận hàng": vẫn ở trạng thái da_giao nhưng khách đã xác nhận nhận hàng.
+            elseif ($trangThai === 'da_nhan_hang') {
+                $query->where('trang_thai', DonHang::TRANG_THAI_DA_GIAO)
+                    ->whereNotNull('da_nhan_hang_at')
+                    ->where(function ($q) {
+                        $q->where('yeu_cau_tra', false)->orWhereNull('yeu_cau_tra');
+                    });
             }
         }
 
@@ -228,6 +231,13 @@ class OrderController extends Controller
 
     public function confirm(Request $request, $id)
     {
+        if ((string) $request->input('client_confirm_complete', '0') !== '1') {
+            return back()->with(
+                'error',
+                'Vui lòng xác nhận hoàn thành'
+            );
+        }
+
         $donHang = DonHang::where('id', $id)
             ->where('nguoi_dung_id', Auth::id())
             ->firstOrFail();
@@ -241,6 +251,10 @@ class OrderController extends Controller
             return back()->with('error', 'Đơn hàng đang có yêu cầu trả. Vui lòng xử lý yêu cầu trả hàng trước.');
         }
 
+        if (empty($donHang->da_nhan_hang_at)) {
+            return back()->with('error', 'Vui lòng xác nhận đã nhận hàng trước khi hoàn thành đơn.');
+        }
+
         if (!DonHang::coTheChuyenSang($donHang->trang_thai, DonHang::TRANG_THAI_DA_HOAN_THANH)) {
             return back()->with('error', 'Không thể chuyển đơn hàng sang trạng thái hoàn thành.');
         }
@@ -252,6 +266,28 @@ class OrderController extends Controller
         ]);
 
         return back()->with('success', 'Cảm ơn bạn đã xác nhận');
+    }
+
+    public function received(Request $request, $id)
+    {
+        $donHang = DonHang::where('id', $id)
+            ->where('nguoi_dung_id', Auth::id())
+            ->firstOrFail();
+
+        if ($donHang->trang_thai !== DonHang::TRANG_THAI_DA_GIAO) {
+            return back()->with('error', 'Chỉ có thể xác nhận nhận hàng khi đơn đang ở trạng thái "Đã giao".');
+        }
+
+        if (!empty($donHang->da_nhan_hang_at)) {
+            return back()->with('success', 'Bạn đã xác nhận nhận hàng trước đó.');
+        }
+
+        $donHang->update([
+            'da_nhan_hang_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return back()->with('success', 'Đã xác nhận nhận hàng. Thời gian hoàn/trả được tính từ bây giờ.');
     }
 
     public function requestReturn(Request $request, DonHang $donHang)
@@ -284,19 +320,30 @@ class OrderController extends Controller
             }
         }
 
+        if (
+            $donHang->trang_thai === DonHang::TRANG_THAI_DA_GIAO
+            && empty($donHang->da_nhan_hang_at)
+        ) {
+            return back()->with('error', 'Vui lòng xác nhận đã nhận hàng trước khi gửi yêu cầu hoàn tiền/trả hàng.');
+        }
+
         $isOnlineCancelRefund = $donHang->phuong_thuc_thanh_toan === 'vnpay'
             && $donHang->trang_thai === DonHang::TRANG_THAI_DA_HUY
             && $donHang->trang_thai_thanh_toan === 'da_thanh_toan';
 
         // Hoàn tiền do hủy đơn online đã thanh toán được phép gửi ngay sau khi hủy.
         if (!$isOnlineCancelRefund) {
-            $hoanThanhTime = $donHang->da_hoan_thanh_at ?? $donHang->updated_at;
+            $hoanThanhTime = $donHang->da_nhan_hang_at ?? $donHang->da_giao_at;
+            if (!$hoanThanhTime) {
+                return back()->with('error', 'Đơn hàng chưa có mốc nhận hàng để xử lý thời hạn hoàn tiền.');
+            }
             if (!Carbon::parse($hoanThanhTime)->addDays(3)->isFuture()) {
-                return back()->with('error', 'Đã hết thời hạn yêu cầu hoàn tiền (3 ngày sau khi hoàn thành).');
+                return back()->with('error', 'Đã hết thời hạn yêu cầu hoàn tiền (3 ngày sau khi nhận hàng).');
             }
         }
 
-        $isDeliveredReturn = $donHang->trang_thai === DonHang::TRANG_THAI_DA_GIAO;
+        $isDeliveredReturn = $donHang->trang_thai === DonHang::TRANG_THAI_DA_GIAO
+            && !empty($donHang->da_nhan_hang_at);
         $requiresFullReturn = $isOnlineCancelRefund || $isDeliveredReturn;
         $rules = [
             'ly_do' => ($isOnlineCancelRefund ? 'nullable' : 'required') . '|string|max:2000',
@@ -364,6 +411,21 @@ class OrderController extends Controller
 
         DB::beginTransaction();
         try {
+            // Khóa đơn hàng để chặn 2 request đồng thời từ nhiều tab tạo trùng yêu cầu.
+            $lockedDonHang = DonHang::where('id', $donHang->id)->lockForUpdate()->firstOrFail();
+
+            // Nếu đã có yêu cầu active thì không cho tạo thêm.
+            $activeRefund = Refund::where('don_hang_id', $lockedDonHang->id)
+                ->where('user_id', Auth::id())
+                ->whereIn('trang_thai', ['cho_xu_ly', 'da_chap_nhan', 'da_hoan_tien'])
+                ->latest()
+                ->first();
+            if ($activeRefund) {
+                DB::rollBack();
+                return redirect()->route('order.show', $lockedDonHang->id)
+                    ->with('error', 'Yêu cầu hoàn tiền/trả hàng của bạn đang được xử lý.');
+            }
+
             $refund = Refund::where('don_hang_id', $donHang->id)
                 ->where('user_id', Auth::id())
                 ->where('trang_thai', 'da_tu_choi')
@@ -472,7 +534,7 @@ class OrderController extends Controller
                 }
             }
 
-            $donHang->update([
+            $lockedDonHang->update([
                 'yeu_cau_tra' => 1,
                 'ly_do_tra' => $refund->ly_do,
                 'ngay_yeu_cau_tra' => $refund->created_at,

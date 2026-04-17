@@ -50,6 +50,7 @@
                             'cho_duyet_huy' => 'Chờ duyệt hủy',
                             'dang_giao' => 'Đang giao',
                             'da_giao' => 'Đã giao',
+                            'da_nhan_hang' => 'Đã nhận hàng',
                             'da_huy' => 'Đã hủy',
                             // Bộ lọc bổ sung
                             'da_hoan_thanh' => 'Đã hoàn thành',
@@ -295,6 +296,7 @@
                                     'cho_duyet_huy' => ['warning', \App\Models\DonHang::tenTrangThai('cho_duyet_huy')],
                                     'dang_giao' => ['primary', \App\Models\DonHang::tenTrangThai('dang_giao')],
                                     'da_giao' => ['success', \App\Models\DonHang::tenTrangThai('da_giao')],
+                                    'da_nhan_hang' => ['primary', 'Đã nhận hàng'],
                                     'da_hoan_thanh' => ['success', \App\Models\DonHang::tenTrangThai('da_hoan_thanh')],
                                     'da_huy' => ['danger', \App\Models\DonHang::tenTrangThai('da_huy')],
                                 ];
@@ -308,6 +310,11 @@
                                     $displayStatus = ['warning', 'Yêu cầu hủy'];
                                 } elseif ($latestRefund && isset($refundBadgeMap[$latestRefund->trang_thai])) {
                                     $displayStatus = $refundBadgeMap[$latestRefund->trang_thai];
+                                } elseif (
+                                    $donHang->trang_thai === \App\Models\DonHang::TRANG_THAI_DA_GIAO
+                                    && !empty($donHang->da_nhan_hang_at)
+                                ) {
+                                    $displayStatus = $orderBadgeMap['da_nhan_hang'];
                                 }
                             @endphp
                             <div>

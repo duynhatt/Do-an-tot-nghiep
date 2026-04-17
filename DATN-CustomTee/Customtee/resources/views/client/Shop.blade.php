@@ -130,9 +130,9 @@
                         <div id="sortCollapse" class="collapse show">
                             <select name="sort" class="form-select form-select-sm mt-2">
                                 <option value="">Mặc định</option>
-                                <option value="price_asc" {{ $selectedSort === 'price_asc' ? 'selected' : '' }}>Giá tăng dần</option>
-                                <option value="price_desc" {{ $selectedSort === 'price_desc' ? 'selected' : '' }}>Giá giảm dần</option>
-                                <option value="new" {{ $selectedSort === 'new' ? 'selected' : '' }}>Mới nhất</option>
+                                <option value="giá tăng dần" {{ $selectedSort === 'price_asc' ? 'selected' : '' }}>Giá tăng dần</option>
+                                <option value="giá giảm dần" {{ $selectedSort === 'price_desc' ? 'selected' : '' }}>Giá giảm dần</option>
+                                <option value="mới nhất" {{ $selectedSort === 'new' ? 'selected' : '' }}>Mới nhất</option>
                             </select>
                         </div>
 
