@@ -93,6 +93,8 @@ class DashboardController extends Controller
 
         $topCancelledProducts = $this->getTopCancelledProducts($startDate, $endDate, 10);
 
+        $topReturnedProducts = $this->getTopReturnedProducts($startDate, $endDate, 10);
+
         $lowStockVariants = BienThe::with('sanPham')
             ->where('so_luong', '<', 10)
             ->orderBy('so_luong')
@@ -110,6 +112,7 @@ class DashboardController extends Controller
             'ordersByStatus',
             'topProducts',
             'topCancelledProducts',
+            'topReturnedProducts',
             'period',
             'groupBy',
             'startDate',
@@ -467,6 +470,54 @@ class DashboardController extends Controller
                 : ($cancelQty > 0 ? 100 : 0);
             $product->last_cancel_date = $product->last_cancel_date
                 ? \Carbon\Carbon::parse($product->last_cancel_date)->format('d/m/Y H:i')
+                : null;
+        }
+
+        return $products;
+    }
+
+    private function getTopReturnedProducts($start, $end, $limit = 10)
+    {
+        $products = ChiTietDonHang::query()
+            ->join('don_hangs', 'don_hang_chi_tiets.don_hang_id', '=', 'don_hangs.id')
+            ->join('san_phams', 'don_hang_chi_tiets.san_pham_id', '=', 'san_phams.id')
+            ->whereBetween('don_hangs.created_at', [$start, $end])
+            ->where('don_hangs.yeu_cau_tra', true)
+            ->select(
+                'san_phams.id',
+                'san_phams.ten_san_pham',
+                'san_phams.hinh_anh_chinh',
+                DB::raw('SUM(don_hang_chi_tiets.so_luong) as return_quantity'),
+                DB::raw('MAX(don_hangs.updated_at) as last_return_date')
+            )
+            ->groupBy('san_phams.id', 'san_phams.ten_san_pham', 'san_phams.hinh_anh_chinh')
+            ->orderByDesc('return_quantity')
+            ->limit($limit)
+            ->get();
+
+        $soldQuantities = ChiTietDonHang::query()
+            ->join('don_hangs', 'don_hang_chi_tiets.don_hang_id', '=', 'don_hangs.id')
+            ->join('san_phams', 'don_hang_chi_tiets.san_pham_id', '=', 'san_phams.id')
+            ->whereBetween('don_hangs.updated_at', [$start, $end])
+            ->where('don_hangs.trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
+            ->where('don_hangs.trang_thai_thanh_toan', 'da_thanh_toan')
+            ->select(
+                'san_phams.id',
+                DB::raw('SUM(don_hang_chi_tiets.so_luong) as total_sold')
+            )
+            ->groupBy('san_phams.id')
+            ->pluck('total_sold', 'san_phams.id');
+
+        foreach ($products as $product) {
+            $returnQty = (int) $product->return_quantity;
+            $soldQty = (int) ($soldQuantities[$product->id] ?? 0);
+            $product->return_count = $returnQty;
+            $product->total_sold = $soldQty;
+            $product->percent_returned = $soldQty > 0
+                ? round(($returnQty / $soldQty) * 100, 2)
+                : ($returnQty > 0 ? 100 : 0);
+            $product->last_return_date = $product->last_return_date
+                ? \Carbon\Carbon::parse($product->last_return_date)->format('d/m/Y H:i')
                 : null;
         }
 

@@ -675,6 +675,57 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="col-12">
+                    <div class="chart-container">
+                        <h5 class="fw-semibold mb-4">Top sản phẩm trả hàng</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th class="text-center">Ảnh</th>
+                                        <th>Sản phẩm</th>
+                                        <th class="text-center">Số lượng trả</th>
+                                        <th class="text-center">Lần trả gần nhất</th>
+                                        <th class="text-end">Tỷ lệ trả (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($topReturnedProducts as $index => $product)
+                                        <tr>
+                                            <td>{{ $index + 1 }}</td>
+                                            @php
+                                                $productImage = $product->hinh_anh_chinh
+                                                    ? '/storage/' . $product->hinh_anh_chinh
+                                                    : '/images/no-image.png';
+                                            @endphp
+                                            <td class="text-center">
+                                                <img src="{{ $productImage }}" alt="{{ $product->ten_san_pham }}"
+                                                    style="width:70px;height:70px;object-fit:cover;border-radius:12px">
+                                            </td>
+                                            <td><strong>{{ $product->ten_san_pham }}</strong></td>
+                                            <td class="text-center">{{ number_format($product->return_count) }}</td>
+                                            <td class="text-center text-muted">
+                                                {{ $product->last_return_date ?? '-' }}
+                                            </td>
+                                            <td class="text-end">
+                                                {{ number_format($product->percent_returned, 2, ',', '.') }}%
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted py-4">
+                                                <i class="fas fa-check-circle text-success me-1"></i>
+                                                Không có sản phẩm nào được trả hàng trong khoảng thời gian này
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {{-- Modal các đơn hàng theo trạng thái --}}
