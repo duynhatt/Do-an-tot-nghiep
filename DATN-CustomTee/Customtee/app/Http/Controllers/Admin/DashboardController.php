@@ -134,11 +134,14 @@ class DashboardController extends Controller
 
     private function getQuickStats($start, $end)
     {
-        // Doanh thu chỉ tính khi khách xác nhận nhận hàng
+        // Doanh thu thật: tiền hàng sau giảm giá, không gồm phí vận chuyển.
+        $netRevenueExpression = 'GREATEST(COALESCE(tam_tinh, 0) - COALESCE(tien_giam, 0), 0)';
+
         $revenue = DonHang::whereBetween('updated_at', [$start, $end])
             ->where('trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
             ->where('trang_thai_thanh_toan', 'da_thanh_toan')
-            ->sum('tong_tien');
+            ->selectRaw("SUM({$netRevenueExpression}) as total_revenue")
+            ->value('total_revenue');
 
         // Đếm số đơn "hoàn thành" theo thời điểm xác nhận
         $ordersCount = DonHang::whereBetween('updated_at', [$start, $end])
@@ -163,13 +166,15 @@ class DashboardController extends Controller
         $values = [];
 
         if ($groupBy === 'day') {
+            $netRevenueExpression = 'GREATEST(COALESCE(tam_tinh, 0) - COALESCE(tien_giam, 0), 0)';
+
             $data = DonHang::query()
                 ->whereBetween('updated_at', [$start, $end])
                 ->where('trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
                 ->where('trang_thai_thanh_toan', 'da_thanh_toan')
                 ->select(
                     DB::raw('DATE(updated_at) as date'),
-                    DB::raw('SUM(tong_tien) as total')
+                    DB::raw("SUM({$netRevenueExpression}) as total")
                 )
                 ->groupBy('date')
                 ->get();
@@ -195,13 +200,15 @@ class DashboardController extends Controller
         }
 
         if ($groupBy === 'week') {
+            $netRevenueExpression = 'GREATEST(COALESCE(tam_tinh, 0) - COALESCE(tien_giam, 0), 0)';
+
             $data = DonHang::query()
                 ->whereBetween('updated_at', [$start, $end])
                 ->where('trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
                 ->where('trang_thai_thanh_toan', 'da_thanh_toan')
                 ->select(
                     DB::raw('YEARWEEK(updated_at, 1) as bucket'),
-                    DB::raw('SUM(tong_tien) as total')
+                    DB::raw("SUM({$netRevenueExpression}) as total")
                 )
                 ->groupBy('bucket')
                 ->get();
@@ -231,13 +238,15 @@ class DashboardController extends Controller
         }
 
         if ($groupBy === 'month') {
+            $netRevenueExpression = 'GREATEST(COALESCE(tam_tinh, 0) - COALESCE(tien_giam, 0), 0)';
+
             $data = DonHang::query()
                 ->whereBetween('updated_at', [$start, $end])
                 ->where('trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
                 ->where('trang_thai_thanh_toan', 'da_thanh_toan')
                 ->select(
                     DB::raw('DATE_FORMAT(updated_at, "%Y-%m") as bucket'),
-                    DB::raw('SUM(tong_tien) as total')
+                    DB::raw("SUM({$netRevenueExpression}) as total")
                 )
                 ->groupBy('bucket')
                 ->get();
@@ -261,13 +270,14 @@ class DashboardController extends Controller
         }
 
         // year
+        $netRevenueExpression = 'GREATEST(COALESCE(tam_tinh, 0) - COALESCE(tien_giam, 0), 0)';
         $data = DonHang::query()
             ->whereBetween('updated_at', [$start, $end])
             ->where('trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
             ->where('trang_thai_thanh_toan', 'da_thanh_toan')
             ->select(
                 DB::raw('YEAR(updated_at) as bucket'),
-                DB::raw('SUM(tong_tien) as total')
+                DB::raw("SUM({$netRevenueExpression}) as total")
             )
             ->groupBy('bucket')
             ->get();
@@ -292,6 +302,20 @@ class DashboardController extends Controller
 
     private function getRevenueByCategory($start, $end)
     {
+        // Doanh thu thật theo dòng sản phẩm:
+        // doanh thu dòng = thành tiền dòng - phần giảm giá phân bổ theo tỷ trọng thành tiền dòng / tạm tính đơn.
+        $lineNetRevenueExpression = '
+            GREATEST(
+                COALESCE(don_hang_chi_tiets.thanh_tien, 0)
+                - CASE
+                    WHEN COALESCE(don_hangs.tam_tinh, 0) > 0
+                    THEN (COALESCE(don_hang_chi_tiets.thanh_tien, 0) / COALESCE(don_hangs.tam_tinh, 0)) * COALESCE(don_hangs.tien_giam, 0)
+                    ELSE 0
+                END,
+                0
+            )
+        ';
+
         $data = ChiTietDonHang::query()
             ->join('don_hangs', 'don_hang_chi_tiets.don_hang_id', '=', 'don_hangs.id')
             ->join('san_phams', 'don_hang_chi_tiets.san_pham_id', '=', 'san_phams.id')
@@ -301,7 +325,7 @@ class DashboardController extends Controller
             ->where('don_hangs.trang_thai_thanh_toan', 'da_thanh_toan')
             ->select(
                 'danh_mucs.ten_danh_muc',
-                DB::raw('SUM(don_hang_chi_tiets.thanh_tien) as total')
+                DB::raw("SUM({$lineNetRevenueExpression}) as total")
             )
             ->groupBy('danh_mucs.id', 'danh_mucs.ten_danh_muc')
             ->orderByDesc('total')
@@ -318,6 +342,8 @@ class DashboardController extends Controller
 
     private function getTopCustomers($start, $end, $limit = 8)
     {
+        $netRevenueExpression = 'GREATEST(COALESCE(don_hangs.tam_tinh, 0) - COALESCE(don_hangs.tien_giam, 0), 0)';
+
         return DonHang::query()
             ->whereBetween('don_hangs.updated_at', [$start, $end])
             ->where('don_hangs.trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
@@ -327,7 +353,7 @@ class DashboardController extends Controller
                 'users.name',
                 'users.phone',
                 DB::raw('COUNT(don_hangs.id) as order_count'),
-                DB::raw('SUM(don_hangs.tong_tien) as total_revenue')
+                DB::raw("SUM({$netRevenueExpression}) as total_revenue")
             )
             ->groupBy('users.id', 'users.name', 'users.phone')
             ->orderByDesc('total_revenue')
@@ -388,13 +414,26 @@ class DashboardController extends Controller
 
     private function getTopProducts($start, $end, $limit = 10)
     {
+        $lineNetRevenueExpression = '
+            GREATEST(
+                COALESCE(don_hang_chi_tiets.thanh_tien, 0)
+                - CASE
+                    WHEN COALESCE(don_hangs.tam_tinh, 0) > 0
+                    THEN (COALESCE(don_hang_chi_tiets.thanh_tien, 0) / COALESCE(don_hangs.tam_tinh, 0)) * COALESCE(don_hangs.tien_giam, 0)
+                    ELSE 0
+                END,
+                0
+            )
+        ';
+
         $totalRevenue = ChiTietDonHang::query()
             ->join('don_hangs', 'don_hang_chi_tiets.don_hang_id', '=', 'don_hangs.id')
             ->join('san_phams', 'don_hang_chi_tiets.san_pham_id', '=', 'san_phams.id')
             ->whereBetween('don_hangs.updated_at', [$start, $end])
             ->where('don_hangs.trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
             ->where('don_hangs.trang_thai_thanh_toan', 'da_thanh_toan')
-            ->sum('don_hang_chi_tiets.thanh_tien');
+            ->selectRaw("SUM({$lineNetRevenueExpression}) as total_revenue")
+            ->value('total_revenue');
 
         $products = ChiTietDonHang::query()
             ->join('don_hangs', 'don_hang_chi_tiets.don_hang_id', '=', 'don_hangs.id')
@@ -407,7 +446,7 @@ class DashboardController extends Controller
                 'san_phams.ten_san_pham',
                 'san_phams.hinh_anh_chinh',
                 DB::raw('SUM(don_hang_chi_tiets.so_luong) as total_quantity'),
-                DB::raw('SUM(don_hang_chi_tiets.thanh_tien) as total_revenue')
+                DB::raw("SUM({$lineNetRevenueExpression}) as total_revenue")
             )
             ->groupBy('san_phams.id', 'san_phams.ten_san_pham', 'san_phams.hinh_anh_chinh')
             ->orderByDesc('total_quantity')
@@ -478,44 +517,32 @@ class DashboardController extends Controller
 
     private function getTopReturnedProducts($start, $end, $limit = 10)
     {
-        $products = ChiTietDonHang::query()
+        // Top trả hàng dựa trên yêu cầu hoàn/trả đã được xử lý thực tế.
+        // Chỉ lấy yêu cầu đã chấp nhận hoặc đã hoàn tiền, lọc theo thời gian tạo yêu cầu refund.
+        $products = DB::table('refund_items')
+            ->join('refunds', 'refund_items.refund_request_id', '=', 'refunds.id')
+            ->join('don_hang_chi_tiets', 'refund_items.chi_tiet_don_hang_id', '=', 'don_hang_chi_tiets.id')
             ->join('don_hangs', 'don_hang_chi_tiets.don_hang_id', '=', 'don_hangs.id')
             ->join('san_phams', 'don_hang_chi_tiets.san_pham_id', '=', 'san_phams.id')
-            ->whereBetween('don_hangs.created_at', [$start, $end])
-            ->where('don_hangs.yeu_cau_tra', true)
+            ->whereBetween('refunds.created_at', [$start, $end])
+            ->whereIn('refunds.trang_thai', ['da_chap_nhan', 'da_hoan_tien'])
+            ->where('don_hangs.trang_thai', DonHang::TRANG_THAI_DA_GIAO)
+            ->whereNotNull('don_hangs.da_nhan_hang_at')
             ->select(
                 'san_phams.id',
                 'san_phams.ten_san_pham',
                 'san_phams.hinh_anh_chinh',
-                DB::raw('SUM(don_hang_chi_tiets.so_luong) as return_quantity'),
-                DB::raw('MAX(don_hangs.updated_at) as last_return_date')
+                DB::raw('SUM(refund_items.so_luong_yeu_cau) as return_quantity'),
+                DB::raw('MAX(refunds.created_at) as last_return_date')
             )
             ->groupBy('san_phams.id', 'san_phams.ten_san_pham', 'san_phams.hinh_anh_chinh')
             ->orderByDesc('return_quantity')
             ->limit($limit)
             ->get();
 
-        $soldQuantities = ChiTietDonHang::query()
-            ->join('don_hangs', 'don_hang_chi_tiets.don_hang_id', '=', 'don_hangs.id')
-            ->join('san_phams', 'don_hang_chi_tiets.san_pham_id', '=', 'san_phams.id')
-            ->whereBetween('don_hangs.updated_at', [$start, $end])
-            ->where('don_hangs.trang_thai', DonHang::TRANG_THAI_DA_HOAN_THANH)
-            ->where('don_hangs.trang_thai_thanh_toan', 'da_thanh_toan')
-            ->select(
-                'san_phams.id',
-                DB::raw('SUM(don_hang_chi_tiets.so_luong) as total_sold')
-            )
-            ->groupBy('san_phams.id')
-            ->pluck('total_sold', 'san_phams.id');
-
         foreach ($products as $product) {
             $returnQty = (int) $product->return_quantity;
-            $soldQty = (int) ($soldQuantities[$product->id] ?? 0);
             $product->return_count = $returnQty;
-            $product->total_sold = $soldQty;
-            $product->percent_returned = $soldQty > 0
-                ? round(($returnQty / $soldQty) * 100, 2)
-                : ($returnQty > 0 ? 100 : 0);
             $product->last_return_date = $product->last_return_date
                 ? \Carbon\Carbon::parse($product->last_return_date)->format('d/m/Y H:i')
                 : null;

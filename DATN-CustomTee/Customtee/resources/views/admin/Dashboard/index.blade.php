@@ -169,6 +169,11 @@
                 color: #374151;
             }
 
+            .status-hoan_tien {
+                background: #dbeafe;
+                color: #1d4ed8;
+            }
+
             @media (min-width: 1200px) {
                 .status-summary-row {
                     display: flex;
@@ -229,7 +234,7 @@
         <main class="main-content">
             <div class="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-3">
                 <div>
-                    <h1 class="fw-bold mb-1">Tổng quan doanh thu</h1>
+                    <h1 class="fw-bold mb-1">Tổng quan doanh thu thuần</h1>
                     <p class="text-muted mb-0">Khoảng thời gian: {{ $startDate->format('d/m/Y') }} →
                         {{ $endDate->format('d/m/Y') }}</p>
                 </div>
@@ -285,7 +290,7 @@
                         <div class="stat-header">
                             <div class="clearfix">
                                 <div style="float:left">
-                                    <h6 class="mb-1 text-white-75">Doanh thu</h6>
+                                    <h6 class="mb-1 text-white-75">Doanh thu thuần</h6>
                                     <h3>₫ {{ $stats['revenue'] }}</h3>
                                 </div>
                                 <i class="fas fa-coins fa-2x text-white" style="float:right"></i>
@@ -361,7 +366,7 @@
                             'da_nhan_hang' => ['Đã nhận hàng', 'primary'],
                             'da_hoan_thanh' => ['Đã hoàn thành', 'success'],
                             'da_huy' => ['Đã hủy', 'danger'],
-                            'tra_hang' => ['Trả hàng', 'secondary'],
+                            'tra_hang' => ['Hoàn trả', 'secondary'],
                         ];
                     @endphp
                     @foreach ($statusLabels as $statusKey => $label)
@@ -396,7 +401,7 @@
                                 ];
                                 $groupLabel = $groupLabels[$currentGroupBy] ?? 'Ngày';
                             @endphp
-                            <h5 class="fw-semibold mb-0">Doanh thu theo {{ $groupLabel }}
+                            <h5 class="fw-semibold mb-0">Doanh thu thuần theo {{ $groupLabel }}
                                 ({{ $startDate->format('d/m/Y') }} → {{ $endDate->format('d/m/Y') }})</h5>
                             <div class="d-flex align-items-center gap-2">
                                 <select class="form-select form-select-sm w-auto" onchange="window.location.href=this.value">
@@ -461,7 +466,7 @@
                                     <tr>
                                         <th>#</th>
                                         <th>Kỳ</th>
-                                        <th class="text-end">Doanh thu</th>
+                                        <th class="text-end">Doanh thu thuần</th>
                                         <th class="text-end">% tổng</th>
                                     </tr>
                                 </thead>
@@ -496,7 +501,7 @@
 
                 <div class="col-xl-4">
                     <div class="chart-container h-100">
-                        <h5 class="fw-semibold mb-4">Cơ cấu doanh thu theo danh mục</h5>
+                        <h5 class="fw-semibold mb-4">Cơ cấu doanh thu thuần theo danh mục</h5>
                         <canvas id="categoryChart" height="180"></canvas>
 
                         @php
@@ -509,7 +514,7 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>Danh mục</th>
-                                        <th class="text-end">Doanh thu</th>
+                                        <th class="text-end">Doanh thu thuần</th>
                                         <th class="text-end">% tổng</th>
                                     </tr>
                                 </thead>
@@ -546,7 +551,7 @@
                                         <th class="text-center">Ảnh</th>
                                         <th>Sản phẩm</th>
                                         <th class="text-end">Số lượng bán</th>
-                                        <th class="text-end">Doanh thu</th>
+                                        <th class="text-end">Doanh thu thuần</th>
                                         <th class="text-end">% tổng doanh thu</th>
                                     </tr>
                                 </thead>
@@ -593,7 +598,7 @@
                                         <th>#</th>
                                         <th>Khách hàng</th>
                                         <th>Đơn hàng</th>
-                                        <th>Doanh thu</th>
+                                        <th>Doanh thu thuần</th>
                                         <th>% Tổng</th>
                                     </tr>
                                 </thead>
@@ -636,8 +641,6 @@
                                         <th class="text-center">Ảnh</th>
                                         <th>Sản phẩm</th>
                                         <th class="text-center">Số lượng Hủy</th>
-                                        <th class="text-center">Lần hủy gần nhất</th>
-                                        <th class="text-end">Tỷ lệ hủy (%)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -655,16 +658,10 @@
                                             </td>
                                             <td><strong>{{ $product->ten_san_pham }}</strong></td>
                                             <td class="text-center">{{ number_format($product->cancel_count) }}</td>
-                                            <td class="text-center text-muted">
-                                                {{ $product->last_cancel_date ?? '-' }}
-                                            </td>
-                                            <td class="text-end">
-                                                {{ number_format($product->percent_cancelled, 2, ',', '.') }}%
-                                            </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="6" class="text-center text-muted py-4">
+                                            <td colspan="4" class="text-center text-muted py-4">
                                                 <i class="fas fa-check-circle text-success me-1"></i>
                                                 Không có sản phẩm nào bị hủy trong khoảng thời gian này
                                             </td>
@@ -687,8 +684,7 @@
                                         <th class="text-center">Ảnh</th>
                                         <th>Sản phẩm</th>
                                         <th class="text-center">Số lượng trả</th>
-                                        <th class="text-center">Lần trả gần nhất</th>
-                                        <th class="text-end">Tỷ lệ trả (%)</th>
+                                        {{-- <th class="text-center">Lần trả gần nhất</th> --}}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -706,16 +702,13 @@
                                             </td>
                                             <td><strong>{{ $product->ten_san_pham }}</strong></td>
                                             <td class="text-center">{{ number_format($product->return_count) }}</td>
-                                            <td class="text-center text-muted">
+                                            {{-- <td class="text-center text-muted">
                                                 {{ $product->last_return_date ?? '-' }}
-                                            </td>
-                                            <td class="text-end">
-                                                {{ number_format($product->percent_returned, 2, ',', '.') }}%
-                                            </td>
+                                            </td> --}}
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="6" class="text-center text-muted py-4">
+                                            <td colspan="5" class="text-center text-muted py-4">
                                                 <i class="fas fa-check-circle text-success me-1"></i>
                                                 Không có sản phẩm nào được trả hàng trong khoảng thời gian này
                                             </td>
@@ -962,7 +955,8 @@
                         'da_nhan_hang': 'Đã nhận hàng',
                         'da_hoan_thanh': 'Đã hoàn thành',
                         'da_huy': 'Đã hủy',
-                        'tra_hang': 'Trả hàng'
+                        'tra_hang': 'Hoàn trả',
+                        'hoan_tien': 'Hoàn tiền'
                     };
 
                     if (res.data.length === 0) {
@@ -978,6 +972,10 @@
                         res.data.forEach(order => {
 
                             let badgeKey = order.yeu_cau_tra ? 'tra_hang' : order.trang_thai;
+                            if (order.yeu_cau_tra) {
+                                // Đã giao/đã nhận: hoàn trả; chưa giao: hoàn tiền.
+                                badgeKey = order.da_nhan_hang_at ? 'tra_hang' : 'hoan_tien';
+                            }
                             if (!order.yeu_cau_tra && order.trang_thai === 'da_giao' && order.da_nhan_hang_at) {
                                 badgeKey = 'da_nhan_hang';
                             }

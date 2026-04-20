@@ -37,7 +37,7 @@
                     </div>
                     <div class="col-md-6 form-group">
                         <label>Giá trị giảm</label>
-                        <input type="number" name="gia_tri" class="form-control" min="1" max="1000000000" value="{{ old('gia_tri', (int) $voucher->gia_tri) }}" required>
+                        <input type="number" name="gia_tri" class="form-control" min="1" max="999999999999" value="{{ old('gia_tri', (int) $voucher->gia_tri) }}" required>
                         @error('gia_tri')
                             <div class="text-danger small mt-1">{{ $message }}</div>
                         @enderror
@@ -46,14 +46,14 @@
                 <div class="row">
                     <div class="col-md-6 form-group">
                         <label>Đơn hàng tối thiểu (đ)</label>
-                        <input type="number" name="don_hang_toi_thieu" class="form-control" min="0" value="{{ old('don_hang_toi_thieu', $voucher->don_hang_toi_thieu) }}" placeholder="VD: 100000 – đơn từ 100k mới áp dụng">
+                        <input type="number" name="don_hang_toi_thieu" class="form-control" min="0" max="999999999999" value="{{ old('don_hang_toi_thieu', $voucher->don_hang_toi_thieu) }}" placeholder="VD: 100000 – đơn từ 100k mới áp dụng">
                         @error('don_hang_toi_thieu')
                             <div class="text-danger small mt-1">{{ $message }}</div>
                         @enderror
                     </div>
                     <div class="col-md-6 form-group" id="giam-toi-da-wrap" style="display: {{ $voucher->loai == 'phan_tram' ? 'block' : 'none' }};">
                         <label>Giảm tối đa (đ)</label>
-                        <input type="number" name="giam_toi_da" class="form-control" min="0" value="{{ old('giam_toi_da', $voucher->giam_toi_da) }}" placeholder="VD: 50000">
+                        <input type="number" name="giam_toi_da" class="form-control" min="0" max="999999999999" value="{{ old('giam_toi_da', $voucher->giam_toi_da) }}" placeholder="VD: 50000">
                         <small class="text-muted">Chỉ áp dụng cho loại Giảm theo % (VD: giảm 10%, tối đa 50.000đ).</small>
                         @error('giam_toi_da')
                             <div class="text-danger small mt-1">{{ $message }}</div>
@@ -78,7 +78,7 @@
                 </div>
                 <div class="form-group">
                     <label>Số lượng</label>
-                    <input type="number" name="so_luong" class="form-control" min="1" value="{{ old('so_luong', $voucher->so_luong) }}" required>
+                    <input type="number" name="so_luong" class="form-control" min="1" max="2147483647" value="{{ old('so_luong', $voucher->so_luong) }}" required>
                     <small class="text-muted">Số lượng không được nhỏ hơn số lượt đã dùng hiện tại ({{ $voucher->da_su_dung }}).</small>
                     @error('so_luong')
                         <div class="text-danger small mt-1">{{ $message }}</div>
@@ -91,6 +91,7 @@
                         name="max_per_user"
                         class="form-control"
                         min="1"
+                        max="255"
                         value="{{ old('max_per_user', $voucher->max_per_user) }}"
                         placeholder="VD: 2"
                     >

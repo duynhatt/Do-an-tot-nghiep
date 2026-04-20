@@ -190,6 +190,12 @@
             $refundButtonLabel = $donHang->trang_thai === 'da_giao' ? 'Hoàn tiền/Trả hàng' : 'Hoàn tiền';
         @endphp
 
+        @if (!empty($donHang->da_giao_at))
+            <div class="alert alert-light border small mt-4 mb-0">
+                <strong>Thời gian đã giao:</strong> {{ $donHang->da_giao_at->format('d/m/Y H:i') }}
+            </div>
+        @endif
+
         @if ($yeuCauHoanTien && $currentRefund)
             {{-- Luôn hiển thị thông tin hoàn tiền/trả hàng nếu đã có yêu cầu --}}
             <div class="mt-4 card border-{{ $currentRefund[1] }} shadow-sm">
