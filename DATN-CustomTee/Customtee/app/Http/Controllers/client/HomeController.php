@@ -16,6 +16,7 @@ class HomeController extends Controller
 {
     public function index()
     {
+        // Ưu tiên hiển thị danh mục có sản phẩm bán chạy nhất.
         $startDate = Carbon::now()->subDays(30);
         $endDate = Carbon::now();
 

@@ -13,30 +13,54 @@ class BinhLuanController extends Controller
     {
         $request->validate([
             'san_pham_id' => 'required|exists:san_phams,id',
+            'bien_the_id' => 'nullable|exists:bien_thes,id',
             'don_hang_id' => 'required|exists:don_hangs,id',
             'noi_dung' => 'required',
             'so_sao' => 'required|integer|min:1|max:5',
         ]);
 
-        // Kiểm tra đã đánh giá trong đơn hàng chưa
-        $daDanhGia = BinhLuan::where('user_id', Auth::id())
+        // Kiểm tra đã đánh giá cho biến thể này trong đơn hàng chưa
+        $query = BinhLuan::where('user_id', Auth::id())
             ->where('san_pham_id', $request->san_pham_id)
-            ->where('don_hang_id', $request->don_hang_id)
-            ->exists();
+            ->where('don_hang_id', $request->don_hang_id);
+
+        // Nếu có bien_the_id thì kiểm tra theo biến thể
+        if ($request->bien_the_id) {
+            $query->where('bien_the_id', $request->bien_the_id);
+        } else {
+            // Nếu không có bien_the_id thì chỉ kiểm tra các đánh giá cũ không có bien_the_id
+            $query->whereNull('bien_the_id');
+        }
+
+        $daDanhGia = $query->exists();
 
         if ($daDanhGia) {
-            return back()->with('error', 'Bạn đã đánh giá sản phẩm này trong đơn hàng này rồi.');
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Bạn đã đánh giá sản phẩm này rồi.'
+                ]);
+            }
+            return back()->with('error', 'Bạn đã đánh giá sản phẩm này rồi.');
         }
 
         BinhLuan::create([
             'user_id' => Auth::id(),
             'san_pham_id' => $request->san_pham_id,
+            'bien_the_id' => $request->bien_the_id,
             'don_hang_id' => $request->don_hang_id,
             'noi_dung' => $request->noi_dung,
             'so_sao' => $request->so_sao,
             'trang_thai' => 1,
             'hien_thi_trang_chu' => 0,
         ]);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Đánh giá thành công'
+            ]);
+        }
 
         return back()->with('success', 'Đánh giá thành công');
     }
@@ -56,7 +80,7 @@ class BinhLuanController extends Controller
 
     public function index()
     {
-        $binhLuans = BinhLuan::with(['user','sanPham','donHang'])
+        $binhLuans = BinhLuan::with(['user','sanPham','donHang','bienThe.color','bienThe.size'])
             ->latest()
             ->paginate(10);
 

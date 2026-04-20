@@ -115,43 +115,128 @@
                             $daDanhGia = \App\Models\BinhLuan::where('user_id', auth()->id())
                                 ->where('san_pham_id', $chiTiet->sanPham->id)
                                 ->where('don_hang_id', $donHang->id)
+                                ->where('bien_the_id', $chiTiet->bien_the_id)
                                 ->exists();
                         @endphp
                         <div class="border rounded p-3 mb-3">
                             <div class="d-flex align-items-center mb-2">
                                 <img src="{{ $chiTiet->sanPham->hinh_anh_chinh ? asset('storage/' . $chiTiet->sanPham->hinh_anh_chinh) : 'https://via.placeholder.com/60' }}"
                                     width="60" height="60" class="rounded me-3" style="object-fit:cover">
-                                <div><strong>{{ $chiTiet->sanPham->ten_san_pham }}</strong></div>
+                                <div>
+                                    <strong>{{ $chiTiet->sanPham->ten_san_pham }}</strong>
+                                    @if ($chiTiet->bienThe)
+                                        <div class="small text-muted d-flex align-items-center gap-1">
+                                            @if ($chiTiet->bienThe->color)
+                                                <span class="border rounded" style="width:12px;height:12px;background-color:{{ $chiTiet->bienThe->color->ma_mau ?? '#ccc' }};"></span>
+                                                <span>{{ $chiTiet->bienThe->color->ten_mau ?? '—' }}</span>
+                                            @endif
+                                            @if ($chiTiet->bienThe->size)
+                                                <span>/ {{ $chiTiet->bienThe->size->ten_kich_thuoc }}</span>
+                                            @endif
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                             @if ($daDanhGia)
                                 <div class="alert alert-success mb-0"><i class="bi bi-check-circle"></i> Bạn đã đánh giá
                                     sản phẩm này</div>
-                            @else
-                                <form action="{{ route('binh-luan.store') }}" method="POST">
-                                    @csrf
-                                    <input type="hidden" name="san_pham_id" value="{{ $chiTiet->sanPham->id }}">
-                                    <input type="hidden" name="don_hang_id" value="{{ $donHang->id }}">
-                                    <div class="mb-2">
-                                        <label class="form-label fw-semibold">Số sao</label>
-                                        <select name="so_sao" class="form-select w-auto">
-                                            <option value="5">⭐⭐⭐⭐⭐ (5 sao)</option>
-                                            <option value="4">⭐⭐⭐⭐ (4 sao)</option>
-                                            <option value="3">⭐⭐⭐ (3 sao)</option>
-                                            <option value="2">⭐⭐ (2 sao)</option>
-                                            <option value="1">⭐ (1 sao)</option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-2">
-                                        <textarea name="noi_dung" class="form-control" rows="3" placeholder="Viết đánh giá của bạn..."></textarea>
-                                    </div>
-                                    <button class="btn btn-primary btn-sm"><i class="bi bi-send"></i> Gửi đánh
-                                        giá</button>
-                                </form>
-                            @endif
+                                @else
+                                    <form action="{{ route('binh-luan.store') }}" method="POST" class="review-form" data-product-id="{{ $chiTiet->sanPham->id }}" data-variant-id="{{ $chiTiet->bien_the_id }}" data-order-id="{{ $donHang->id }}">
+                                        @csrf
+                                        <input type="hidden" name="san_pham_id" value="{{ $chiTiet->sanPham->id }}">
+                                        <input type="hidden" name="bien_the_id" value="{{ $chiTiet->bien_the_id }}">
+                                        <input type="hidden" name="don_hang_id" value="{{ $donHang->id }}">
+                                        <div class="mb-2">
+                                            <label class="form-label fw-semibold">Số sao</label>
+                                            <select name="so_sao" class="form-select w-auto">
+                                                <option value="5">⭐⭐⭐⭐⭐ (5 sao)</option>
+                                                <option value="4">⭐⭐⭐⭐ (4 sao)</option>
+                                                <option value="3">⭐⭐⭐ (3 sao)</option>
+                                                <option value="2">⭐⭐ (2 sao)</option>
+                                                <option value="1">⭐ (1 sao)</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-2">
+                                            <textarea name="noi_dung" class="form-control" rows="3" placeholder="Viết đánh giá của bạn..."></textarea>
+                                        </div>
+                                        <button class="btn btn-primary btn-sm" type="submit">
+                                            <i class="bi bi-send"></i> Gửi đánh giá
+                                        </button>
+                                        <div class="mt-2 alert-message" style="display: none;"></div>
+                                    </form>
+                                @endif
                         </div>
                     @endforeach
                 </div>
             </div>
         @endif
     </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('.review-form');
+
+        forms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const formData = new FormData(this);
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const alertDiv = this.querySelector('.alert-message');
+
+                // Vô hiệu hóa nút submit
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang gửi...';
+
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                        return null;
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data) return;
+
+                    if (data.success) {
+                        // Hiển thị thông báo thành công
+                        alertDiv.className = 'mt-2 alert-message alert alert-success';
+                        alertDiv.innerHTML = '<i class="bi bi-check-circle"></i> ' + data.message;
+                        alertDiv.style.display = 'block';
+
+                        // Reset form
+                        form.reset();
+
+                        // Chuyển form thành trạng thái "đã đánh giá"
+                        const parentDiv = form.closest('div.border');
+                        parentDiv.innerHTML = '<div class="alert alert-success mb-0"><i class="bi bi-check-circle"></i> Bạn đã đánh giá sản phẩm này</div>';
+                    } else if (data.error) {
+                        // Hiển thị thông báo lỗi
+                        alertDiv.className = 'mt-2 alert-message alert alert-danger';
+                        alertDiv.innerHTML = '<i class="bi bi-exclamation-triangle"></i> ' + data.error;
+                        alertDiv.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    // Nếu lỗi, reload trang để hiển thị thông báo lỗi từ Laravel
+                    window.location.reload();
+                })
+                .finally(() => {
+                    if (!alertDiv.classList.contains('alert')) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-send"></i> Gửi đánh giá';
+                    }
+                });
+            });
+        });
+    });
+    </script>
 </div>

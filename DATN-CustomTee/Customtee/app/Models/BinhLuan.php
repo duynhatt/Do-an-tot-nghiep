@@ -14,6 +14,7 @@ class BinhLuan extends Model
     protected $fillable = [
         'user_id',
         'san_pham_id',
+        'bien_the_id',
         'don_hang_id',
         'noi_dung',
         'so_sao',
@@ -36,6 +37,12 @@ class BinhLuan extends Model
     public function sanPham()
     {
         return $this->belongsTo(SanPham::class, 'san_pham_id');
+    }
+
+    // Biến thể được bình luận (nullable - để tương thích với dữ liệu cũ)
+    public function bienThe()
+    {
+        return $this->belongsTo(BienThe::class, 'bien_the_id');
     }
 
     public function donHang()

@@ -155,7 +155,20 @@
                     <div class="border rounded p-3 mb-3 shadow-sm">
 
                         <div class="d-flex justify-content-between mb-2">
-                            <strong>{{ $dg->user->name ?? 'Khách hàng' }}</strong>
+                            <div>
+                                <strong>{{ $dg->user->name ?? 'Khách hàng' }}</strong>
+                                @if($dg->bienThe)
+                                    <div class="small text-muted d-flex align-items-center gap-1">
+                                        @if($dg->bienThe->color)
+                                            <span class="border rounded" style="width:14px;height:14px;background-color:{{ $dg->bienThe->color->ma_mau ?? '#ccc' }};"></span>
+                                            <span>{{ $dg->bienThe->color->ten_mau ?? '—' }}</span>
+                                        @endif
+                                        @if($dg->bienThe->size)
+                                            <span>/ {{ $dg->bienThe->size->ten_kich_thuoc }}</span>
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
 
                             <small class="text-muted">
                                 {{ $dg->created_at->format('d/m/Y') }}
