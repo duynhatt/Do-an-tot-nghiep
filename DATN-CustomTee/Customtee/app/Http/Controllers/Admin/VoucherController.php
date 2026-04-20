@@ -149,6 +149,8 @@ class VoucherController extends Controller
 
     private function validateVoucherRequest(Request $request, ?Voucher $voucher = null): array
     {
+        $maxMoneyValue = 999999999999; // Khớp DECIMAL(12,0) trong DB
+        $maxSoLuong = 2147483647; // Khớp INT signed trong DB
         $voucherId = $voucher?->id;
         $validated = $request->validate([
             'ma' => [
@@ -159,18 +161,22 @@ class VoucherController extends Controller
                 Rule::unique('vouchers', 'ma')->ignore($voucherId),
             ],
             'loai' => 'required|in:phan_tram,tien_mat',
-            'gia_tri' => 'required|numeric|min:1',
-            'don_hang_toi_thieu' => 'nullable|numeric|min:0',
-            'giam_toi_da' => 'nullable|numeric|min:0|required_if:loai,phan_tram',
+            'gia_tri' => "required|integer|min:1|max:{$maxMoneyValue}",
+            'don_hang_toi_thieu' => "nullable|integer|min:0|max:{$maxMoneyValue}",
+            'giam_toi_da' => "nullable|integer|min:0|max:{$maxMoneyValue}|required_if:loai,phan_tram",
             'bat_dau' => 'required|date',
             'ket_thuc' => 'required|date|after_or_equal:bat_dau',
-            'so_luong' => 'required|integer|min:1',
+            'so_luong' => "required|integer|min:1|max:{$maxSoLuong}",
             'max_per_user' => 'nullable|integer|min:1|max:255',
         ], [
             'ma.unique' => 'Mã voucher này đã tồn tại!',
             'ma.regex' => 'Mã voucher chỉ được chứa chữ, số, dấu gạch ngang hoặc gạch dưới.',
             'ket_thuc.after_or_equal' => 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu!',
             'giam_toi_da.required_if' => 'Voucher giảm theo % bắt buộc nhập số tiền giảm tối đa.',
+            'gia_tri.max' => 'Giá trị giảm không được vượt quá 999.999.999.999.',
+            'don_hang_toi_thieu.max' => 'Đơn hàng tối thiểu không được vượt quá 999.999.999.999.',
+            'giam_toi_da.max' => 'Giảm tối đa không được vượt quá 999.999.999.999.',
+            'so_luong.max' => 'Số lượng voucher quá lớn, vui lòng nhập nhỏ hơn hoặc bằng 2.147.483.647.',
             'max_per_user.min' => 'Giới hạn mỗi khách phải lớn hơn hoặc bằng 1.',
         ]);
 
@@ -196,6 +202,28 @@ class VoucherController extends Controller
             ]);
         }
 
+        if ($validated['loai'] === 'tien_mat') {
+            $giaTriTienMat = (float) $validated['gia_tri'];
+            $donHangToiThieu = (float) ($validated['don_hang_toi_thieu'] ?? 0);
+
+            if ($donHangToiThieu <= $giaTriTienMat) {
+                throw ValidationException::withMessages([
+                    'don_hang_toi_thieu' => 'Với voucher tiền mặt, đơn hàng tối thiểu phải lớn hơn số tiền giảm.',
+                ]);
+            }
+        }
+
+        if (isset($validated['max_per_user']) && $validated['max_per_user'] !== null) {
+            $maxPerUser = (int) $validated['max_per_user'];
+            $soLuongVoucher = (int) $validated['so_luong'];
+
+            if ($maxPerUser > $soLuongVoucher) {
+                throw ValidationException::withMessages([
+                    'max_per_user' => 'Giới hạn mỗi khách không được lớn hơn tổng số lượng voucher.',
+                ]);
+            }
+        }
+
         if ($voucher) {
             $daSuDung = (int) ($voucher->da_su_dung ?? 0);
             if ((int) $validated['so_luong'] < $daSuDung) {
@@ -208,6 +236,7 @@ class VoucherController extends Controller
                 $newMaxPerUser = (int) $validated['max_per_user'];
                 $isExceededByAnyUser = VoucherUsage::query()
                     ->where('voucher_id', $voucher->id)
+                    ->selectRaw('1')
                     ->groupBy('user_id')
                     ->havingRaw('COUNT(*) > ?', [$newMaxPerUser])
                     ->exists();

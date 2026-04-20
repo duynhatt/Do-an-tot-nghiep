@@ -86,6 +86,11 @@
                 <p class="text-muted mb-0">
                     Đặt lúc {{ $donHang->created_at->format('d/m/Y H:i') }}
                 </p>
+                @if (!empty($donHang->da_giao_at))
+                    <p class="text-muted mb-0">
+                        Đã giao lúc {{ $donHang->da_giao_at->format('d/m/Y H:i') }}
+                    </p>
+                @endif
             </div>
             <div class="col-auto text-end">
                 <span class="badge bg-{{ $badge }} fs-5 px-4 py-2">

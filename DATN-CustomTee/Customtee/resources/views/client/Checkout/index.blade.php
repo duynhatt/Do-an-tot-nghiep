@@ -49,6 +49,14 @@
         padding: 14px;
         border-radius: 10px;
     }
+    .voucher-list {
+        max-height: 240px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+    .voucher-list .voucher-item:last-child {
+        margin-bottom: 0 !important;
+    }
     @media (max-width: 991px) {
         .order-summary {
             position: static !important;
